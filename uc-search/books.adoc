@@ -1,0 +1,317 @@
+:author: Justyna Gromada
+:twitter: @gromajus
+:linkedIn: http://www.linkedin.com/in/jgromada
+:email: jgromada@gmail.com
+
+= BOOKS MANAGEMENT GRAPH
+
+== GOAL
+The aim of this graphgist is to order the information about books. The idea can be used by books management systems, content recommendations systems, etc. Firstly, the designed data model is presented. Next, exemplary data is loaded and exemplary cipher queries run to show the applications of this model.
+
+== Data Model
+The designed data model is presented on the figure below:
+
+image::http://i57.tinypic.com/2gvn0jr.jpg[width=800, align="center"]
+
+The *Book* concept is the heart of the model and other entities together with relationships describe it.
+The model consist of the following domains and relationships:
+
+.Domains
+[options="header,footer"]
+|=======================
+|Domain             |Attributes                               |Example
+|Book               |title - original                         |Harry Potter and the Philosopher's Stone
+|Book Series        |title                                    |Harry Potter
+|Keyword            |name                                     |magic, students
+|Genre              |name                                     |fantasy, mystery
+|Person             |name, surname                            |J. K. Rowling
+|Translation        |title - translated)                      |Harry Potter Ã  l'Ã©cole des sorciers 
+|Language           |name                                     |English, French
+|EBook              |link                                     |linkToHarryPotterEBook
+|Review             |link                                     |linkToReview1, linkToReview2
+|Movie              |title                                    |Harry Potter and the Philosopher's Stone
+|Time               |century, year, season, date              |1997, 
+|Place              |continent, country, city name, address   |US, UK
+|Publishing House   |name                                     |Bloomsbury Publishing, Arthur A. Levine Books
+|=======================
+
+.Relationships
+[options="header,footer"]
+|=======================
+|Start Node             |Relationship               |End Node | Example
+|Book             |IS_PART_OF               |Book Series | Harry Potter and the Philosopher's Stone IS_PART_OF (order no: 1) Harry Potter
+|Book |DESCRIBED_BY| Keyword| Harry Potter and the Philosopher's Stone DESCRIBED_BY magic
+|Book |OF_TYPE| Genre| Harry Potter and the Philosopher's Stone OF_TYPE fantasy
+|Book |WRITTEN_BY| Person| Harry Potter and the Philosopher's Stone WRITTEN_BY J. K. Rowling
+|Book |TRANSLATED_TO| Translation| Harry Potter and the Philosopher's Stone TRANSLATED_TO Harry Potter Ã  l'Ã©cole des sorciers
+|Book |HAS_ORIGINAL_LANGUAGE| Language| Harry Potter and the Philosopher's Stone HAS_ORIGINAL_LANGUAGE English
+|Translation |OF_LANGUAGE| Language| Harry Potter Ã  l'Ã©cole des sorciers OF_LANGUAGE French
+|Translation |MADE_BY| Person| Harry Potter Ã  l'Ã©cole des sorciers MADE_BY Jean-FranÃ§ois MÃ©nard
+|Book |HAS_E_VERSION| EBook| Harry Potter and the Philosopher's Stone HAS_E_VERSION eHarryPotter
+|Translation |HAS_E_VERSION| EBook | Harry Potter Ã  l'Ã©cole des sorciers HAS_E_VERSION eHarryPotterInFrench
+|Book |HAS_REVIEW| Review| Harry Potter and the Philosopher's Stone HAS_REVIEW review1
+|Book |MADE_INTO| Movie| Harry Potter and the Philosopher's Stone MADE_INTO Harry Potter and the Philosopher's Stone
+|Book |WHEN_ACTION| Time|  Harry Potter and the Philosopher's Stone WHEN_ACTION XX century
+|Book |WHEN_PUBLISHED| Time| Harry Potter and the Philosopher's Stone WHEN_PUBLISHED 1997
+|Book |WHERE_ACTION| Place| Harry Potter and the Philosopher's Stone WHERE_ACTION Londyn
+|Book |WHERE_PUBLISHED| Place| Harry Potter and the Philosopher's Stone WHERE_PUBLISHED UK
+|Book |PUBLISHED_BY| Publishing House| Harry Potter and the Philosopher's Stone PUBLISHED_BY Bloomsbury Publishing
+|=======================
+
+
+== Graph data upload
+Firtly, the test data is added to the database.
+
+The uploaded data consists of the following books and information about them:
+
+* *Harry Potter and the Philosophers Stone* written by J. K. Rowling in English which is a part of Harry Potter series. It was published in 1997 by Bloomsbury Publishing, Arthur A. Levine Books. The book has been translated into many languages, including French. There is also a movie based on the book. The action takes place in London in contemporary times. Keywords describing the movie: magic, students.
+* *The Books Thief* written by Markus Zusak in English. It was first published in 2005 by Picador in Australia. The action takes place in nazist Germany in XX century. There is also a movie based on the book. Keywords describing the movie: death, students, judaism.
+* *The Adventures of Tom Sawyer* written by Mark Twain in English. It was published by American Publishing Company in 1876 in US. The action takes place in US. Keywords describing the movie: boy, children's novel, change, psychology.
+
+
+//hide
+
+//setup
+
+[source,cypher]
+
+----
+//Book
+CREATE (harry1:Book{title:'Harry Potter and the Philosophers Stone'}),
+       (bookThief:Book{title:'The Book Thief'}),
+	   (tom:Book{title:'The Adventures of Tom Sawyer'})
+	   
+//Book Series 
+CREATE (harryPotter:BookSeries{title:'Harry Potter'})
+
+//Keyword
+CREATE (magic:Keyword{name:'magic'}), 
+	   (students:Keyword{name:'students'}),
+	   (death:Keyword{name:'death'}),
+	   (judaism:Keyword{name:'judaism'}),
+	   (boy:Keyword{name:'boy'}),
+	   (change:Keyword{name:'change'}),
+	   (psychology:Keyword{name:'psychology'})	   
+
+//Genre  
+CREATE (fantasy:Genre{name:'fantasy'}), 
+	   (mystery:Genre{name:'mystery'}),
+	   (novel:Genre{name:'novel'}),	
+	   (historical:Genre{name:'historical'}),
+	   (fiction:Genre{name:'fiction'}),
+	   (Bildungsroman:Genre{name:'Bildungsroman'}),
+	   (childrensNovel:Genre{name:'childrenâ€™s novel'})
+	   
+	   
+//Person
+CREATE (rowling:Person{name:'J. K.', surname:'Rowling'}),
+	   (menard:Person{name:'Jean-FranÃ§ois', surname:'MÃ©nard'}),
+	   (zusak:Person{name:'Markus', surname:'Zusak'}),
+	   (twain:Person{name:'Mark', surname:'Twain'})   
+
+
+//Translation
+CREATE (harry1French:Translation{title:'Harry Potter Ã  lecole des sorciers'}),
+	   (harry1Polish:Translation{title:'Harry Potter i KamieÅ„ Filozoficzny'}),
+	   (harry1Spanish:Translation{title:'Harry Potter y la piedra filosofal '})
+
+
+//Language
+CREATE (english:Language{name:'English'}),
+	   (french:Language{name:'French'}),
+	   (polish:Language{name:'Polish'}),
+	   (spanish:Language{name:'Spanish'})
+
+	   
+//Movie 
+CREATE (harry1Movie:Movie{title:'Harry Potter and the Philosophers Stone'}),
+	   (bookThiefMovie:Movie{title:'The Book Thief'})
+	   
+//Time 
+CREATE (year1997:Time{year:'1997'}),
+	   (year2005:Time{year:'2005'}),
+	   (year1876:Time{year:'1876'}),
+	   (centuryXIX:Time{century:'XIX'}),
+	   (centuryXX:Time{century:'XX'})
+
+//Place 
+CREATE (US:Place{country:'US'}),
+		(UK:Place{country:'UK'}),
+		(London:Place{cityName:'London'}),
+		(Australia:Place{country:'Australia'}),
+		(Germany:Place{country:'Germany'})
+		
+//Publishing House
+CREATE (bloomsbury:PublishingHouse{name:'Bloomsbury Publishing'}),
+	   (levine:PublishingHouse{name:'Arthur A. Levine Books'}),
+	   (picador:PublishingHouse{name:'Picador'}),
+	   (apc:PublishingHouse{name:'American Publishing Company'})
+	   
+//IS_PART_OF
+CREATE	 harry1-[:IS_PART_OF]->harryPotter
+
+//DESCRIBED_BY
+CREATE	 harry1-[:DESCRIBED_BY]->magic,
+		 harry1-[:DESCRIBED_BY]->students,
+		 bookThief-[:DESCRIBED_BY]->students,
+		 bookThief-[:DESCRIBED_BY]->death,
+		 bookThief-[:DESCRIBED_BY]->judaism,
+		 tom-[:DESCRIBED_BY]->boy,
+		 tom-[:DESCRIBED_BY]->psychology,
+		 tom-[:DESCRIBED_BY]->change
+		 
+//OF_TYPE
+CREATE	 harry1-[:OF_TYPE]->fantasy,
+		 harry1-[:OF_TYPE]->mystery,
+		 harry1-[:OF_TYPE]->fiction,
+		 bookThief-[:OF_TYPE]->novel,
+		 bookThief-[:OF_TYPE]->historical,
+		 bookThief-[:OF_TYPE]->fiction,
+		 tom-[:OF_TYPE]->novel,
+		 tom-[:OF_TYPE]->Bildungsroman,
+		 tom-[:OF_TYPE]->childrensNovel
+
+//WRITTEN_BY
+CREATE	 harry1-[:WRITTEN_BY]->rowling,
+		 bookThief-[:WRITTEN_BY]->zusak,
+		 tom-[:WRITTEN_BY]->twain
+
+//TRANSLATED_TO
+CREATE	 harry1-[:TRANSLATED_TO]->harry1French,
+		 harry1-[:TRANSLATED_TO]->harry1Polish,
+		 harry1-[:TRANSLATED_TO]->harry1Spanish
+
+//HAS_ORIGINAL_LANGUAGE
+CREATE	 harry1-[:HAS_ORIGINAL_LANGUAGE]->english,
+		 bookThief-[:HAS_ORIGINAL_LANGUAGE]->english,
+		 tom-[:HAS_ORIGINAL_LANGUAGE]->english
+
+//OF_LANGUAGE
+CREATE	 harry1French-[:OF_LANGUAGE]->french,
+		 harry1Polish-[:OF_LANGUAGE]->polish,
+		 harry1Spanish-[:OF_LANGUAGE]->spanish
+
+//MADE_BY
+CREATE	 harry1French-[:MADE_BY]->menard
+
+//MADE_INTO
+CREATE	 harry1-[:MADE_INTO]->harry1Movie,
+		 bookThief-[:MADE_INTO]->bookThiefMovie
+
+//WHEN_ACTION
+CREATE	 harry1-[:WHEN_ACTION]->centuryXX,
+		 bookThief-[:WHEN_ACTION]->centuryXX,
+		 tom-[:WHEN_ACTION]->centuryXIX
+		 
+//WHEN_PUBLISHED
+CREATE	 harry1-[:WHEN_PUBLISHED]->year1997,
+		 bookThief-[:WHEN_PUBLISHED]->year2005,
+		 tom-[:WHEN_PUBLISHED]->year1876
+
+//WHERE_ACTION
+CREATE	 harry1-[:WHERE_ACTION]->London,
+	     bookThief-[:WHERE_ACTION]->Germany,
+	     tom-[:WHERE_ACTION]->US
+
+//WHERE_PUBLISHED
+CREATE	 harry1-[:WHERE_PUBLISHED]->UK,
+		 bookThief-[:WHERE_PUBLISHED]->Australia,
+		 tom-[:WHERE_PUBLISHED]->US
+
+//PUBLISHED_BY
+CREATE	 harry1-[:PUBLISHED_BY]->bloomsbury,
+		 bookThief-[:PUBLISHED_BY]->picador,
+		 tom-[:PUBLISHED_BY]->apc
+
+
+
+
+
+
+
+
+----
+
+
+//graph
+
+
+
+== Applications
+The data model and queries below enable retrieving information about books according to many criteria.
+
+=== Find books of genre 'novel'
+
+[source,cypher]
+
+----
+MATCH (b:Book)-[:OF_TYPE]->(:Genre{name:'novel'}),
+       b-[:DESCRIBED_BY]->(k:Keyword)
+RETURN b.title AS book, collect(k.name) as keywords
+ORDER BY b.title
+----
+
+
+//table
+
+=== Find books published by 'Bloomsbury Publishing'
+
+[source,cypher]
+
+----
+MATCH (b:Book)-[:PUBLISHED_BY]->(:PublishingHouse{name:'Bloomsbury Publishing'}), 
+       b-[:WHEN_PUBLISHED]->(t:Time), 
+       b-[:WHERE_PUBLISHED]->(p:Place)
+RETURN b.title AS book, t.year as time, p.country as place
+ORDER BY t DESC, b.title
+----
+
+
+//table
+
+=== Find books whose action takes place in 'Germany' in 'XX century'
+
+[source,cypher]
+
+----
+MATCH (b:Book)-[:WHERE_ACTION]->(:Place{country:'Germany'}), 
+       b-[:WHEN_ACTION]->(:Time{century:'XX'})
+RETURN b.title AS book
+ORDER BY b.title
+----
+
+
+//table
+
+=== Find all books that has been filmed
+
+[source,cypher]
+
+----
+MATCH (b:Book)-[:MADE_INTO]->(m:Movie),
+       b-[:WHEN_PUBLISHED]->(t:Time)
+WHERE m.title<>""
+RETURN b.title AS book, t.year as time
+ORDER BY t.year DESC, b.title
+----
+
+
+//table
+
+=== Find books translations into foreign languages
+
+[source,cypher]
+
+----
+MATCH (b:Book)-[:TRANSLATED_TO]->(t:Translation)
+RETURN DISTINCT b.title AS book, collect(t.title) as translations
+ORDER BY b.title
+----
+
+
+//table
+
+== Summary
+
+Presented model is extendible: the information about other content can be added, e.g. about movies, audiobooks, computer games that correspond to particular books. This order information is the knowledge base about books that can be used in searching for a particular content or content recommendations.
+Additional layer in form of classical social network can be added to enable the functionality of profiling people according to their reading taste, finding similar people (based on their reading taste), etc. The model can be also used to prove that graph modelling of this domain and querying is much easier that in case of relational databases.
