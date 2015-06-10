@@ -1,0 +1,514 @@
+= Amazon Web Services Global Infrastructure Graph =
+
+Amazon Web Services global infractructure is steadily expanding and now serves thousands of customers in over 190 countries.
+Certain services are only available in some regions and compute prices vary across the globe.
+Wouldn't it be nice if you could slice and dice through the entire AWS domain of services, data centres and prices all in one spot to optimise your AWS bill? , enter the *AWS Global Infrastructure Graph*!
+
+At the time of writing the AWS global infrastructure graph consists of  5 continents, with 10 regions, and 21 availability zones, offering 32 services. The data shown here is current as of 21 January 2014.
+
+**disclaimer
+AWS consumers beware! The prices and services listed in the graph are correct as of January 21st 2014, please refer to the AWS price calculator for the latest prices and service offering's per region -  http://calculator.s3.amazonaws.com/calc5.html **
+
+feedback to aidancasey@gmail.com  | @AIDANJCASEY  |  http://acaseyblog.wordpress.com
+
+== Setup ==
+//hide
+//setup
+[source,cypher]
+----
+
+CREATE (continent1:Continent{name:'North America'})
+CREATE (continent2:Continent{name:'South America'})
+CREATE (continent3:Continent{name:'Asia'})
+CREATE (continent4:Continent{name:'Europe'})
+CREATE (continent5:Continent{name:'Australia'})
+
+
+CREATE (region1:Region{name:'N. Virginia' , launched:2006})
+CREATE (region2:Region{name:'Oregon' , launched:2011})
+CREATE (region3:Region{name:'N. California' , launched:2009})
+CREATE (region4:Region{name:'Ireland' , launched:2007})
+CREATE (region5:Region{name:'Singapore' , launched:2010})
+CREATE (region6:Region{name:'Tokyo' , launched:2011})
+CREATE (region7:Region{name:'Sydney' , launched:2012})
+CREATE (region8:Region{name:'Sao Paulo' , launched:2011})
+CREATE (region9:Region{name:'GovCloud' , launched:2011})
+CREATE (region10:Region{name:'Beijing' , launched:2014})
+
+CREATE (availabilityzone1:AvailabilityZone{name:'eu-west-1a'})
+CREATE (availabilityzone2:AvailabilityZone{name:'eu-west-1b'})
+CREATE (availabilityzone3:AvailabilityZone{name:'eu-west-1c'})
+CREATE (availabilityzone4:AvailabilityZone{name:'us-east-1a'})
+CREATE (availabilityzone5:AvailabilityZone{name:'us-east-1b'})
+CREATE (availabilityzone6:AvailabilityZone{name:'us-east-1c'})
+CREATE (availabilityzone7:AvailabilityZone{name:'us-east-1d'})
+CREATE (availabilityzone8:AvailabilityZone{name:'us-west-2a'})
+CREATE (availabilityzone9:AvailabilityZone{name:'us-west-2b'})
+CREATE (availabilityzone10:AvailabilityZone{name:'us-west-2c'})
+CREATE (availabilityzone11:AvailabilityZone{name:'us-west-1a'})
+CREATE (availabilityzone12:AvailabilityZone{name:'us-west-1c'})
+CREATE (availabilityzone13:AvailabilityZone{name:'ap-southeast-1a'})
+CREATE (availabilityzone14:AvailabilityZone{name:'ap-southeast-1b'})
+CREATE (availabilityzone15:AvailabilityZone{name:'ap-northeast-1a'})
+CREATE (availabilityzone16:AvailabilityZone{name:'ap-northeast-1b'})
+CREATE (availabilityzone17:AvailabilityZone{name:'ap-northeast-1c'})
+CREATE (availabilityzone18:AvailabilityZone{name:'ap-southeast-2a'})
+CREATE (availabilityzone19:AvailabilityZone{name:'ap-southeast-2b'})
+CREATE (availabilityzone20:AvailabilityZone{name:'sa-east-1a'})
+CREATE (availabilityzone21:AvailabilityZone{name:'sa-east-1b'})
+
+CREATE (region1)-[:IS_LOCATED_IN]->(continent1)
+CREATE (region2)-[:IS_LOCATED_IN]->(continent1)
+CREATE (region3)-[:IS_LOCATED_IN]->(continent1)
+CREATE (region4)-[:IS_LOCATED_IN]->(continent4)
+CREATE (region5)-[:IS_LOCATED_IN]->(continent3)
+CREATE (region6)-[:IS_LOCATED_IN]->(continent3)
+CREATE (region7)-[:IS_LOCATED_IN]->(continent5)
+CREATE (region8)-[:IS_LOCATED_IN]->(continent2)
+CREATE (region9)-[:IS_LOCATED_IN]->(continent1)
+CREATE (region10)-[:IS_LOCATED_IN]->(continent3)
+
+CREATE (region4)-[:HAS_ISOLATED]->(availabilityzone1)
+CREATE (region4)-[:HAS_ISOLATED]->(availabilityzone2)
+CREATE (region4)-[:HAS_ISOLATED]->(availabilityzone3)
+CREATE (region1)-[:HAS_ISOLATED]->(availabilityzone4)
+CREATE (region1)-[:HAS_ISOLATED]->(availabilityzone5)
+CREATE (region1)-[:HAS_ISOLATED]->(availabilityzone6)
+CREATE (region1)-[:HAS_ISOLATED]->(availabilityzone7)
+CREATE (region2)-[:HAS_ISOLATED]->(availabilityzone8)
+CREATE (region2)-[:HAS_ISOLATED]->(availabilityzone9)
+CREATE (region2)-[:HAS_ISOLATED]->(availabilityzone10)
+CREATE (region3)-[:HAS_ISOLATED]->(availabilityzone11)
+CREATE (region3)-[:HAS_ISOLATED]->(availabilityzone12)
+CREATE (region5)-[:HAS_ISOLATED]->(availabilityzone13)
+CREATE (region5)-[:HAS_ISOLATED]->(availabilityzone14)
+CREATE (region6)-[:HAS_ISOLATED]->(availabilityzone15)
+CREATE (region6)-[:HAS_ISOLATED]->(availabilityzone16)
+CREATE (region6)-[:HAS_ISOLATED]->(availabilityzone17)
+CREATE (region7)-[:HAS_ISOLATED]->(availabilityzone18)
+CREATE (region7)-[:HAS_ISOLATED]->(availabilityzone19)
+CREATE (region8)-[:HAS_ISOLATED]->(availabilityzone20)
+CREATE (region8)-[:HAS_ISOLATED]->(availabilityzone21)
+
+CREATE (service1:Service{name:'Amazon Elastic Compute Cloud'})
+CREATE (service2:Service{name:'Amazon CloudWatch'})
+CREATE (service3:Service{name:'Amazon Virtual Private Cloud'})
+CREATE (service4:Service{name:'Amazon Simple Storage Service'})
+CREATE (service5:Service{name:'Amazon Elastic Block Store'})
+CREATE (service6:Service{name:'Auto Scaling'})
+CREATE (service7:Service{name:'Amazon Simple Queue Service'})
+CREATE (service8:Service{name:'Amazon Simple Notification Service'})
+CREATE (service9:Service{name:'Elastic Load Balancing'})
+CREATE (service10:Service{name:'AWS Support'})
+CREATE (service11:Service{name:'Amazon DynamoDB'})
+CREATE (service12:Service{name:'Amazon Relational Database Service'})
+CREATE (service13:Service{name:'Amazon Simple Workflow Service'})
+CREATE (service14:Service{name:'Amazon Elastic MapReduce'})
+CREATE (service15:Service{name:'AWS Direct Connect'})
+CREATE (service16:Service{name:'AWS CloudFormation'})
+CREATE (service17:Service{name:'VM Import/Export'})
+CREATE (service18:Service{name:'AWS Elastic Beanstalk'})
+CREATE (service19:Service{name:'AWS Storage Gateway'})
+CREATE (service20:Service{name:'Amazon SimpleDB'})
+CREATE (service21:Service{name:'Amazon ElastiCache'})
+CREATE (service22:Service{name:'Amazon Elastic Transcoder'})
+CREATE (service23:Service{name:'Amazon Redshift'})
+CREATE (service24:Service{name:'Amazon CloudSearch'})
+CREATE (service25:Service{name:'AWS Import/Export'})
+CREATE (service26:Service{name:'Amazon Glacier'})
+CREATE (service27:Service{name:'High Performance Computing'})
+CREATE (service28:Service{name:'AWS CloudHSM'})
+CREATE (service29:Service{name:'AWS CloudTrail'})
+CREATE (service30:Service{name:'Amazon Simple Email Service'})
+CREATE (service31:Service{name:'AWS Data Pipeline'})
+CREATE (service32:Service{name:'Amazon Kinesis'})
+
+CREATE (region1)-[:OFFERS_SERVICE]->(service1)
+CREATE (region1)-[:OFFERS_SERVICE]->(service2)
+CREATE (region1)-[:OFFERS_SERVICE]->(service3)
+CREATE (region1)-[:OFFERS_SERVICE]->(service4)
+CREATE (region1)-[:OFFERS_SERVICE]->(service5)
+CREATE (region1)-[:OFFERS_SERVICE]->(service6)
+CREATE (region1)-[:OFFERS_SERVICE]->(service7)
+CREATE (region1)-[:OFFERS_SERVICE]->(service8)
+CREATE (region1)-[:OFFERS_SERVICE]->(service9)
+CREATE (region1)-[:OFFERS_SERVICE]->(service10)
+CREATE (region1)-[:OFFERS_SERVICE]->(service11)
+CREATE (region1)-[:OFFERS_SERVICE]->(service12)
+CREATE (region1)-[:OFFERS_SERVICE]->(service13)
+CREATE (region1)-[:OFFERS_SERVICE]->(service14)
+CREATE (region1)-[:OFFERS_SERVICE]->(service15)
+CREATE (region1)-[:OFFERS_SERVICE]->(service16)
+CREATE (region1)-[:OFFERS_SERVICE]->(service17)
+CREATE (region1)-[:OFFERS_SERVICE]->(service18)
+CREATE (region1)-[:OFFERS_SERVICE]->(service19)
+CREATE (region1)-[:OFFERS_SERVICE]->(service20)
+CREATE (region1)-[:OFFERS_SERVICE]->(service21)
+CREATE (region1)-[:OFFERS_SERVICE]->(service22)
+CREATE (region1)-[:OFFERS_SERVICE]->(service23)
+CREATE (region1)-[:OFFERS_SERVICE]->(service24)
+CREATE (region1)-[:OFFERS_SERVICE]->(service25)
+CREATE (region1)-[:OFFERS_SERVICE]->(service26)
+CREATE (region1)-[:OFFERS_SERVICE]->(service27)
+CREATE (region1)-[:OFFERS_SERVICE]->(service28)
+CREATE (region1)-[:OFFERS_SERVICE]->(service29)
+CREATE (region1)-[:OFFERS_SERVICE]->(service30)
+CREATE (region1)-[:OFFERS_SERVICE]->(service31)
+CREATE (region1)-[:OFFERS_SERVICE]->(service32)
+
+CREATE (region2)-[:OFFERS_SERVICE]->(service1)
+CREATE (region2)-[:OFFERS_SERVICE]->(service2)
+CREATE (region2)-[:OFFERS_SERVICE]->(service3)
+CREATE (region2)-[:OFFERS_SERVICE]->(service4)
+CREATE (region2)-[:OFFERS_SERVICE]->(service5)
+CREATE (region2)-[:OFFERS_SERVICE]->(service6)
+CREATE (region2)-[:OFFERS_SERVICE]->(service7)
+CREATE (region2)-[:OFFERS_SERVICE]->(service8)
+CREATE (region2)-[:OFFERS_SERVICE]->(service9)
+CREATE (region2)-[:OFFERS_SERVICE]->(service10)
+CREATE (region2)-[:OFFERS_SERVICE]->(service11)
+CREATE (region2)-[:OFFERS_SERVICE]->(service12)
+CREATE (region2)-[:OFFERS_SERVICE]->(service13)
+CREATE (region2)-[:OFFERS_SERVICE]->(service14)
+CREATE (region2)-[:OFFERS_SERVICE]->(service15)
+CREATE (region2)-[:OFFERS_SERVICE]->(service16)
+CREATE (region2)-[:OFFERS_SERVICE]->(service17)
+CREATE (region2)-[:OFFERS_SERVICE]->(service18)
+CREATE (region2)-[:OFFERS_SERVICE]->(service19)
+CREATE (region2)-[:OFFERS_SERVICE]->(service20)
+CREATE (region2)-[:OFFERS_SERVICE]->(service21)
+CREATE (region2)-[:OFFERS_SERVICE]->(service22)
+CREATE (region2)-[:OFFERS_SERVICE]->(service23)
+CREATE (region2)-[:OFFERS_SERVICE]->(service24)
+CREATE (region2)-[:OFFERS_SERVICE]->(service25)
+CREATE (region2)-[:OFFERS_SERVICE]->(service26)
+CREATE (region2)-[:OFFERS_SERVICE]->(service27)
+CREATE (region2)-[:OFFERS_SERVICE]->(service28)
+CREATE (region2)-[:OFFERS_SERVICE]->(service29)
+
+CREATE (region3)-[:OFFERS_SERVICE]->(service1)
+CREATE (region3)-[:OFFERS_SERVICE]->(service2)
+CREATE (region3)-[:OFFERS_SERVICE]->(service3)
+CREATE (region3)-[:OFFERS_SERVICE]->(service4)
+CREATE (region3)-[:OFFERS_SERVICE]->(service5)
+CREATE (region3)-[:OFFERS_SERVICE]->(service6)
+CREATE (region3)-[:OFFERS_SERVICE]->(service7)
+CREATE (region3)-[:OFFERS_SERVICE]->(service8)
+CREATE (region3)-[:OFFERS_SERVICE]->(service9)
+CREATE (region3)-[:OFFERS_SERVICE]->(service10)
+CREATE (region3)-[:OFFERS_SERVICE]->(service11)
+CREATE (region3)-[:OFFERS_SERVICE]->(service12)
+CREATE (region3)-[:OFFERS_SERVICE]->(service13)
+CREATE (region3)-[:OFFERS_SERVICE]->(service14)
+CREATE (region3)-[:OFFERS_SERVICE]->(service15)
+CREATE (region3)-[:OFFERS_SERVICE]->(service16)
+CREATE (region3)-[:OFFERS_SERVICE]->(service17)
+CREATE (region3)-[:OFFERS_SERVICE]->(service18)
+CREATE (region3)-[:OFFERS_SERVICE]->(service19)
+CREATE (region3)-[:OFFERS_SERVICE]->(service20)
+CREATE (region3)-[:OFFERS_SERVICE]->(service21)
+CREATE (region3)-[:OFFERS_SERVICE]->(service22)
+CREATE (region3)-[:OFFERS_SERVICE]->(service24)
+CREATE (region3)-[:OFFERS_SERVICE]->(service25)
+CREATE (region3)-[:OFFERS_SERVICE]->(service26)
+
+CREATE (region4)-[:OFFERS_SERVICE]->(service1)
+CREATE (region4)-[:OFFERS_SERVICE]->(service2)
+CREATE (region4)-[:OFFERS_SERVICE]->(service3)
+CREATE (region4)-[:OFFERS_SERVICE]->(service4)
+CREATE (region4)-[:OFFERS_SERVICE]->(service5)
+CREATE (region4)-[:OFFERS_SERVICE]->(service6)
+CREATE (region4)-[:OFFERS_SERVICE]->(service7)
+CREATE (region4)-[:OFFERS_SERVICE]->(service8)
+CREATE (region4)-[:OFFERS_SERVICE]->(service9)
+CREATE (region4)-[:OFFERS_SERVICE]->(service10)
+CREATE (region4)-[:OFFERS_SERVICE]->(service11)
+CREATE (region4)-[:OFFERS_SERVICE]->(service12)
+CREATE (region4)-[:OFFERS_SERVICE]->(service13)
+CREATE (region4)-[:OFFERS_SERVICE]->(service14)
+CREATE (region4)-[:OFFERS_SERVICE]->(service15)
+CREATE (region4)-[:OFFERS_SERVICE]->(service16)
+CREATE (region4)-[:OFFERS_SERVICE]->(service17)
+CREATE (region4)-[:OFFERS_SERVICE]->(service18)
+CREATE (region4)-[:OFFERS_SERVICE]->(service19)
+CREATE (region4)-[:OFFERS_SERVICE]->(service20)
+CREATE (region4)-[:OFFERS_SERVICE]->(service21)
+CREATE (region4)-[:OFFERS_SERVICE]->(service22)
+CREATE (region4)-[:OFFERS_SERVICE]->(service23)
+CREATE (region4)-[:OFFERS_SERVICE]->(service24)
+CREATE (region4)-[:OFFERS_SERVICE]->(service25)
+CREATE (region4)-[:OFFERS_SERVICE]->(service26)
+CREATE (region4)-[:OFFERS_SERVICE]->(service27)
+CREATE (region4)-[:OFFERS_SERVICE]->(service28)
+CREATE (region4)-[:OFFERS_SERVICE]->(service30)
+
+CREATE (region5)-[:OFFERS_SERVICE]->(service1)
+CREATE (region5)-[:OFFERS_SERVICE]->(service2)
+CREATE (region5)-[:OFFERS_SERVICE]->(service3)
+CREATE (region5)-[:OFFERS_SERVICE]->(service4)
+CREATE (region5)-[:OFFERS_SERVICE]->(service5)
+CREATE (region5)-[:OFFERS_SERVICE]->(service6)
+CREATE (region5)-[:OFFERS_SERVICE]->(service7)
+CREATE (region5)-[:OFFERS_SERVICE]->(service8)
+CREATE (region5)-[:OFFERS_SERVICE]->(service9)
+CREATE (region5)-[:OFFERS_SERVICE]->(service10)
+CREATE (region5)-[:OFFERS_SERVICE]->(service11)
+CREATE (region5)-[:OFFERS_SERVICE]->(service12)
+CREATE (region5)-[:OFFERS_SERVICE]->(service13)
+CREATE (region5)-[:OFFERS_SERVICE]->(service14)
+CREATE (region5)-[:OFFERS_SERVICE]->(service15)
+CREATE (region5)-[:OFFERS_SERVICE]->(service16)
+CREATE (region5)-[:OFFERS_SERVICE]->(service17)
+CREATE (region5)-[:OFFERS_SERVICE]->(service18)
+CREATE (region5)-[:OFFERS_SERVICE]->(service19)
+CREATE (region5)-[:OFFERS_SERVICE]->(service20)
+CREATE (region5)-[:OFFERS_SERVICE]->(service21)
+CREATE (region5)-[:OFFERS_SERVICE]->(service22)
+CREATE (region5)-[:OFFERS_SERVICE]->(service23)
+CREATE (region5)-[:OFFERS_SERVICE]->(service24)
+CREATE (region5)-[:OFFERS_SERVICE]->(service25)
+
+CREATE (region6)-[:OFFERS_SERVICE]->(service1)
+CREATE (region6)-[:OFFERS_SERVICE]->(service2)
+CREATE (region6)-[:OFFERS_SERVICE]->(service3)
+CREATE (region6)-[:OFFERS_SERVICE]->(service4)
+CREATE (region6)-[:OFFERS_SERVICE]->(service5)
+CREATE (region6)-[:OFFERS_SERVICE]->(service6)
+CREATE (region6)-[:OFFERS_SERVICE]->(service7)
+CREATE (region6)-[:OFFERS_SERVICE]->(service8)
+CREATE (region6)-[:OFFERS_SERVICE]->(service9)
+CREATE (region6)-[:OFFERS_SERVICE]->(service10)
+CREATE (region6)-[:OFFERS_SERVICE]->(service11)
+CREATE (region6)-[:OFFERS_SERVICE]->(service12)
+CREATE (region6)-[:OFFERS_SERVICE]->(service13)
+CREATE (region6)-[:OFFERS_SERVICE]->(service14)
+CREATE (region6)-[:OFFERS_SERVICE]->(service15)
+CREATE (region6)-[:OFFERS_SERVICE]->(service16)
+CREATE (region6)-[:OFFERS_SERVICE]->(service17)
+CREATE (region6)-[:OFFERS_SERVICE]->(service18)
+CREATE (region6)-[:OFFERS_SERVICE]->(service19)
+CREATE (region6)-[:OFFERS_SERVICE]->(service20)
+CREATE (region6)-[:OFFERS_SERVICE]->(service21)
+CREATE (region6)-[:OFFERS_SERVICE]->(service22)
+CREATE (region6)-[:OFFERS_SERVICE]->(service23)
+CREATE (region6)-[:OFFERS_SERVICE]->(service26)
+CREATE (region6)-[:OFFERS_SERVICE]->(service27)
+
+CREATE (region7)-[:OFFERS_SERVICE]->(service1)
+CREATE (region7)-[:OFFERS_SERVICE]->(service2)
+CREATE (region7)-[:OFFERS_SERVICE]->(service3)
+CREATE (region7)-[:OFFERS_SERVICE]->(service4)
+CREATE (region7)-[:OFFERS_SERVICE]->(service5)
+CREATE (region7)-[:OFFERS_SERVICE]->(service6)
+CREATE (region7)-[:OFFERS_SERVICE]->(service7)
+CREATE (region7)-[:OFFERS_SERVICE]->(service8)
+CREATE (region7)-[:OFFERS_SERVICE]->(service9)
+CREATE (region7)-[:OFFERS_SERVICE]->(service10)
+CREATE (region7)-[:OFFERS_SERVICE]->(service11)
+CREATE (region7)-[:OFFERS_SERVICE]->(service12)
+CREATE (region7)-[:OFFERS_SERVICE]->(service13)
+CREATE (region7)-[:OFFERS_SERVICE]->(service14)
+CREATE (region7)-[:OFFERS_SERVICE]->(service15)
+CREATE (region7)-[:OFFERS_SERVICE]->(service16)
+CREATE (region7)-[:OFFERS_SERVICE]->(service17)
+CREATE (region7)-[:OFFERS_SERVICE]->(service18)
+CREATE (region7)-[:OFFERS_SERVICE]->(service19)
+CREATE (region7)-[:OFFERS_SERVICE]->(service20)
+CREATE (region7)-[:OFFERS_SERVICE]->(service21)
+CREATE (region7)-[:OFFERS_SERVICE]->(service23)
+CREATE (region7)-[:OFFERS_SERVICE]->(service26)
+CREATE (region7)-[:OFFERS_SERVICE]->(service28)
+
+CREATE (region8)-[:OFFERS_SERVICE]->(service1)
+CREATE (region8)-[:OFFERS_SERVICE]->(service2)
+CREATE (region8)-[:OFFERS_SERVICE]->(service3)
+CREATE (region8)-[:OFFERS_SERVICE]->(service4)
+CREATE (region8)-[:OFFERS_SERVICE]->(service5)
+CREATE (region8)-[:OFFERS_SERVICE]->(service6)
+CREATE (region8)-[:OFFERS_SERVICE]->(service7)
+CREATE (region8)-[:OFFERS_SERVICE]->(service8)
+CREATE (region8)-[:OFFERS_SERVICE]->(service9)
+CREATE (region8)-[:OFFERS_SERVICE]->(service10)
+CREATE (region8)-[:OFFERS_SERVICE]->(service11)
+CREATE (region8)-[:OFFERS_SERVICE]->(service12)
+CREATE (region8)-[:OFFERS_SERVICE]->(service13)
+CREATE (region8)-[:OFFERS_SERVICE]->(service14)
+CREATE (region8)-[:OFFERS_SERVICE]->(service15)
+CREATE (region8)-[:OFFERS_SERVICE]->(service16)
+CREATE (region8)-[:OFFERS_SERVICE]->(service18)
+CREATE (region8)-[:OFFERS_SERVICE]->(service19)
+CREATE (region8)-[:OFFERS_SERVICE]->(service20)
+CREATE (region8)-[:OFFERS_SERVICE]->(service21)
+
+CREATE (region9)-[:OFFERS_SERVICE]->(service1)
+CREATE (region9)-[:OFFERS_SERVICE]->(service2)
+CREATE (region9)-[:OFFERS_SERVICE]->(service3)
+CREATE (region9)-[:OFFERS_SERVICE]->(service4)
+CREATE (region9)-[:OFFERS_SERVICE]->(service5)
+CREATE (region9)-[:OFFERS_SERVICE]->(service6)
+CREATE (region9)-[:OFFERS_SERVICE]->(service7)
+CREATE (region9)-[:OFFERS_SERVICE]->(service8)
+CREATE (region9)-[:OFFERS_SERVICE]->(service9)
+CREATE (region9)-[:OFFERS_SERVICE]->(service10)
+CREATE (region9)-[:OFFERS_SERVICE]->(service11)
+CREATE (region9)-[:OFFERS_SERVICE]->(service12)
+CREATE (region9)-[:OFFERS_SERVICE]->(service13)
+CREATE (region9)-[:OFFERS_SERVICE]->(service14)
+CREATE (region9)-[:OFFERS_SERVICE]->(service15)
+CREATE (region9)-[:OFFERS_SERVICE]->(service16)
+CREATE (region9)-[:OFFERS_SERVICE]->(service27)
+
+CREATE (region10)-[:OFFERS_SERVICE]->(service1)
+CREATE (region10)-[:OFFERS_SERVICE]->(service2)
+CREATE (region10)-[:OFFERS_SERVICE]->(service3)
+CREATE (region10)-[:OFFERS_SERVICE]->(service4)
+CREATE (region10)-[:OFFERS_SERVICE]->(service5)
+CREATE (region10)-[:OFFERS_SERVICE]->(service6)
+CREATE (region10)-[:OFFERS_SERVICE]->(service7)
+CREATE (region10)-[:OFFERS_SERVICE]->(service8)
+CREATE (region10)-[:OFFERS_SERVICE]->(service9)
+CREATE (region10)-[:OFFERS_SERVICE]->(service10)
+CREATE (region10)-[:OFFERS_SERVICE]->(service11)
+CREATE (region10)-[:OFFERS_SERVICE]->(service12)
+CREATE (region10)-[:OFFERS_SERVICE]->(service13)
+CREATE (region10)-[:OFFERS_SERVICE]->(service14)
+CREATE (region10)-[:OFFERS_SERVICE]->(service16)
+CREATE (region10)-[:OFFERS_SERVICE]->(service17)
+CREATE (region10)-[:OFFERS_SERVICE]->(service19)
+CREATE (region10)-[:OFFERS_SERVICE]->(service21)
+CREATE (region10)-[:OFFERS_SERVICE]->(service26)
+
+CREATE (instance1:EC2InstanceType{name:'m1.small', family :'general purpose' , memory:1.7 }) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance2:EC2InstanceType{name:'m1.medium', family :'general purpose', memory:3.75}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance3:EC2InstanceType{name:'m1.large', family :'general purpose' ,memory:7.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance4:EC2InstanceType{name:'m1.xlarge', family :'general purpose' ,memory:15}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance5:EC2InstanceType{name:'m3.xlarge', family :'general purpose' , memory:15 }) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance6:EC2InstanceType{name:'m3.2xlarge', family :'general purpose', memory:30}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance7:EC2InstanceType{name:'c1.medium', family :'Compute optimized', memory:1.7}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance8:EC2InstanceType{name:'c1.xlarge', family :'Compute optimized' ,memory:7}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance9:EC2InstanceType{name:'c3.large', family :'Compute optimized' ,memory:3.75}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance10:EC2InstanceType{name:'c3.xlarge', family :'Compute optimized' ,memory:7.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance11:EC2InstanceType{name:'c3.2xlarge', family :'Compute optimized' ,memory:15}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance12:EC2InstanceType{name:'c3.4xlarge', family :'Compute optimized' ,memory:30}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance13:EC2InstanceType{name:'c3.8xlarge', family :'Compute optimized' ,memory:60}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance14:EC2InstanceType{name:'cc2.8xlarge', family :'Compute optimized' ,memory:60.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance15:EC2InstanceType{name:'m2.xlarge', family :'Memory optimized' ,memory:17.1}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance16:EC2InstanceType{name:'m2.2xlarge', family :'Memory optimized' ,memory:34.2}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance17:EC2InstanceType{name:'m2.4xlarge', family :'Memory optimized' ,memory:68.4}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance18:EC2InstanceType{name:'cr1.8xlarge', family :'Memory optimized' ,memory:244}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance19:EC2InstanceType{name:'hi1.4xlarge', family :'Storage optimized' ,memory:60.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance20:EC2InstanceType{name:'hs1.8xlarge', family :'Storage optimized' ,memory:117}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance21:EC2InstanceType{name:'i2.xlarge', family :'Storage optimized' ,memory:30.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance22:EC2InstanceType{name:'Â i2.2xlarge', family :'Storage optimized' ,memory:61}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance23:EC2InstanceType{name:'i2.4xlargeÂ ', family :'Storage optimized' ,memory:122}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance24:EC2InstanceType{name:'i2.8xlarge', family :'Storage optimized' ,memory:244}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance25:EC2InstanceType{name:'t1.micro', family :'Micro instances' ,memory:.615}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance26:EC2InstanceType{name:'cg1.4xlarge', family :'GPU instances' ,memory:22.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance27:EC2InstanceType{name:'g2.2xlarge', family :'GPU instances' ,memory:15}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+
+
+//instance 9
+CREATE (price1:Price{name:'PriceBook', desc:'region 1 price book' ,cost_per_hour:0.150})
+CREATE (price2:Price{name:'PriceBook', desc:'region 2 pricebook' ,cost_per_hour:0.150})
+CREATE (price3:Price{name:'PriceBook', desc:'region 3 pricebook' , cost_per_hour:0.171})
+
+CREATE (region1)-[:CHARGES]->(price1)-[:FOR_INSTANCE]->instance9
+CREATE (region2)-[:CHARGES]->(price2)-[:FOR_INSTANCE]->instance9
+CREATE (region3)-[:CHARGES]->(price3)-[:FOR_INSTANCE]->instance9
+
+
+//instance1
+CREATE (price4:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.060})
+CREATE (region1)-[:CHARGES]->(price4)-[:FOR_INSTANCE]->instance1
+
+//instance 10
+CREATE (price5:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.300})
+CREATE (price6:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.300})
+CREATE (price7:Price{name:'PriceBook', desc:'foo' , cost_per_hour:0.342})
+
+CREATE (region1)-[:CHARGES]->(price5)-[:FOR_INSTANCE]->instance10
+CREATE (region2)-[:CHARGES]->(price6)-[:FOR_INSTANCE]->instance10
+CREATE (region3)-[:CHARGES]->(price7)-[:FOR_INSTANCE]->instance10
+
+
+//instance 11
+CREATE (price8:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.600})
+CREATE (price9:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.600})
+CREATE (price10:Price{name:'PriceBook', desc:'foo' , cost_per_hour:0.683})
+
+CREATE (region9)-[:CHARGES]->(price8)-[:FOR_INSTANCE]->instance11
+CREATE (region2)-[:CHARGES]->(price9)-[:FOR_INSTANCE]->instance11
+CREATE (region3)-[:CHARGES]->(price10)-[:FOR_INSTANCE]->instance11
+
+//instance 12
+CREATE (price11:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:1.200})
+CREATE (price12:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:1.200})
+CREATE (price13:Price{name:'PriceBook', desc:'foo' , cost_per_hour:1.366})
+
+CREATE (region1)-[:CHARGES]->(price11)-[:FOR_INSTANCE]->instance12
+CREATE (region2)-[:CHARGES]->(price12)-[:FOR_INSTANCE]->instance12
+CREATE (region3)-[:CHARGES]->(price13)-[:FOR_INSTANCE]->instance12
+
+//instance 13
+CREATE (price14:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:2.400})
+CREATE (price15:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:2.400})
+CREATE (price16:Price{name:'PriceBook', desc:'foo' , cost_per_hour:2.732})
+
+CREATE (region1)-[:CHARGES]->(price14)-[:FOR_INSTANCE]->instance13
+CREATE (region2)-[:CHARGES]->(price15)-[:FOR_INSTANCE]->instance13
+CREATE (region3)-[:CHARGES]->(price16)-[:FOR_INSTANCE]->instance13
+----
+
+==  The Graph  ==
+//graph1
+
+== The Domain ==
+image::https://github.com/aidancasey/AWSGraphComp/blob/master/aws.jpg?raw=true[Domain Model]
+
+== Some Use Cases... ==
+ 
+== What is the cheapest compute optomised EC2 instance anywhere in North America? ==
+[source,cypher]
+----
+MATCH (region)-[:IS_LOCATED_IN]->(Continent{name:'North America'})
+with region as usa_regions
+MATCH usa_regions-[:CHARGES]->(price)-[:FOR_INSTANCE]->(EC2InstanceType{family :'Compute optimized'})
+RETURN usa_regions.name as aws_region, min(price.cost_per_hour) as hourly_cost, EC2InstanceType.name as instance_type
+ORDER BY hourly_cost LIMIT 1;
+----
+
+//table1
+
+== Which AWS region has the most availability zones? ==
+[source,cypher]
+----
+MATCH (region)-[:HAS_ISOLATED]->(AvailabilityZone)
+
+RETURN region.name as aws_region , count(AvailabilityZone) as count_availibility_zones
+ORDER BY count_availibility_zones DESC LIMIT 1
+----
+
+//table2
+
+== What are the AWS regions that offer the service AWS CloudTrail? ==
+[source,cypher]
+----
+MATCH (region)-[:OFFERS_SERVICE]->(Service{name:'AWS CloudTrail'})
+RETURN region.name as aws_region 
+----
+
+//table3
+
+== Which EC2 instance type has the most available memory? ==
+[source,cypher]
+----
+MATCH (ec2: EC2InstanceType)
+WHERE HAS(ec2.memory) 
+RETURN ec2.memory as memory_GiB, ec2.name ORDER BY ec2.memory DESC LIMIT 1
+----
+
+//table3
+ 
+Created by Aidan Casey
+twitter : @AIDANJCASEY
+
