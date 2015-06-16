@@ -4,8 +4,6 @@
 :twitter: @kennybastani
 :tags: domain:finance, use-case:fraud-detection
 
-= Bank Fraud Detection
-
 (original source: https://github.com/neo4j-contrib/gists/blob/master/other/BankFraudDetection.adoc )
 
 This interactive Neo4j graph tutorial covers bank fraud detection scenarios.
