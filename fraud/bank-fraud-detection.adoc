@@ -39,7 +39,7 @@ Banks and Insurance companies lose billions of dollars every year to fraud. Trad
 
 == Explanation of Scenario
 
-While no fraud prevention measures can ever be perfect, significant opportunity for improvement lies in looking beyond the individual data points, to the connections that link them. Oftentimes these connections go unnoticed until it is too lateâ€” something that is unfortunate, as these connections oftentimes hold the best clues.
+While no fraud prevention measures can ever be perfect, significant opportunity for improvement lies in looking beyond the individual data points, to the connections that link them. Oftentimes these connections go unnoticed until it is too late-- something that is unfortunate, as these connections oftentimes hold the best clues.
 
 === Typical Scenario
 
@@ -51,7 +51,7 @@ While the exact details behind each first-party fraud collusion vary from operat
 * New accounts are added to the original ones: unsecured credit lines, credit cards, overdraft protection, personal loans, etc. 
 * The accounts are used as normally, with regular purchases and timely payments
 * Banks increase the revolving credit lines over time, due to the observed responsible credit behavior 
-* One day the ring â€œbusts outâ€, coordinating their activity, maxing out all of their credit lines, and disappearing
+* One day the ring "busts out", coordinating their activity, maxing out all of their credit lines, and disappearing
 * Sometimes fraudsters will go a step further and bring all of their balances to zero using fake checks immediately before the prior step, doubling the damage
 * Collections processes ensue, but agents are never able to reach the fraudster
 * The uncollectible debt is written off
@@ -64,7 +64,7 @@ Graph databases offer new methods of uncovering fraud rings and other sophistica
 
 === How Graph Databases Can Help
 
-Augmenting oneâ€™s existing fraud detection infrastructure to support ring detection can be done by running appropriate entity link analysis queries using a graph database, and running checks during key stages in the customer & account lifecycle, such as:
+Augmenting one's existing fraud detection infrastructure to support ring detection can be done by running appropriate entity link analysis queries using a graph database, and running checks during key stages in the customer & account lifecycle, such as:
 
 * At the time the account is created
 * During an investigation
