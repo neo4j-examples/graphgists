@@ -1,0 +1,244 @@
+= Neo4j and the Offshore Leaks: the Case of Azerbaijan
+:neo4j-version: 2.0.0-RC1
+:author: Jean Villedieu
+:twitter: @jvilledieu
+:tags: domain:finance, use-case:data-analysis
+  
+'''
+
+*Table of Contents*
+ 
+* *Introduction*
+** <<_the_icij_offshore_leaks_dataset, The ICIJ Offshore Leaks Dataset>>
+* *The Graph*
+** <<_nodes, Nodes>>
+** <<_relationships, Relationships>>
+** <<_example_schema, Example Schema>>
+* *Database Setup*
+** <<_sample_data_set, Sample Data Set>>
+* *Cypher Queries*
+** <<_what_assets_belong_to_what_person, What Assets Belong to What Person>>
+** <<_the_role_of_middlemen, The Role of Middlemen>>
+** <<_president_ihham_aliyev_and_adbdolbari_gozal, President Ilham Aliyev and Adbdolbari Gozal>>
+* *Learn More*
+** <<_the_icij_offshore_leaks_references, The ICIJ Offshore Leaks References>>
+
+'''
+ 
+== The ICIJ Offshore Leaks Dataset
+ 
+A consequence of the https://en.wikipedia.org/wiki/Firepower_International[Firepower] scandal of 2013, the Offshore Leaks dataset released by the International Consortium of Investigative Journalists (http://www.icij.org[ICIJ]) was a rarity in the compliance/due diligence world, akin to the Cablegate or the release of the Pentagon Papers. In contrast to the relatively organized and easy-to-parse government leaks, the Offshore Leaks dataset is the result of the often manual extraction of data from a detailed collection of leaked from e-mails and other documents. The dataset is a treasure trove of information about offshore financial centers and tax havens. ICIJ's investigations brought to the surface many interesting patterns, including the potentially illegal activities of the President of Azerbaijan. 
+
+This graph gist was built to make sense of the complex data in the Offshore Leaks dataset.
+
+[quote, Duncan Campbell, How ICIJ’s Project Team Analyzed the Offshore Files]
+__________________________
+ICIJ’s fundamental lesson from the Offshore Project data has been patience and perseverance. Many members started by feeding in lists of names of politicians, tycoons, suspected or convicted fraudsters and the like, hoping that bank accounts and scam plots would just pop out.  It was a frustrating road to follow.  The data was not like that.  
+
+But persistently following leads through incomplete data and documents yielded some great rewards: not just occasional and unexpected top names, but also many more nuanced and complex schemes for hiding wealth.  Some of the schemes spotted, although well known in the offshore trade, have not been described publicly before.  Patience was rewarded when this data opened new windows on the offshore world.
+__________________________
+
+== The Goal
+ 
+We want to explore how the http://www.icij.org/offshore/offshore-companies-provide-link-between-corporate-mogul-and-azerbaijans-president[President of Azerbaijan (for example) is connected to offshore accounts]. Why does this matter? Azerbaijani law forbids state officials involved in overseeing business from being involved in business themselves, including being shareholders in companies. In order to understand his dealings, we need to focus on the network he uses to control his assets stored in offshore entities. This network includes family members, companies, addresses, and a complex set of intermediaries and partners.
+
+[quote, Stefan Candea, Offshore companies provide link between corporate mogul and Azerbaijan’s president]
+__________________________
+Why the presidential family established these companies is unclear. What is clear is that the family took steps that obscured its involvement in the companies, using various agents to register the companies and direct them, at least on paper.
+__________________________
+
+== The Graph
+
+=== Nodes
+
+- *Person:* Persons are individuals building and using the asset network. Although some people are are quite visible, others are working behind the scenes. 
+- *Company:* Companies include offshore entities, banking services providers, and businesses
+- *Address:* Addresses are the locations registered to people and companies. As they have legal implications (a company registered in a financial haven pays lower or no taxes), addresses can provide interesting insights. 
+
+=== Relationships
+
+- *`(Person)-[:USES_ADDRESS]->(Address)` and `(Company)-[:USES_ADDRESS]->Address)`*: People and companies are connected to addresses. 
+- *`(Person)-[:FAMILY]->(Person)`*: People can be connected via family ties. In this model, family relationships are very simple-either two people are family or they are not. 
+- *`(Person)-[:IS_LINKED_TO {role:'', date:''}]->(Company)`*: Links between People and Companies have the properites "role" (for example, `Director` or `Shareholder`) and "date", which mark how the person is related to the company and the date of the connection. 
+- *`(Company)-[:IS_LINKED_TO {role:'', date:''}]->(Company)`*: The `:IS_LINKED_TO` relationship between Companies and Companies similarly has the properites "role" (for example, `Master Client` or `Records and Registers`) and "date", which mark how the first company is related to the second company, and the date of the connection. 
+- *`(Company)-[:IS_OFFSHORE_PROVIDER_OF]->(Company)`*: Offshore providers are usually selling their know-how, contacts, and favorable tax situations to the people who want to take advantage of the offshore system.
+
+=== Example Schema
+
+image::https://linkurio.us/wp-content/uploads/2014/05/Azerbaijan-600x337.png[A graph data model of the ICIJ Offshore Leaks dataset]
+
+John and Sam are married and have stored assets in a company they control (both are shareholders and John is a Director): Treasure Ltd. John and Sam used an address in Dubai and established Treasure in the Bahamas, making the assets controled by Treasure private and tax-free. In addition, Treasure was set up with the help of two companies: Good Advice Inc and Hide and Seek. Oleg, a business partner of John with an address in Russia, is also a Director of Treasure Ltd.
+
+This schema is one of the many ways we can model the ICIJ dataset. Although this exact example was not present in the original dataset, they have been included to highlight the importance of interpersonal relationships in the realm of shell corporations and tax havens.
+
+'''
+ 
+== Sample Data Set
+ 
+//hide
+//setup
+[source,cypher]
+----
+ 
+// Create People
+CREATE (Ilham_Aliyev:Person {first_name:'Ilham', last_name:'Aliyev', job:'President', Employer:'Azerbaijan', picture: 'http://bigbrowser.blog.lemonde.fr/files/2013/04/000_Par7450762-530x343.jpg'})
+CREATE (Hassan_Gozal:Person {first_name:'Hassan', last_name:'Gozal', job:'Vice President', Employer:'Intersun Holding', picture: ''})
+CREATE (Abdolbari_Gozal:Person {first_name:'Abdolbari', last_name:'Gozal', job:'President', Employer:'Intersun Holding', picture: 'http://www.azersun.az/news/news146.jpg'})
+CREATE (Mehriban_Aliyeva:Person {first_name:'Mehriban', last_name:'Aliyeva', job:'Director', Employer:'Heydar Aliyev Foundation ', picture: 'http://www.mehriban-aliyeva.org//u/a/4/o.jpg'})
+CREATE (Arzu_Aliyeva:Person {first_name:'Arzu', last_name:'Aliyeva', job:'', Employer:'', picture: 'http://legend.az/uploads/posts/2011-09/1315158828_arzi-aliyeva-008.jpg'})
+CREATE (Leyla_Aliyeva:Person {first_name:'Leyla', last_name:'Aliyeva', job:'', Employer:'', picture: 'http://www2.pictures.zimbio.com/gi/Leyla+Aliyeva+Fly+Bakou+Exhibition+Launch+Nn74uXjDl_cl.jpg'})
+CREATE (Heydar_Aliyev:Person {first_name:'Heydar', last_name:'Aliyev', job:'', Employer:'', picture: ''})
+CREATE (Ridzuan_Salleh:Person {first_name:'Ridzuan', last_name:'Salleh', job:'', Employer:'', picture: ''})
+
+// Create Addresses
+CREATE (Al_Fairooz_Dubai_Marina:Address {address:'13 Al Fairooz Dubai Marina', city:'Dubai', country:'Dubai'})
+CREATE (Portcullis_TrustNet_Chambers_POBox:Address {address:'Portcullis TrustNet Chambers P.O. Box 3444 Road Town', city:'Tortola', country:'Tortola'})
+CREATE (UnitPL01A_Plaza_Level:Address {address:'Unit PL 01-A, Plaza Level, No. 45 Block A Medan Setia 1, Plaza Damansara, Damansara Heights, 50490', city:'Kuala Lumpur', country:'Kuala Lumpur'})
+CREATE (Apartment_No1801_Dubai:Address {address:'Apartment No. 1801 Dubai Marina Lerev Residential', city:'Dubai', country:'Dubai'})
+CREATE (Apartment_No1802_Dubai:Address {address:'Apartment No. 1802 Dubai Marina Lerev Residential', city:'Dubai', country:'Dubai'})
+CREATE (Villa22_Gate51_Avenue6:Address {address:'Villa 22 Gate 51 Avenue 6 Jannusan 504', city:'', country:''})
+CREATE (Prospekt_Kutuzonskiy:Address {address:'444, 4/2 Prospekt Kutuzonskiy', city:'Moscow', country:'Moscow'})
+CREATE (Honest_Bright_Company_Ltd:Address {address:'Honest & Bright Company Ltd. Office 53-54, Construction 3 3-rd Tverskaya-Yamskaya Street, Bld. 12', city:'Moscow', country:'Moscow'})
+CREATE (PO_Box_117920:Address {address:'P.O. Box 117920 Jebel Ali Free Zone', city:'Dubai', country:'Dubai'})
+CREATE (Shenton_Way_DBS:Address {address:'6 Shenton Way #14-01 DBS Building Tower One Singapore 068809', city:'Singapore', country:'Singapore'})
+
+// Create Companies
+CREATE (Harvard_Management_Limited:Company {name:'Harvard Management Limited', form:'Standard International Company', incorporation:'07/11/2008', status:'Active', link: 'http://offshoreleaks.icij.org/nodes/166436'})
+CREATE (LaBelleza_Holdings_Limited:Company {name:'LaBelleza Holdings Limited', form:'Business Company Limited by Shares', incorporation:'07/11/2008', status:'Active', link: 'http://offshoreleaks.icij.org/nodes/166434'})
+CREATE (Arbor_Investments_Limited:Company {name:'Arbor Investments Limited', form:'Business Company Limited by Shares', incorporation:'07/11/2008', status:'Active', link: 'http://offshoreleaks.icij.org/nodes/166435'})
+CREATE (Portcullis_Trustnet:Company {name:'Portcullis Trustnet', form:'OFFSHORE SERVICE PROVIDER', incorporation:'', status:'', link: 'http://offshoreleaks.icij.org/nodes/54662'})
+CREATE (Naziq_and_Partners:Company {name:'Naziq & Partners', form:'', incorporation:'', status:'', link: 'http://offshoreleaks.icij.org/nodes/294050'})
+CREATE (Crovelent_Holdings_LTD:Company {name:'Crovelent Holdings LTD.', form:'Business Company Limited by Shares', incorporation:'29/03/2007', status:'Active', link: 'http://offshoreleaks.icij.org/nodes/204584'})
+CREATE (Rosamund_International_Ltd:Company {name:'Rosamund International Ltd', form:'Standard International Company', incorporation:'08/11/2002', status:'Inactive', link: 'http://offshoreleaks.icij.org/nodes/138523'})
+CREATE (DBS_Trustee_Limited:Company {name:'DBS Trustee Limited', form:'', incorporation:'', status:'', link: 'http://offshoreleaks.icij.org/nodes/290319'})
+
+// Create Relationships
+CREATE (Ilham_Aliyev)-[:FAMILY]->(Mehriban_Aliyeva)
+CREATE (Ilham_Aliyev)-[:FAMILY]->(Arzu_Aliyeva)
+CREATE (Ilham_Aliyev)-[:FAMILY]->(Leyla_Aliyeva)
+CREATE (Ilham_Aliyev)-[:FAMILY]->(Heydar_Aliyev)
+CREATE (Mehriban_Aliyeva)-[:FAMILY]->(Arzu_Aliyeva)
+CREATE (Mehriban_Aliyeva)-[:FAMILY]->(Leyla_Aliyeva)
+CREATE (Mehriban_Aliyeva)-[:FAMILY]->(Heydar_Aliyev)
+CREATE (Leyla_Aliyeva)-[:FAMILY]->(Arzu_Aliyeva)
+CREATE (Leyla_Aliyeva)-[:FAMILY]->(Heydar_Aliyev)
+CREATE (Arzu_Aliyeva)-[:FAMILY]->(Heydar_Aliyev)
+CREATE (Hassan_Gozal)-[:FAMILY]->(Abdolbari_Gozal)
+CREATE (Hassan_Gozal)-[:USES_ADDRESS]->(Al_Fairooz_Dubai_Marina)
+CREATE (Harvard_Management_Limited)-[:USES_ADDRESS]->(Portcullis_TrustNet_Chambers_POBox)
+CREATE (Naziq_and_Partners)-[:USES_ADDRESS]->(UnitPL01A_Plaza_Level)
+CREATE (Arzu_Aliyeva)-[:USES_ADDRESS]->(Apartment_No1801_Dubai)
+CREATE (Leyla_Aliyeva)-[:USES_ADDRESS]->(Apartment_No1802_Dubai)
+CREATE (Ridzuan_Salleh)-[:USES_ADDRESS]->(Villa22_Gate51_Avenue6)
+CREATE (Leyla_Aliyeva)-[:USES_ADDRESS]->(Prospekt_Kutuzonskiy)
+CREATE (Mehriban_Aliyeva)-[:USES_ADDRESS]->(PO_Box_117920)
+CREATE (Ilham_Aliyev)-[:USES_ADDRESS]->(PO_Box_117920)
+CREATE (Rosamund_International_Ltd)-[:USES_ADDRESS]->(Portcullis_TrustNet_Chambers_POBox)
+CREATE (DBS_Trustee_Limited)-[:USES_ADDRESS]->(Shenton_Way_DBS)
+CREATE (LaBelleza_Holdings_Limited)-[:USES_ADDRESS]->(Portcullis_TrustNet_Chambers_POBox)
+CREATE (Arbor_Investments_Limited)-[:USES_ADDRESS]->(Portcullis_TrustNet_Chambers_POBox)
+CREATE (Crovelent_Holdings_LTD)-[:USES_ADDRESS]->(Honest_Bright_Company_Ltd)
+CREATE (Portcullis_Trustnet)-[:IS_OFFSHORE_PROVIDER_OF]->(Harvard_Management_Limited)
+CREATE (Portcullis_Trustnet)-[:IS_OFFSHORE_PROVIDER_OF]->(Naziq_and_Partners)
+CREATE (Portcullis_Trustnet)-[:IS_OFFSHORE_PROVIDER_OF]->(LaBelleza_Holdings_Limited)
+CREATE (Portcullis_Trustnet)-[:IS_OFFSHORE_PROVIDER_OF]->(Arbor_Investments_Limited)
+CREATE (Portcullis_Trustnet)-[:IS_OFFSHORE_PROVIDER_OF]->(Rosamund_International_Ltd)
+CREATE (Naziq_and_Partners)-[:IS_LINKED_TO {role:'Master Client', date:''}]->(Harvard_Management_Limited)
+CREATE (Portcullis_Trustnet)-[:IS_LINKED_TO {role:'Records And Registers', date:''}]->(Harvard_Management_Limited)
+CREATE (Hassan_Gozal)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(Harvard_Management_Limited)
+CREATE (Ridzuan_Salleh)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(Harvard_Management_Limited)
+CREATE (Leyla_Aliyeva)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(Harvard_Management_Limited)
+CREATE (Leyla_Aliyeva)-[:IS_LINKED_TO {role:'Shareholder', date:'39759'}]->(Harvard_Management_Limited)
+CREATE (Naziq_and_Partners)-[:IS_LINKED_TO {role:'Master Client', date:''}]->(LaBelleza_Holdings_Limited)
+CREATE (Portcullis_Trustnet)-[:IS_LINKED_TO {role:'Records And Registers', date:''}]->(LaBelleza_Holdings_Limited)
+CREATE (Hassan_Gozal)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(LaBelleza_Holdings_Limited)
+CREATE (Ridzuan_Salleh)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(LaBelleza_Holdings_Limited)
+CREATE (Leyla_Aliyeva)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(LaBelleza_Holdings_Limited)
+CREATE (Leyla_Aliyeva)-[:IS_LINKED_TO {role:'Shareholder', date:'39759'}]->(LaBelleza_Holdings_Limited)
+CREATE (Naziq_and_Partners)-[:IS_LINKED_TO {role:'Master Client', date:''}]->(Arbor_Investments_Limited)
+CREATE (Portcullis_Trustnet)-[:IS_LINKED_TO {role:'Records And Registers', date:''}]->(Arbor_Investments_Limited)
+CREATE (Arzu_Aliyeva)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(Arbor_Investments_Limited)
+CREATE (Hassan_Gozal)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(Arbor_Investments_Limited)
+CREATE (Ridzuan_Salleh)-[:IS_LINKED_TO {role:'Director', date:'39759'}]->(Arbor_Investments_Limited)
+CREATE (Arzu_Aliyeva)-[:IS_LINKED_TO {role:'Shareholder', date:'39759'}]->(Arbor_Investments_Limited)
+CREATE (Leyla_Aliyeva)-[:IS_LINKED_TO {role:'Shareholder', date:'39653'}]->(Crovelent_Holdings_LTD)
+CREATE (Mehriban_Aliyeva)-[:IS_LINKED_TO {role:'Director Of', date:'37635'}]->(Rosamund_International_Ltd)
+CREATE (Mehriban_Aliyeva)-[:IS_LINKED_TO {role:'Shareholder Of', date:'37635'}]->(Rosamund_International_Ltd)
+CREATE (DBS_Trustee_Limited)-[:IS_LINKED_TO {role:'Master Client', date:''}]->(Rosamund_International_Ltd)
+CREATE (Portcullis_Trustnet)-[:IS_LINKED_TO {role:'Records And Registers', date:''}]->(Rosamund_International_Ltd)
+CREATE (Ilham_Aliyev)-[:IS_LINKED_TO {role:'Director', date:'37635'}]->(Rosamund_International_Ltd)
+CREATE (Ilham_Aliyev)-[:IS_LINKED_TO {role:'Shareholder', date:'37635'}]->(Rosamund_International_Ltd)
+ 
+RETURN *
+----
+ 
+//graph
+ 
+'''
+_https://www.dropbox.com/s/d9ceb427xzrcpza/Azerbaijan%20Offshore%20Leaks.zip[Download the complete dataset]_
+
+== What Assetts Belong to What Person
+
+=== President Ilham Aliyev's Direct Assets 
+ 
+We look for the _direct_ links between the President and offshore accounts
+ 
+[source,cypher]
+----
+MATCH (president:Person {first_name:'Ilham'})-[r]->(account:Company) // Find a Person with first name 'Ilham' that is one hop away fom a company
+RETURN account.name as Company, account.form as Form, account.incorporation as Incorporation, account.status as Status, r.date as Date, r.role as Role
+----
+ 
+//output
+//table
+
+THe first line of the query searches for all instances of a `Person` named `Ilham` one hop away from a `Company`. 
+
+The second line returns basic information about the company and the characteristics of the relationship between the Person and the Company. In this particular case, we see that `Ilham` served as `Director` and `Shareholder` of `Rosamund International Ltd`, a `Standard International Company` incorporated in 2002. 
+
+
+=== President Ilham Aliyev's Indirect Assets 
+
+People who are trying to hide money tend to use proxies they can hide behind. That means that we must enlarge our search and look for indirect connections.
+
+With a Neo4j database for example, finding all the foreign assets Ilham Aliyev controls directly or indirectly is as simple as adding a “*” to our first query. The search will return all the paths in the data between Ilham Aliyev and offshore accounts.
+
+[source,cypher]
+----
+MATCH (president:Person {first_name:'Ilham'})-[r*]->(account:Company)
+RETURN DISTINCT account.name as Company, account.form as Form, account.incorporation as Incorporation, account.status as Status
+----
+ 
+//output
+//table
+
+== The Role of Middlemen
+
+Some middlemen might be particularly well connected and/or important to President Ilham Aliyev. We can use Cypher find every company in the president's extended network. We can then find all companies associated with these companies and quantify how tightly connected these middleman companies are to the in-network companies. 
+
+[source,cypher]
+----
+MATCH (president:Person {first_name:'Ilham'})-[r*]->(account:Company)
+WITH account
+MATCH (account)-[t]-(middlemen:Company)
+RETURN middlemen.name as name, count(DISTINCT t) as mentions, type(t) as type, t.role as role
+ORDER BY mentions DESC
+----
+ 
+//output
+//table
+
+'''
+
+== Learn More
+
+=== Graph Gists
+
+For more graph-related usecases, make sure to check out http://linkurio.us/blog[the Linkurious blog].
+
+=== The ICIJ Offshore Leaks References
+
+- http://www.icij.org/offshore[Secrecy for Sale: Inside the Global Offshore Money Maze]
+- http://www.icij.org/offshore/offshore-companies-provide-link-between-corporate-mogul-and-azerbaijans-president[Offshore companies provide link between corporate mogul and Azerbaijan’s president]
+- http://www.icij.org/resources/getting-most-out-offshore-leaks-data[Getting the Most out of Offshore Leaks Data]
+- http://www.icij.org/offshore/how-icijs-project-team-analyzed-offshore-files[How ICIJ’s Project Team Analyzed the Offshore Files]
