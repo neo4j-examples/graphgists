@@ -1,0 +1,170 @@
+== Interpreting Citation Patterns in Academic Publications: A research aid
+
+Academic research largely consists in reading and writing texts. These texts can be modelled as a conversation. To be a reasercher, on this model, is to enter into a scientific conversation, to listen (read) and occassionaly to speak (write).  
+
+image:http://yuml.me/806f29d8.png["Authors write things"]
+
+Texts embodying contributions to the scientific conversation are published as book chapters, articles in peer reviewed journals, conference papers &c. For the individual researcher, a major task involves identifying which of these published items are relevant to one’s research, to be able to study them and to respond. 
+
+=== Key concepts: relevance and order
+
+A published item of the scientific conversation can be relevant to one’s research in itself; because it is a central expression of some thesis to be criticized, because it provides a common background against which some new theory is to be developed, because it develops arguments similar to one’s own over against which distinctions need to be drawn, &c.  
+
+image:http://yuml.me/6bb1013a.png["Some stuff is relevant"]
+
+
+An item can also be relevant on account of another, as a function of its order to other parts of the scientific conversation. If article A is relevant in itself, for it’s central exposition of some thesis in my field, and book B presents poignant objections to the arguments of A, then I cannot rely on or object to A without taking B also into account. As each part of the conversation is ordered to other parts as dependent, developing, responding, contradicting &c, I must trace this order to find which individual items are relevant for my research, or my contribution is wont to be redundant either because it merely repeats what has already been said or because my arguments have already been defeated in some text that I didn’t bother to read.  
+
+
+=== Citation patterns
+
+Some of the order among the parts of the scientific conversation is codified in a system of citation. An author who intends to contradict the arguments of another will cite the works where those arguments appear; the same is true if he relies on the conclusions of someone else’s or his own previous work. Each published item contains these outgoing relevance-indicating pointers in footnotes, endnotes and bibliographies. The researchers job involves tracing these outgoing relationships; when studying a relevant work one must consider studying also the works that it cites. While the published item does not contain any index of incoming citation pointers, these would be equally important in establishing relevance; before I write an elaborate criticism of article A I should be aware of book B since it may have made all my objections already, perhaps even better than I could.  
+
+image:http://yuml.me/832d57bc.png["cites and relevance"]
+
+By importing our bibliographic data with citations into Neo4j we get access to the citation pointers in both directions. We can describe the simplest relevance-indicating pattern as B-[:CITES]->A where A or B is known to be relevant. We can proceed to define more complex relevance-indicating patterns, making Neo4j and cypher a powerful research aid; this is our business below.  
+
+ 
+=== From the generic to the specific
+
+So far our case has been generic, but I don’t believe the implementation should be. One reason is that the scientific conversation is not homogenous across disciplines and the patterns of order and citation therefore don’t have the same meaning in the various fields; another reason is that nobody has all the data. Below is a small example from the field of Philosophy, based on acual data and patterns.  
+ 
+ 
+=== Our graph
+
+Four authors, five articles and a book chapter, their contexts of publication and their order of citation. It is assumed that Michael Gorman’s article "Independence and Substance" (2006) is known to be relevant, and we retrieve it explicitly by its unique DOI. With that as starting point we define some relevance-indicating citation patterns to learn what other published items are also likely to be relevant.  
+
+////
+image:http://yuml.me/diagram/nofunky/class/67a0585f.png["Tiny domain horizontal"]
+image:http://yuml.me/diagram/nofunky/class/e237ac14.png["Tiny domain vertical"]
+image:http://yuml.me/diagram/nofunky/class/b56af23d.png["Small domain horizontal"]
+image:http://yuml.me/diagram/nofunky/class/70551cfd.png["Small domain vertical"]
+////
+
+image:http://yuml.me/b56af23d.png["Small domain horizontal"]
+
+//hide
+[source,cypher]
+----
+// Setup query
+CREATE 
+(gorman:Author {name:"Gorman, Michael"}), 
+(toner:Author {name:"Toner, Patrick"}), 
+(koslicki:Author {name:"Koslicki, Kathrin"}), 
+(fine:Author {name:"Fine, Kit"}),
+(art1:Article {doi:"10.5840/ipq20064626", title:"Independence and Substance"}),
+(art2:Article {doi:"10.1007/s11098-010-9521-4", title:"Independence Accounts of Substance and Substantial Parts"}),
+(art3:Article {doi:"10.1007/s11098-011-9708-3", title:"On Substantial Independence: a Reply to Patrick Toner"}),
+(art4:Article {doi:"10.1080/05568640609485174", title:"Substance and Identity-Dependence"}),
+(art5:Article {doi:"10.2307/4545221", title:"Ontological Dependence"}),
+(chp1:Chapter {no:9, title:"Substance, Independence, and Unity"}),
+(ipq:Journal {title:"International Philosophical Quarterly", ISSN:"0019-0365", onlineISSN:"2153-8077"}),
+(ps:Journal {title:"Philosophical Studies", ISSN:"0031-8116", onlineISSN:"1573-0883"}),
+(pp:Journal {title:"Philosophical Papers", ISSN:"0556-8641", onlineISSN:"1996-8523"}),
+(pas:Journal {title:"Proceedings of the Aristotelian Society", ISSN:"0066-7374", onlineISSN:"1467-9264"}),
+gorman-[:WRITES]->art1-[:IN {pp:[147,159]} ]->(:Issue {volume:46, issue:2, year:2006, month:6})-[:OF]->ipq,
+toner-[:WRITES]->art2-[:IN {pp:[37,43]} ]->(:Issue {volume:155, issue:1, year:2011, month:8})-[:OF]->ps,
+gorman-[:WRITES]->art3-[:IN {pp:[239,297]} ]->(:Issue {volume:159, issue:2, year:2012, month:6})-[:OF]->ps,
+gorman-[:WRITES]->art4-[:IN {pp:[103,118]} ]->(:Issue {volume:35, issue:1, year:2006, month:3})-[:OF]->pp,
+fine-[:WRITES]->art5-[:IN {pp:[269,290]} ]->(:Issue {volume:95, year:1995})-[:OF]->pas,
+koslicki-[:WRITES]->chp1-[:IN {pp:[169,195]} ]->(book:Book {title:"Aristotle on Method and Metaphysics", `ISBN-10`:"0230360912", `ISBN-13`:"978-0230360914", year:2013, month:7})<-[:EDITS]-(feser:Author {name:"Feser, Edward"}),
+book<-[:PUBLISHED_BY]-(pub:Publisher {location:"London", name:"Palgrave Macmillan"}),
+art1-[:CITES]->art5,
+art2-[:CITES]->art1,
+art2-[:CITES]->art4,
+art3-[:CITES]->art2,
+art3-[:CITES]->art4,
+chp1-[:CITES]->art1,
+chp1-[:CITES]->art2, 
+chp1-[:CITES]->art3
+----
+
+//graph  
+ 
+ 
+=== Definition 1: Reference
+A bibliographic reference is a standardized-format rendering of metadata for a published item. An indication that our data and model are sound is that we can recreate such references (it doesn't have to be pretty, just possible).
+
+[source,cypher]
+-----
+// Definition of reference
+MATCH (author:Author)-[:WRITES]->(article:Article)-[context:IN]->(issue)-[:OF]->(journal)
+RETURN author.name + ": " + issue.year + ", '" + article.title + "', " + journal.title + " " + issue.volume + ", " + context.pp[0] + "-" + context.pp[1] + "." as Reference
+UNION MATCH (author:Author)-[:WRITES]->(chapter:Chapter)-[context:IN]->(book)<-[:EDITS]-(editor:Author), (book)<-[:PUBLISHED_BY]-(pub:Publisher)
+RETURN author.name + ": " + book.year + ", '" + chapter.title + "' in " + editor.name + " (Ed.), " + book.title + ", pp." + context.pp[0] + "-" + context.pp[1] + "." + pub.location + ": " + pub.name + "." AS Reference
+-----
+
+//table  
+ 
+ 
+=== Definition 2: Citation
+
+A citation is when one published item cites another, that is, formally refers to it by naming its reference.
+
+[source,cypher]
+----
+// Definition of citation
+MATCH (a)-[:WRITES]->(b)-[:CITES]->(c)<-[:WRITES]-(d)
+RETURN b.title + " (by " + a.name + ")  CITES  " + c.title + " (by " + d.name + ")" as citation
+----
+
+//table  
+ 
+ 
+=== Relevance-indicating pattern 1: Everything cited by Gorman (2006).
+Whatever is cited by something relevant may be relevant–the simplest use case.
+
+[source,cypher]
+----
+// Cited by Gorman (2006)
+MATCH (a {doi:"10.5840/ipq20064626"})-[:CITES]->(b)<-[:WRITES]-(c)
+RETURN b.title + " (by " + c.name + ")" as citation
+----
+
+//table 
+ 
+ 
+=== Relevance-indicating pattern 2: Everything that cites Gorman (2006).
+While following outgoing citation pointers is nothing new, we can now follow incoming ones as well. Whatever cites something relevant is likely to be relevant.
+
+[source,cypher]
+----
+// Citing Gorman (2006)
+MATCH (a {doi:"10.5840/ipq20064626"})<-[:CITES]-(b)<-[:WRITES]-(c)
+RETURN b.title + " (by " + c.name + ")" as citation
+----
+
+//table  
+ 
+ 
+=== Relevance-indicating pattern 3: Basic debate
+A common order in the scientific conversation is where an author argues for some conclusion, someone else responds with objections, and the original author responds with objections to the objections or to strengthen the initial case. Let's call this a debate. It has the following pattern: item C cites item B which cites item A, and the same author writes A and C but not B. It is possible that this is a case of two researchers in agreement, taking turns developing a common argument; but it is, at least in the field of philosophy with which our example is concerned, more likely to be a debate where an author makes statement C which receives criticism B and responds to the criticism in A. We can test if Gorman (2006) is involved in any such patterns thus
+
+[source,cypher]
+----
+// Debates sparked by Gorman (2006)
+MATCH (author)-[:WRITES]->(article {doi:"10.5840/ipq20064626"})<-[:CITES]-(criticism)<-[:CITES]-(response)<-[:WRITES]-(author), (criticism)<-[:WRITES]-(opponent)
+WHERE NOT author-[:WRITES]->criticism
+RETURN article.title + " (by " + author.name + ")" as statement, criticism.title + " (by " + opponent.name + ")" as criticism, response.title + " (by " + author.name + ")" as response
+----
+
+//table  
+
+
+=== Relevance-indicating pattern 4: Complex debate
+If the debate is relevant, it is likely that other contributions beyond those captured by the basic debate pattern are also relevant. A work that cites both the statement and the objection of the debate pattern, or the objection and the defense, is a good candidate. If the work cites more members of the debate, this is increasingly indicative of relevance, so we count and consider further citations into the debate pattern as a relevance score.
+
+[source,cypher]
+----
+// Other contributions to debates sparked by Gorman (2006)
+MATCH (author)-[:WRITES]->(statement {doi:"10.5840/ipq20064626"})<-[:CITES]-(criticism)<-[:CITES]-(response)<-[:WRITES]-(author)
+, (criticism)<-[:CITES]-(interjection)-[:CITES]->(statementOrResponse), interjection<-[:WRITES]-(interjector)
+WHERE NOT author-[:WRITES]->criticism AND (statementOrResponse = statement OR statementOrResponse = response)
+RETURN interjection.title + " (by " + interjector.name + ")" as interjection, count(*) as relevance
+----
+
+//table  
+ 
+ 
+=== Final note
+I've given four simple examples of interpreting citation patterns in academic publications, philosophy. These patterns could be extended further but some of the the data I've used to prototype is proprietary and I've limited the gist to data that is not. I believe it would be useless and misleading to try to do a graph of "the most influential academicians" this way, but I think this would make a very powerful tool for the individual researcher. Let the person who knows his own field define those citation patterns that signal relevance in his particular area of research. Particularly, I think this could be implemented as a plugin to bibliographic software, such as Thomson Reuters' EndNote, enabling some handy new search functionality. If someone's interested in doing that, let me know.

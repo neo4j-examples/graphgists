@@ -1,0 +1,221 @@
+= Supply Chain Management
+:neo4j-version: 2.1.3
+:author: Marcus Wachsmuth
+
+
+== Introduction
+
+Globalization and outsourcing were the main drivers for increasing the complexity of supply chains. At the same time, natural catastrophes as well as economic, social and ethical aspects drove the importance of having a good overview and understanding of the entire supply chain rather than just focusing on your direct suppliers and distributors.
+
+In order to model and understand supply chains better, more and more sources refer to modern supply chains as supply networks.
+Therefore, it looks like a perfect environment to figure out how Neo4j can help us mastering the supply chain "network" challenge.
+
+For everybody who has no idea what supply chain management (SCM) is, I recommend https://en.wikipedia.org/wiki/Supply_chain_management to get a basic understanding.
+
+
+== Initial Data Model
+
+For the sake of simplicity, every node has the same following attributes.
+(lat = tatitude, lon = longitude)
+
+image::http://yuml.me/e906a1f7[]
+
+
+We categorize our suppliers into RawSupplierA and SupplierA for fresh products and RawSupplierB and SupplierB for durable commodities.
+The rest is straight forward. The distribution is through wholesaler and retailer.
+
+
+image::http://yuml.me/c4f6cf8a[]
+
+Supply chains are inherently complex and can be modeled and clustered in several different ways.
+For the sake of understandability, we will keep it simple and neglect a lot of things, which would be essential in a real world application.
+
+
+= Apply it to a real world example
+
+This supply chain could be a good example for soft drink supply chain. Every participant in the chain is a sample commodity or entity.
+
+image::http://yuml.me/5dd14968[]
+
+== Challenges of supply chain management 
+
+The biggest challenge in supply chain management is the inherent complexity of modern supply chains. Therefore, none of these examples is sufficient enough for decision-making. There are many additional questions to answer, which are beyond of the scope of this little scenario. 
+
+//setup
+//hide
+[source,cypher]
+
+----
+
+CREATE (:Product { name: "Product", lat: tan(rand())*100, lon: tan(rand())*100, co2: 200, cost: 100, time: 0 })
+FOREACH (r IN range(0,1)| 
+         CREATE (:Wholesaler { name:"Wholesaler" + r, cost: round(exp(rand()*3)+20), co2: round(exp(rand()*8)+250), lat: tan(rand())*100, lon: tan(rand())*100, time: round(rand()*5)}))
+FOREACH (r IN range(0,10)| 
+CREATE (:Retailer { name:"Retailer" + r, cost: round(exp(rand()*3)+20), co2: round(exp(rand()*8)+250), lat: tan(rand())*100, lon: tan(rand())*100, time: 1}))
+FOREACH (r IN range(0,2)| 
+         CREATE (:SupplierA { name:"SupplierA" + r, cost: round(exp(rand()*3)+20), co2: round(exp(rand()*8)+250), lat: tan(rand())*100, lon: tan(rand())*100, time: round(rand()*5)}))
+FOREACH (r IN range(0,1)| 
+         CREATE (:SupplierB { name:"SupplierB" + r, cost: round(exp(rand()*3)+20), co2: round(exp(rand()*8)+250), lat: tan(rand())*100, lon: tan(rand())*100, time: round(rand()*5)}))
+FOREACH (r IN range(0,5)| 
+         CREATE (:RawSupplierA{ name:"RawSupplierA" + r, cost: round(exp(rand()*3)+20), co2: round(exp(rand()*8)+250), lat: tan(rand())*100, lon: tan(rand())*100, time: round(rand()*5)})) 
+FOREACH (r IN range(0,5)| 
+         CREATE (:RawSupplierB{ name:"RawSuppplierB" + r, cost: round(exp(rand()*3)+20), co2: round(exp(rand()*8)+250), lat: tan(rand())*100, lon: tan(rand())*100, time: round(rand()*5)}))
+
+
+----
+
+== Connect the Graph
+
+//hide
+[source,cypher]
+
+----
+
+MATCH (sa:SupplierA), (p:Product), (w:Wholesaler), (r:Retailer)
+CREATE UNIQUE (sa)-[:DELIVER]->(p)-[:DELIVER]->(w) -[:DELIVER]->(r)
+WITH p, sa
+MATCH (sb:SupplierB)
+CREATE UNIQUE (sb)-[:DELIVER]->(p)
+WITH sb, sa
+MATCH (ra:RawSupplierA), (rb:RawSupplierB)
+CREATE UNIQUE (ra)-[:DELIVER]->(sa)
+CREATE UNIQUE (rb)-[:DELIVER]->(sb)
+
+
+----
+
+//hide
+[source,cypher]
+
+----
+MATCH (a)-[r]-()
+RETURN a, r
+----
+
+= The finished network
+
+//graph
+
+== Let's add the distance between every Supplier 
+
+Adding the distance between connected nodes is based on the longitude and latitude.
+
+//hide
+[source,cypher]
+
+----
+MATCH (a)-[r]->(b)
+WITH r, a, b, 2 * 6371 * asin(sqrt(haversin(radians(toInt(a.lat) - toInt(b.lat))) + cos(radians(a.lat))*
+  cos(radians(b.lat))* haversin(radians(a.lon - b.lon)))) AS dist
+SET r.km = round(dist)
+----
+
+== Case 1: Find best Wholesaler 
+
+Let's start off with a good old transportation problem: Find the Wholesaler with the least accumulated distance to every retailer. Thanks to Cypher, this can be done very easily.
+
+
+[source,cypher]
+----
+MATCH    (p:Product)-[r1]->(w)-[r2]->(re:Retailer)
+WITH     distinct(substring(w.name, 10)) as Num, 
+         avg(r1.km + r2.km) as Average_Distance,
+         sum(r1.km + r2.km) as Total_Distance
+RETURN   "Wholesaler" + Num AS Wholesaler, Total_Distance, round(Average_Distance)   
+ORDER BY Total_Distance
+----
+
+//table
+
+
+== Case 2.1: We want it fresh
+
+Let's assume we want to guarantee that all fresh ingredients in our drink are not older than seven days.
+
+[source,cypher]
+----
+MATCH chain=(rs:RawSupplierA)-[r*]->(re:Retailer)
+WITH reduce(wait = 0, s IN nodes(chain)| wait + s.time) as waitTime, chain
+WHERE waitTime < 8
+WITH extract(n IN nodes(chain)| n.name) AS SupplyChain, waitTime
+ORDER BY SupplyChain[1]
+RETURN SupplyChain, waitTime
+
+----
+
+HINT: Almost all values are based on random value generation. In case the table is empty, simply reload the graph.
+
+//table
+
+== Case 2.2: It's time to put it togehter
+
+Let's assume: we don't only want a fresh product. Additionally, we want it locally. Therefore, we want to make sure that our product needs less than 8 days and travels less than 23000km from the farmer to the shelve in a grocery store. 
+
+
+
+[source,cypher]
+----
+
+MATCH    chain=(rs:RawSupplierA)-[r*]->(re:Retailer)
+WITH     reduce(wait = 0, s IN nodes(chain)| wait + s.time) AS waitTime, chain
+WHERE    waitTime < 8
+WITH     reduce(dist = 0, s IN relationships(chain)| dist + s.km) AS distance, waitTime, chain
+WHERE    distance < 23000
+WITH     extract(n IN nodes(chain)| n.name) AS SupplyChain
+RETURN   collect(distinct(SupplyChain[1])) AS Supplier, collect(distinct(SupplyChain[0])) AS RawSupplier
+----
+
+Here we want to know which RawSupplier and Supplier can guarantee this promise.
+Of course, we would have to specify the exact path through the network, in order to fulfill the promise of being local. 
+
+
+// table
+
+==  Case 3: Find the Top "Sample" Supply Chain within the Supply Chain Network
+
+We define 'sample' supply chain as having one participant for every processing step in the supply chain. The 'top' simply means to find the chain with best rating. Please keep in mind, that we isolate and rate every 'sample' supply chain and don't evalute the entire supply chain at once. We compare every possible supply chain in terms of cost, time and waste. The comparison is based on a weighted score.
+
+Total score = (cost 60%) + (waste 20%) + (time 20%)
+
+Total score can be used as a KPI and eases complex decision-making and quick comparison of values of a different nature. Furthermore, this could be very useful to examine other members of the supply chain and take the measurements as tangible goals for improving these members or monitoring the entire supply chain. The total score also comes in handy in case we want to diminish the number of our (raw)supplier and only retain the top performer.
+
+
+
+//hide 
+
+[source,cypher]
+----
+MATCH  (n)
+SET n.costR = round(rand()*10)
+SET n.timeR = round(rand()*10)
+SET n.wasteR = round(rand()*10)
+----
+
+[source,cypher]
+----
+MATCH    chain=(rsB:RawSupplierB)-[r*]->(p:Product)<-[r*]-(rsA:RawSupplierA)
+WITH     reduce(wait = 0, s IN nodes(chain)| wait + s.timeR) AS tRating,
+         reduce(wait = 0, s IN nodes(chain)| wait + s.costR) AS cRating,
+         reduce(wait = 0, s IN nodes(chain)| wait + s.wasteR) AS wRating, chain, p
+WITH     chain, p, ((cRating*0.6) + (wRating*0.2) + (tRating*0.2) ) AS score
+WITH     score, p, extract(n IN nodes(chain)| n.name) AS SupplyChain1 ORDER BY score DESC
+MATCH    chain=(p)-[r*]->(re:Retailer)
+WITH     reduce(wait = 0, s IN nodes(chain)| wait + s.timeR) AS tRating,
+         reduce(wait = 0, s IN nodes(chain)| wait + s.costR) AS cRating,
+         reduce(wait = 0, s IN nodes(chain)| wait + s.wasteR) AS wRating, chain, score, SupplyChain1
+WITH     chain, SupplyChain1, ((cRating*0.6) + (wRating*0.2) + (tRating*0.2) + score) AS totalScore
+WITH     SupplyChain1, totalScore, extract(n IN nodes(chain)| n.name) AS SupplyChain2 ORDER BY totalScore DESC
+RETURN   SupplyChain2 + SupplyChain1, totalScore
+LIMIT 	1
+----
+
+//table
+
+=== Conclusion 
+
+         - Due to the nature of supply chains, which is inherently a graph or network structure, graph databases are more suitable to monitor, maintain and model supply chain problems
+                  e.g. Risk Management, Bullwhip-Effect, Transport Optimization, quality assurance. . . 
+         - In combination with RFID chips and could computing, graph database technology offers a broad variety of applications for real-time monitoring and process improvement
+         
+For ideas, critique or question feel free to contact me: www.linkedin.com/in/marcuswachsmuth
+

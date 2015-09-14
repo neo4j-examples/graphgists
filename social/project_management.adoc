@@ -1,0 +1,397 @@
+= Project Management
+:author: Nicole White
+:twitter: @_nicolemargaret
+
+In my optimization class last semester we briefly talked about project management, where there is a set of activities with given durations and some activities need to be completed before other activities can begin. We were taught to explore the management of the project's timeline in Excel, which was link:http://nicolemargaretwhite.blogspot.com/2014/01/project-management-in-excel.html[tedious and prone to errors due to its manual process].
+
+video::5IZv7pyhdLY[youtube, align="center", width=640, height=360]
+
+'''
+
+== The Project
+
+In this example, an insurance company is wanting to build an office LAN. They will want to know the ins and outs of the project; i.e., the earliest start / finish time and the latest start / finish time of each activity, as these details play critical roles in the management of the project. Ultimately, they will want to know the _slack time_ of each activity and the _critical path_, which will be defined soon. The activities and their durations are given below.
+
+++++
+<table>
+<tr>
+<td><b>Label</b></td>
+<td><b>Activity Description</b></td>
+<td><b>Duration (Days)</b></td>
+</tr>
+<tr>
+<td>A</td>
+<td>Perform needs analysis</td>
+<td>10</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Develop specifications</td>
+<td>6</td>
+</tr>
+<tr>
+<td>C</td>
+<td>Select server</td>
+<td>6</td>
+</tr>
+<tr>
+<td>D</td>
+<td>Select software</td>
+<td>12</td>
+</tr>
+<tr>
+<td>E</td>
+<td>Select cables</td>
+<td>4</td>
+</tr>
+<tr>
+<td>F</td>
+<td>Purchase equipment</td>
+<td>3</td>
+</tr>
+<tr>
+<td>G</td>
+<td>Develop user manuals</td>
+<td>6</td>
+</tr>
+<tr>
+<td>H</td>
+<td>Wire offices</td>
+<td>12</td>
+</tr>
+<tr>
+<td>I</td>
+<td>Set up server</td>
+<td>3</td>
+</tr>
+<tr>
+<td>J</td>
+<td>Develop training program</td>
+<td>14</td>
+</tr>
+<tr>
+<td>K</td>
+<td>Install software</td>
+<td>4</td>
+</tr>
+<tr>
+<td>L</td>
+<td>Connect network</td>
+<td>3</td>
+</tr>
+<tr>
+<td>M</td>
+<td>Train users</td>
+<td>8</td>
+</tr>
+<tr>
+<td>N</td>
+<td>Test and debug system</td>
+<td>12</td>
+</tr>
+<tr>
+<td>O</td>
+<td>Get management acceptance</td>
+<td>4</td>
+</tr>
+</table>
+++++
+
+The dependencies of each activity are represented in this graph:
+
+image::https://dl.dropboxusercontent.com/u/94782892/projectmgmt/projectmgmtdiagram.PNG[]
+
+So, for example, activities C and D (select server and select software) need to be completed before activity G (develop user manuals) can begin.
+
+'''
+
+== Some Definitions
+
+Project managers are interested in the following properties of each activity, which I'll define briefly and then add to the graph.
+
+=== Earliest Finish Time
+
+The earliest time an activity \(j\) can finish, \(EF_j\), is the activity's earliest start time, \(ES_j\), plus its duration, \(d_j\):
+
+[subs=none]
+\(EF_j = ES_j + d_j\)
+
+=== Earliest Start Time
+
+Because an activity cannot begin until all of its immediate predecessor activities are completed, the earliest start time of an activity \(j\), \(ES_j\), is the maximum of the earliest finish times of its \(i\) immediate predecessor activities:
+
+[subs=none]
+\(ES_j = max(EF_i)\)
+
+=== Latest Start Time
+
+The latest time an activity \(j\) can start without delaying the project is its latest finish time, \(LF_j\), minus its duration, \(d_j\):
+
+[subs=none]
+\(LS_j = LF_j - d_j\)
+
+=== Latest Finish Time
+
+The latest an activity \(i\) can finish without delaying the project, \(LF_i\), is the minimum of the latest start times of its \(j\) immediate successor activities:
+
+[subs=none]
+\(LF_i = min(LS_j)\)
+
+=== Project Completion Time, Critical Path, & Slack
+
+The total time needed to complete the project is the earliest start time of the Finish node:
+
+[subs=none]
+\(Project Completion Time = ES_{Finish}\)
+
+This is also the longest path through the graph (from start to finish) in terms of cumulative duration, where this cumulative duration is the project completion time. This longest path is the *critical path*. The critical path consists of activities where an increase in any of their durations would increase the overall project completion time. These activities have 0 *slack* time; there is 0 room for an increase in their durations without affecting the overall project completion time. An activity \(j\) not on the critical path will have a positive slack time, which is the difference between its latest and earliest start time:
+
+[subs=none]
+\(slack_j = LS_j - ES_j\)
+
+Activity \(j\)'s duration can be increased by \(slack_j\) without affecting the overall project completion time.
+
+=== Notes
+
+[subs=none]
+\(ES_{Start} = EF_{Start} = LS_{Start} = LF_{Start} = 0\)
+
+[[X1]]
+[subs=none]
+\(ES_{Finish} = EF_{Finish} = LS_{Finish} = LF_{Finish} = Project Completion Time\)
+
+'''
+
+== Data Setup
+
+//hide
+//setup
+
+[source,cypher]
+----
+CREATE  (Start:Activity {id:1, description:'Start', duration:0, earliest_start:0, earliest_finish:0, latest_start:0, latest_finish:0}),
+		(A:Activity {id:2, description:'Perform needs analysis', duration:10}),
+		(B:Activity {id:3, description:'Develop specifications', duration:6}),
+		(C:Activity {id:4, description:'Select server', duration:6}),
+		(D:Activity {id:5, description:'Select software', duration:12}),
+		(E:Activity {id:6, description:'Select cables', duration:4}),
+		(F:Activity {id:7, description:'Purchase equipment', duration:3}),
+		(G:Activity {id:8, description:'Develop user manuals', duration:6}),
+		(H:Activity {id:9, description:'Wire offices', duration:12}),
+		(I:Activity {id:10, description:'Set up server', duration:3}),
+		(J:Activity {id:11, description:'Develop training program', duration:14}),
+		(K:Activity {id:12, description:'Install software', duration:4}),
+		(L:Activity {id:13, description:'Connect network', duration:3}),
+		(M:Activity {id:14, description:'Train users', duration:8}),
+		(N:Activity {id:15, description:'Test and debug system', duration:12}),
+		(O:Activity {id:16, description:'Get management acceptance', duration:4}),
+		(Finish:Activity {id: 17, description:'Finish', duration:0})
+		
+CREATE  (Start)-[:PRECEDES]->(A),
+		(A)-[:PRECEDES]->(B),
+		(B)-[:PRECEDES]->(C),
+		(B)-[:PRECEDES]->(D),
+		(C)-[:PRECEDES]->(E),
+		(C)-[:PRECEDES]->(G),
+		(D)-[:PRECEDES]->(F),
+		(D)-[:PRECEDES]->(G),
+		(E)-[:PRECEDES]->(F),
+		(F)-[:PRECEDES]->(H),
+		(F)-[:PRECEDES]->(I),
+		(G)-[:PRECEDES]->(J),
+		(H)-[:PRECEDES]->(L),
+		(I)-[:PRECEDES]->(K),
+		(J)-[:PRECEDES]->(M),
+		(K)-[:PRECEDES]->(L),
+		(L)-[:PRECEDES]->(M),
+		(L)-[:PRECEDES]->(N),
+		(M)-[:PRECEDES]->(O),
+		(N)-[:PRECEDES]->(O),
+		(O)-[:PRECEDES]->(Finish)
+----
+//graph
+
+'''
+
+== Exploring the Basics of the Project
+
+Cypher can easily answer some basic questions about the project.
+
+=== Immediate Dependencies of an Activity
+
+Suppose we want to know the immediate predecessors of activity M (training the users):
+
+[source,cypher]
+----
+MATCH p = (:Activity)-[:PRECEDES]->(:Activity {description:'Train users'})
+RETURN p
+----
+//graph_result
+
+=== All Dependencies of an Activity
+
+Suppose we want to know all the activities that need to be completed before activity G (develop user manuals) can begin:
+
+[source, cypher]
+----
+MATCH p = (:Activity)-[:PRECEDES*]->(:Activity {description:'Develop user manuals'})
+RETURN p
+----
+//graph_result
+
+=== Project Completion Time
+
+The overall project completion time, as mentioned earlier, is the longest path from start to finish in terms of cumulative duration:
+
+[source,cypher]
+----
+MATCH p = (:Activity {description:'Start'})-[:PRECEDES*]->(:Activity {description:'Finish'})
+WITH p, REDUCE(x = 0, a IN NODES(p) | x + a.duration) AS cum_duration
+ORDER BY cum_duration DESC
+LIMIT 1
+RETURN cum_duration AS `Project Completion Time`
+----
+//table
+
+The project will take 62 days to complete (given there are no delays).
+
+=== Critical Path
+
+[[X2]]
+[source, cypher]
+----
+MATCH p = (:Activity {description:'Start'})-[:PRECEDES*]->(:Activity {description:'Finish'})
+WITH p, REDUCE(x = 0, a IN NODES(p) | x + a.duration) AS cum_duration
+ORDER BY cum_duration DESC
+LIMIT 1
+RETURN p
+----
+//graph_result
+
+The durations of the activities shown in this critical path, if increased, would increase the overall project completion time. The project manager now knows which activities on his timeline are most sensitive to delays.
+
+'''
+
+== Add EF, ES, LS, LF, & Slack Times to the Graph
+
+These insightful properties can be added to the graph easily with Cypher, which (in my opinion) is infinitely better than manually typing functions into several Excel cells.
+
+=== Set Earliest Finish Times
+
+Recall: \(EF_j = ES_j + d_j\)
+
+[source,cypher]
+----
+MATCH p = (:Activity {description:'Start'})-[:PRECEDES*]->(j:Activity)
+WITH j, MAX(REDUCE(x = 0, a IN NODES(p) | x + a.duration)) AS ef
+SET j.earliest_finish = ef
+----
+
+=== Set Earliest Start Times
+
+Recall: \(ES_j = max(EF_i)\)
+
+[source,cypher]
+----
+MATCH (i:Activity)-[:PRECEDES]->(j:Activity)
+WITH j, MAX(i.earliest_finish) AS max_ef
+SET j.earliest_start = max_ef
+----
+
+=== Update Finish Node
+
+We already found the overall project completion time by finding the longest path, but this property is also captured as the earliest start time of the finish node:
+
+[source,cypher]
+----
+MATCH (f:Activity {description:'Finish'})
+RETURN f.earliest_start AS `Project Completion Time`
+----
+//table
+
+We need to update the properties of the Finish node according to <<X1, the insight shown earlier>> before we \'move backward\' through the graph to find the LS and LF times:
+
+[source,cypher]
+----
+MATCH (f:Activity {description:'Finish'})
+SET f.earliest_finish = f.earliest_start, f.latest_start = f.earliest_start, f.latest_finish = f.earliest_start
+----
+
+=== Set Latest Start Times
+
+Recall: \(LS_j = LF_j - d_j\)
+
+[source,cypher]
+----
+MATCH p = (j:Activity)-[:PRECEDES*]->(f:Activity {description:'Finish'})
+WITH j, MIN(REDUCE(x = f.earliest_start, a IN NODES(p) | x - a.duration)) AS ls
+SET j.latest_start = ls
+----
+
+=== Set Latest Finish Times
+
+Recall: \(LF_i = min(LS_j)\)
+
+[source,cypher]
+----
+MATCH (i:Activity)-[:PRECEDES]->(j:Activity)
+WITH i, MIN(j.latest_start) AS min_ls
+SET i.latest_finish = min_ls
+----
+
+=== Set Slack Times
+
+Recall: \(slack_j = LS_j - ES_j\)
+
+[source,cypher]
+----
+MATCH (a:Activity)
+SET a.slack = a.latest_start - a.earliest_start
+----
+
+'''
+
+== View Updated Graph
+//graph
+
+'''
+
+== View ES, EF, LS, LF, & Slack Times
+
+[source,cypher]
+----
+MATCH (a:Activity)
+RETURN a.description AS Activity, a.earliest_start AS `Earliest Start Time`, a.earliest_finish AS `Earliest Finish Time`, a.latest_start AS `Latest Start Time`, a.latest_finish AS `Latest Finish Time`, a.slack AS Slack
+ORDER BY a.id
+----
+//table
+
+The slack times tell the project manager how many days each activity can be delayed beyond its earliest start time before affecting the overall project completion time. The activities with 0 slack are on the critical path, as they cannot be delayed; compare these activities to the list of activities from <<X2, query 5>>. 
+
+'''
+
+== Answering Important Questions
+
+No project will run smoothly, so the project manager will want to know how various setbacks will affect the bottom line. These questions can all be answered by looking at the slack of an activity.
+
+==== If setting up the server is delayed by two days, how will this affect the overall project completion time?
+
+[source, cypher]
+----
+MATCH (a:Activity {description:'Set up server'})
+RETURN a.slack AS Slack
+----
+//table
+
+A delay of two days in setting up the server will have no effect on the project completion time, since setting up the server has a slack of five days.
+
+==== The guy who's supposed to come in and train the users calls and says he'll arrive three days after he initially promised. How will this affect the overall project completion time?
+
+[source,cypher]
+----
+MATCH (a:Activity {description:'Train users'})
+RETURN a.slack AS Slack
+----
+//table
+
+The overall project completion time will increase from 62 to 63 days (62 + (3 - 2)) since the delay of three days exceeds the two-day slack afforded to training the users by one day.

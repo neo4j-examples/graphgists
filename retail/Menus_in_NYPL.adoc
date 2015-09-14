@@ -1,0 +1,446 @@
+= What's on the menu?
+
+New York Public Library has over 45,000 menus from 1840s to present-day in its http://menus.nypl.org/about[What's on the menu?] collection. This graph list dishes from four menus from that collection.
+
+
+== Schema
+
+image::http://nerdycreativity.com/images/graphgist/menu.png[]
+
+(Menu) 
+
+* name: name of the restaurant
+* event
+* physical_description: description of the menu
+* notes
+* call_number: call number for the New York Public Library
+* date: date of the menu
+* status:
+* page_count: number of pages in the menu
+
+(Dish)
+
+* name: name of dish
+
+(Location)
+
+* address
+* city
+* state
+
+[:SERVES]
+
+* price: price of dish
+
+
+== Create nodes and relationships
+
+//hide
+//setup
+//output
+[source,cypher]
+----
+CREATE 
+
+// dishes
+
+(dish_1289:Dish {name: "AMERICAN CHEESE"}),
+(dish_124559:Dish {name: "Artichoke Heart Mayonaise, tongue fillg"}),
+(dish_2978:Dish {name: "Asparagus"}),
+(dish_798:Dish {name: "ASPARAGUS, BROWN BUTTER"}),
+(dish_1283:Dish {name: "ASSORTED CAKE"}),
+(dish_800:Dish {name: "BAKED SWEET POTATOES"}),
+(dish_11207:Dish {name: "Beef Steak Pie"}),
+(dish_43:Dish {name: "BLUE POINTS"}),
+(dish_52:Dish {name: "BOILED BEEF TONGUE, ITALIAN SAUCE"}),
+(dish_222982:Dish {name: "Boiled Beet"}),
+(dish_93:Dish {name: "Boiled onions, cream sauce"}),
+(dish_91:Dish {name: "Boiled rice"}),
+(dish_15959:Dish {name: "Braised Tongue"}),
+(dish_84:Dish {name: "Breaded veal cutlet with peas"}),
+(dish_46:Dish {name: "BROILED SHAD, A LA MAITRE D'HOTEL"}),
+(dish_82:Dish {name: "Broiled shad, Maitre d'hotel"}),
+(dish_61:Dish {name: "BROWNED POTATOES"}),
+(dish_4246:Dish {name: "Cafe noir"}),
+(dish_795:Dish {name: "Cheese"}),
+(dish_231:Dish {name: "Chocolate"}),
+(dish_7307:Dish {name: "Chocolate pot"}),
+(dish_5054:Dish {name: "chocolate, cup"}),
+(dish_3021:Dish {name: "chops"}),
+(dish_283:Dish {name: "Cocoa"}),
+(dish_83478:Dish {name: "Coffe, Cup, large with Cream"}),
+(dish_96:Dish {name: "Coffee"}),
+(dish_74427:Dish {name: "Coffee, Cup, Small"}),
+(dish_7428:Dish {name: "Coffee, large pot"}),
+(dish_7430:Dish {name: "Coffee, small pot"}),
+(dish_47349:Dish {name: "Cold Ribs of beef"}),
+(dish_44:Dish {name: "CONSOMME ANGLAISE"}),
+(dish_81:Dish {name: "Consomme in cup"}),
+(dish_222978:Dish {name: "Consomme of Chicken a la Reine"}),
+(dish_5165:Dish {name: "Crab"}),
+(dish_124561:Dish {name: "Cream Ba Ba"}),
+(dish_36635:Dish {name: "Cream of Cauliflower Soup"}),
+(dish_124555:Dish {name: "Currie & Rice"}),
+(dish_88:Dish {name: "Doucette salad"}),
+(dish_112:Dish {name: "Fruit"}),
+(dish_6858:Dish {name: "Galantine of Chicken"}),
+(dish_4707:Dish {name: "Game"}),
+(dish_1515:Dish {name: "Golden buck"}),
+(dish_408:Dish {name: "GREEN PEAS"}),
+(dish_1099:Dish {name: "Ham"}),
+(dish_86:Dish {name: "Hind-quarter of spring lamb with stuffed tomatoes"}),
+(dish_363691:Dish {name: "Hot Maryland Biscuits"}),
+(dish_85605:Dish {name: "Hot ribs of beef"}),
+(dish_595:Dish {name: "Hot Rolls"}),
+(dish_95:Dish {name: "Ice cream"}),
+(dish_10303:Dish {name: "Lamb chops, Jardiniere"}),
+(dish_572:Dish {name: "Lettuce"}),
+(dish_1253:Dish {name: "LETTUCE SALAD, VINAIGRETTE"}),
+(dish_83:Dish {name: "Mashed potatoes"}),
+(dish_1258:Dish {name: "MAYONNAISE OF CHICKEN"}),
+(dish_98:Dish {name: "Milk"}),
+(dish_89:Dish {name: "New beets"}),
+(dish_1281:Dish {name: "NEW YORK ICE CREAM"}),
+(dish_94:Dish {name: "Old fashioned rice pudding"}),
+(dish_55569:Dish {name: "Orange Cake"}),
+(dish_148:Dish {name: "Oyster cocktail"}),
+(dish_222976:Dish {name: "Oyster, Half shell"}),
+(dish_74395:Dish {name: "Oysters every style"}),
+(dish_74406:Dish {name: "Oysters Raw, Half Shell"}),
+(dish_222968:Dish {name: "Oysters, Balt Broil "}),
+(dish_8303:Dish {name: "Oysters, Fried"}),
+(dish_204096:Dish {name: "Oysters: Boston Stew"}),
+(dish_46674:Dish {name: "Oysters: broiled"}),
+(dish_59320:Dish {name: "Oysters: Steamed"}),
+(dish_70904:Dish {name: "Oysters: Stew"}),
+(dish_3903:Dish {name: "PASTRY"}),
+(dish_158:Dish {name: "PATTIES OF SWEET BREADS, A LA TOULOUSE"}),
+(dish_5569:Dish {name: "Pie"}),
+(dish_132:Dish {name: "PINE APPLE FRITTERS, SAUCE MARASCHINO"}),
+(dish_216:Dish {name: "Potato salad"}),
+(dish_737:Dish {name: "Potatoes"}),
+(dish_49:Dish {name: "POTATOES, JULIEN"}),
+(dish_458:Dish {name: "PUNCH, REPUBLICAN"}),
+(dish_80:Dish {name: "Puree of split peas aux croutons"}),
+(dish_124560:Dish {name: "Raspberry Tary"}),
+(dish_83475:Dish {name: "Ribs of Beef w Lettuce"}),
+(dish_232:Dish {name: "Roast beef"}),
+(dish_83476:Dish {name: "Roast Chicken w Lettuce"}),
+(dish_58:Dish {name: "ROAST EASTER LAMB, MINT SAUCE"}),
+(dish_55:Dish {name: "ROAST SIRLOIN OF BEEF, YORKSHIRE PUDDING"}),
+(dish_797:Dish {name: "ROAST SQUAB ON TOAST, WITH APRICOTS"}),
+(dish_1308:Dish {name: "Roquefort"}),
+(dish_1287:Dish {name: "ROQUEFORT CHEESE"}),
+(dish_48:Dish {name: "SALTED ALMONDS"}),
+(dish_14249:Dish {name: "Scallops & Bacon"}),
+(dish_1286:Dish {name: "SELECTED NUTS"}),
+(dish_1264:Dish {name: "SLICED APPLE PIE"}),
+(dish_47:Dish {name: "SLICED CUCUMBERS"}),
+(dish_177:Dish {name: "SMALL TENDERLOIN STEAK, A LA STANLEY"}),
+(dish_22605:Dish {name: "Steaks"}),
+(dish_92:Dish {name: "Stewed oyster plant"}),
+(dish_117:Dish {name: "Stewed tomatoes"}),
+(dish_40533:Dish {name: "Strawberry Roll, Fruit Sauce"}),
+(dish_11606:Dish {name: "Strawberry tart"}),
+(dish_124556:Dish {name: "Stuffed Bell Pepper"}),
+(dish_70895:Dish {name: "Stuffed Egg"}),
+(dish_1312:Dish {name: "Swiss"}),
+(dish_222974:Dish {name: "Table d'hote with Claret"}),
+(dish_97:Dish {name: "Tea"}),
+(dish_34035:Dish {name: "Tea large pot"}),
+(dish_34032:Dish {name: "Tea small pot"}),
+(dish_19258:Dish {name: "Tea with cream"}),
+(dish_1291:Dish {name: "TOASTED WAFERS"}),
+(dish_222:Dish {name: "Tongue"}),
+(dish_35749:Dish {name: "Vanilla Ice Cream & Cake"}),
+(dish_25132:Dish {name: "Walnut Cake"}),
+(dish_1267:Dish {name: "WASHINGTON CREAM PIE"}),
+(dish_1514:Dish {name: "Welsh rarebit"}),
+(dish_83477:Dish {name: "White Fish a la Creole"}),
+(dish_124562:Dish {name: "White Rock Water (pint bottle)"}),
+
+
+// menus
+
+(menu_12464:Menu {name: "Republican House", event: "", dish_count: 34, physical_description: "CARD, ILLUS, COL, 7.0X9.0", notes: "WEDGEWOOD BLUE CARD, WHITE EMBOSSED GREEK KEY BORDER, EASTER SUNDAY EMBOSSED IN WHITE, VIOLET COLORED SPRAY OF FLOWERS IN UPPER LEFT CORNER", call_number: "1900-2825", date: "1900-04-15", status: "complete", page_count: 2}),
+
+(menu_23234:Menu {name: "Virginia Hotel", event: "TABLE D'HOTE", dish_count: 40, physical_description: "CARD; 6.0X9.25", notes: "PARTIALLY PRINTED MENU ON FRONT; HAND WRITTEN ITEMS ON REVERSE IDENTIFIED AS ‘TABLE D'HOTE WITH CLARET - 50CENTS - SERVED 5:30 TO 9:00’", call_number: "1900-473", date: "1900-01-23", status: "complete", page_count: 2}),
+
+(menu_22712:Menu {name: "Ye Tea Cup Inne", event: "DAILY MENU", dish_count: 30, physical_description: "BROADSIDE; COL; 7X10;", notes: "MENU HANDWRITTEN IN PENCIL ON BLUE PAPER AND GLUED TO CARD; ‘BROUGHT FROM SAN FRANCISCO, CAL. BY MRS. GERTRUDE H. MATHEWSON DEC. 1906’ NOTED BY FEB ON BACK;", call_number: "1906-824", date: "1906-11-14", status: "complete", page_count: 2}),
+
+
+(menu_12473:Menu {name: "Hotel Marlborough", event: "CAFE LUNCHEON", dish_count: 19, physical_description: "CARD, ILLUS, COL, 4.25X5.5", notes: "HOTEL CREST IN BLUE", call_number: "1900-2843", date: "1900-04-17", status: "complete", page_count: 2}),
+
+// location
+(location_1: Location {address: "", city: "San Francisco", state: "CA"}),
+(location_2: Location {address: "", city: "Milwaukee", state: "WI"}),
+(location_4: Location {address: "", city: "New York", state: "NY"}),
+
+// menu location
+(menu_22712) - [:LOCATED_AT] -> (location_1),
+(menu_12464) - [:LOCATED_AT] -> (location_2),
+(menu_12473) - [:LOCATED_AT] -> (location_4),
+(menu_23234) - [:LOCATED_AT] -> (location_4),
+
+
+// menu dishes
+
+
+
+(menu_12464) - [:SERVES] -> (dish_43),
+(menu_12464) - [:SERVES] -> (dish_177),
+(menu_12464) - [:SERVES] -> (dish_1289),
+(menu_12464) - [:SERVES] -> (dish_44),
+(menu_12464) - [:SERVES] -> (dish_408),
+(menu_12464) - [:SERVES] -> (dish_1291),
+(menu_12464) - [:SERVES] -> (dish_36635),
+(menu_12464) - [:SERVES] -> (dish_83),
+(menu_12464) - [:SERVES] -> (dish_40533),
+(menu_12464) - [:SERVES] -> (dish_46),
+(menu_12464) - [:SERVES] -> (dish_458),
+(menu_12464) - [:SERVES] -> (dish_1281),
+(menu_12464) - [:SERVES] -> (dish_47),
+(menu_12464) - [:SERVES] -> (dish_797),
+(menu_12464) - [:SERVES] -> (dish_48),
+(menu_12464) - [:SERVES] -> (dish_798),
+(menu_12464) - [:SERVES] -> (dish_49),
+(menu_12464) - [:SERVES] -> (dish_800),
+(menu_12464) - [:SERVES] -> (dish_52),
+(menu_12464) - [:SERVES] -> (dish_1253),
+(menu_12464) - [:SERVES] -> (dish_55),
+(menu_12464) - [:SERVES] -> (dish_1258),
+(menu_12464) - [:SERVES] -> (dish_117),
+(menu_12464) - [:SERVES] -> (dish_1264),
+(menu_12464) - [:SERVES] -> (dish_58),
+(menu_12464) - [:SERVES] -> (dish_1267),
+(menu_12464) - [:SERVES] -> (dish_61),
+(menu_12464) - [:SERVES] -> (dish_96),
+(menu_12464) - [:SERVES] -> (dish_1283),
+(menu_12464) - [:SERVES] -> (dish_112),
+(menu_12464) - [:SERVES] -> (dish_132),
+(menu_12464) - [:SERVES] -> (dish_1286),
+(menu_12464) - [:SERVES] -> (dish_158),
+(menu_12464) - [:SERVES] -> (dish_1287),
+(menu_12473) - [:SERVES] -> (dish_84),
+(menu_12473) - [:SERVES] -> (dish_86),
+(menu_12473) - [:SERVES] -> (dish_85605),
+(menu_12473) - [:SERVES] -> (dish_47349),
+(menu_12473) - [:SERVES] -> (dish_88),
+(menu_12473) - [:SERVES] -> (dish_117),
+(menu_12473) - [:SERVES] -> (dish_89),
+(menu_12473) - [:SERVES] -> (dish_91),
+(menu_12473) - [:SERVES] -> (dish_92),
+(menu_12473) - [:SERVES] -> (dish_93),
+(menu_12473) - [:SERVES] -> (dish_94),
+(menu_12473) - [:SERVES] -> (dish_95),
+(menu_12473) - [:SERVES] -> (dish_96),
+(menu_12473) - [:SERVES] -> (dish_80),
+(menu_12473) - [:SERVES] -> (dish_97),
+(menu_12473) - [:SERVES] -> (dish_81),
+(menu_12473) - [:SERVES] -> (dish_98),
+(menu_12473) - [:SERVES] -> (dish_82),
+(menu_12473) - [:SERVES] -> (dish_83),
+(menu_22712) - [:SERVES {price: 0.25}] -> (dish_70895),
+(menu_22712) - [:SERVES {price: 0.15}] -> (dish_216),
+(menu_22712) - [:SERVES {price: 0.15}] -> (dish_25132),
+(menu_22712) - [:SERVES {price: 0.35}] -> (dish_11207),
+(menu_22712) - [:SERVES {price: 0.1}] -> (dish_11606),
+(menu_22712) - [:SERVES {price: 0.35}] -> (dish_124555),
+(menu_22712) - [:SERVES {price: 0.15}] -> (dish_55569),
+(menu_22712) - [:SERVES {price: 0.25}] -> (dish_124556),
+(menu_22712) - [:SERVES {price: 0.1}] -> (dish_124560),
+(menu_22712) - [:SERVES {price: 0.25}] -> (dish_15959),
+(menu_22712) - [:SERVES {price: 0.1}] -> (dish_124561),
+(menu_22712) - [:SERVES {price: 0.25}] -> (dish_148),
+(menu_22712) - [:SERVES {price: 0.25}] -> (dish_35749),
+(menu_22712) - [:SERVES {price: 0.3}] -> (dish_232),
+(menu_22712) - [:SERVES {price: 0.15}] -> (dish_1308),
+(menu_22712) - [:SERVES {price: 0.3}] -> (dish_6858),
+(menu_22712) - [:SERVES {price: 0.1}] -> (dish_1312),
+(menu_22712) - [:SERVES {price: 0.3}] -> (dish_222),
+(menu_22712) - [:SERVES {price: 0.1}] -> (dish_97),
+(menu_22712) - [:SERVES] -> (dish_595),
+(menu_22712) - [:SERVES {price: 0.25}] -> (dish_1099),
+(menu_22712) - [:SERVES {price: 0.15}] -> (dish_231),
+(menu_22712) - [:SERVES {price: 0.3}] -> (dish_124559),
+(menu_22712) - [:SERVES {price: 0.1}] -> (dish_96),
+(menu_22712) - [:SERVES {price: 0.3}] -> (dish_2978),
+(menu_22712) - [:SERVES {price: 0.2}] -> (dish_124562),
+(menu_22712) - [:SERVES {price: 0.3}] -> (dish_5165),
+(menu_22712) - [:SERVES {price: 0.1}] -> (dish_98),
+(menu_22712) - [:SERVES {price: 0.15}] -> (dish_572),
+(menu_22712) - [:SERVES] -> (dish_363691),
+(menu_23234) - [:SERVES {price: 0.2}] -> (dish_7307),
+(menu_23234) - [:SERVES {price: 0.2}] -> (dish_148),
+(menu_23234) - [:SERVES] -> (dish_3903),
+(menu_23234) - [:SERVES] -> (dish_795),
+(menu_23234) - [:SERVES {price: 0.3}] -> (dish_8303),
+(menu_23234) - [:SERVES] -> (dish_5569),
+(menu_23234) - [:SERVES {price: 0.35}] -> (dish_46674),
+(menu_23234) - [:SERVES] -> (dish_112),
+(menu_23234) - [:SERVES {price: 0.35}] -> (dish_222968),
+(menu_23234) - [:SERVES] -> (dish_4246),
+(menu_23234) - [:SERVES {price: 0.2}] -> (dish_74406),
+(menu_23234) - [:SERVES {price: 0.25}] -> (dish_70904),
+(menu_23234) - [:SERVES] -> (dish_74395),
+(menu_23234) - [:SERVES] -> (dish_83475),
+(menu_23234) - [:SERVES {price: 0.3}] -> (dish_204096),
+(menu_23234) - [:SERVES] -> (dish_22605),
+(menu_23234) - [:SERVES] -> (dish_83476),
+(menu_23234) - [:SERVES {price: 0.4}] -> (dish_59320),
+(menu_23234) - [:SERVES] -> (dish_3021),
+(menu_23234) - [:SERVES] -> (dish_14249),
+(menu_23234) - [:SERVES {price: 0.1}] -> (dish_5054),
+(menu_23234) - [:SERVES] -> (dish_4707),
+(menu_23234) - [:SERVES] -> (dish_83477),
+(menu_23234) - [:SERVES {price: 0.1}] -> (dish_283),
+(menu_23234) - [:SERVES] -> (dish_1514),
+(menu_23234) - [:SERVES {price: 0.05}] -> (dish_74427),
+(menu_23234) - [:SERVES {price: 0.05}] -> (dish_98),
+(menu_23234) - [:SERVES] -> (dish_1515),
+(menu_23234) - [:SERVES {price: 0.1}] -> (dish_83478),
+(menu_23234) - [:SERVES {price: 0.5}] -> (dish_222974),
+(menu_23234) - [:SERVES {price: 0.1}] -> (dish_7430),
+(menu_23234) - [:SERVES] -> (dish_222976),
+(menu_23234) - [:SERVES {price: 0.15}] -> (dish_7428),
+(menu_23234) - [:SERVES] -> (dish_222978),
+(menu_23234) - [:SERVES {price: 0.1}] -> (dish_19258),
+(menu_23234) - [:SERVES] -> (dish_10303),
+(menu_23234) - [:SERVES {price: 0.1}] -> (dish_34032),
+(menu_23234) - [:SERVES] -> (dish_737),
+(menu_23234) - [:SERVES {price: 0.15}] -> (dish_34035),
+(menu_23234) - [:SERVES] -> (dish_222982);
+
+----
+
+== Queries
+
+
+=== List all the menus
+
+image::http://nerdycreativity.com/images/graphgist/all_menus_rev.jpg[]
+
+
+[source,cypher]
+----
+MATCH (menu: Menu)
+RETURN menu.name as restaurant, menu.dish_count as dishes, menu.call_number as call_number, menu.date as date
+order by restaurant
+----
+//table
+
+=== Find all the restaurants in a city
+
+All restaurants in New York City
+
+[source,cypher]
+----
+MATCH (location: Location {city : "New York"}) <- [:LOCATED_AT] - (menu: Menu) 
+RETURN menu.name as restaurant,  location.city as city, location.state as state, menu.date as date
+order by restaurant
+----
+image::http://nerdycreativity.com/images/graphgist/menus_per_city_rev.png[]
+//table
+
+
+=== Find restaurants that  serve a particular dish.
+
+All restaurants that serve coffee.
+
+[source,cypher]
+----
+MATCH (location: Location) <- [:LOCATED_AT] -  (menu: Menu) - [r:SERVES] -> (dish: Dish {name: 'Coffee'})
+RETURN menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
+order by restaurant
+----
+image::http://nerdycreativity.com/images/graphgist/menus_per_dish_rev.png[]
+//table
+
+
+=== Find restaurants in a city that  serve a particular dish.
+
+All restaurants in New York City that serve milk.
+
+[source,cypher]
+----
+MATCH (location: Location {city : "New York"}) <- [:LOCATED_AT] - (menu: Menu) - [r:SERVES] -> (dish: Dish {name: 'Milk'})
+RETURN menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
+order by restaurant
+----
+//table
+
+=== Find all the dishes that a particular restaurants serves
+
+All the dishes from Virginia Hotel
+
+image::http://nerdycreativity.com/images/graphgist/Virginia_Hotel_thumb.jpeg[]
+http://nerdycreativity.com/images/graphgist/Virginia_Hotel.jpeg[full size image]
+
+[source,cypher]
+----
+MATCH (menu: Menu {name: 'Virginia Hotel'}) - [r:SERVES] -> (dish: Dish)
+RETURN dish.name as dish, r.price as price, menu.date as date
+order by dish
+----
+image::http://nerdycreativity.com/images/graphgist/dishes_per_menu_rev.png[]
+//table
+
+
+=== Find the  most common dishes
+
+[source,cypher]
+----
+MATCH (menu: Menu) - [re:SERVES] -> (dish: Dish)
+with dish, count(menu) as rels , collect(menu.name) as menus
+RETURN  dish.name as dish, rels as count, menus as restaurants
+order by count desc
+limit 5
+----
+//table
+
+=== Find all the dishes that two restaurants have in common
+
+Dishes that Republican House and Hotel Marlborough serve.
+
+[source,cypher]
+----
+MATCH   (menu: Menu {name: 'Republican House'}) - [r:SERVES] -> (dish: Dish)
+RETURN  dish, menu
+Union
+MATCH   (menu: Menu {name: 'Hotel Marlborough'}) - [r:SERVES] -> (dish: Dish)
+RETURN  dish, menu
+----
+image::http://nerdycreativity.com/images/graphgist/menus_shared_dishes.png[]
+
+
+=== Find dishes by prices
+
+Most expensive dishes
+
+[source,cypher]
+----
+MATCH (location: Location) <- [:LOCATED_AT] - (menu: Menu) - [r:SERVES] -> (dish: Dish)
+WHERE r.price > 0
+RETURN  dish.name, menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
+order by price desc
+limit 5
+----
+//table
+
+Least expensive dishes
+
+[source,cypher]
+----
+MATCH (location: Location) <- [:LOCATED_AT] - (menu: Menu) - [r:SERVES] -> (dish: Dish)
+WHERE r.price > 0
+RETURN  dish.name, menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
+order by price asc 
+limit 5
+----
+// table
+
+== Console
+
+//hide
+//console
+

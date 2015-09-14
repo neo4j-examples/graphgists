@@ -1,0 +1,199 @@
+= DoctorFinder!
+
+This GraphGist represents a mobile application backend helping users to find adequate drugs and 
+specialists given their physical characteristics, location and current symptoms.
+
+
+== Our resulting model
+
+[[img-model]]
+.DoctorFinder model
+image::http://img15.hostingpics.net/pics/800451GraphGist.png[DoctorFinder! model, 854, 500]
+
+//hide
+//setup
+[source,cypher]
+....
+
+create 
+(_6:DRUG_CLASS  {name:"Bronchodilators"}),
+(_7:DRUG_CLASS  {name:"Corticosteroids"}),
+(_8:DRUG_CLASS  {name:"Xanthine"}),
+(_9:DRUG  {name:"Salbutamol"}),
+(_10:DRUG  {name:"Terbutaline"}),
+(_11:DRUG  {name:"Bambuterol"}),
+(_12:DRUG  {name:"Formoterol"}),
+(_13:DRUG  {name:"Salmeterol"}),
+(_14:DRUG  {name:"Beclometasone"}),
+(_15:DRUG  {name:"Budesonide"}),
+(_16:DRUG  {name:"Ciclesonide"}),
+(_17:DRUG  {name:"Fluticasone"}),
+(_18:DRUG  {name:"Mometasone"}),
+(_19:DRUG  {name:"Betametasone"}),
+(_20:DRUG  {name:"Prednisolone"}),
+(_21:DRUG  {name:"Dilatrane"}),
+(_22:ALLERGY  {name:"Hypersensitivity to Betametasone"}),
+(_23:PATHOLOGY  {name:"Asthma"}),
+(_24:SYMPTOM  {name:"Wheezing"}),
+(_25:SYMPTOM  {name:"Chest tightness"}),
+(_26:SYMPTOM  {name:"Cough"}),
+(_27:DOCTOR  {latitude:48.8573,longitude:2.35685,name:"Irving Matrix"}),
+(_28:DOCTOR  {latitude:46.83144,longitude:-71.28454,name:"Jack McKee"}),
+(_29:DOCTOR  {latitude:48.86982,longitude:2.32503,name:"Michaela Quinn"}),
+(_30:DOCTOR_SPECIALIZATION  {name:"Physician"}),
+(_31:DOCTOR_SPECIALIZATION  {name:"Angiologist"}),
+_6-[:CURES {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
+_7-[:CURES {age_max:18,age_min:5,indication:"Child asthma"}]->_23,
+_8-[:CURES {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
+_9-[:BELONGS_TO_CLASS]->_6,
+_10-[:BELONGS_TO_CLASS]->_6,
+_11-[:BELONGS_TO_CLASS]->_6,
+_12-[:BELONGS_TO_CLASS]->_6,
+_13-[:BELONGS_TO_CLASS]->_6,
+_14-[:BELONGS_TO_CLASS]->_7,
+_15-[:BELONGS_TO_CLASS]->_7,
+_16-[:BELONGS_TO_CLASS]->_7,
+_17-[:BELONGS_TO_CLASS]->_7,
+_18-[:BELONGS_TO_CLASS]->_7,
+_19-[:BELONGS_TO_CLASS]->_6,
+_19-[:BELONGS_TO_CLASS]->_7,
+_19-[:MAY_CAUSE_ALLERGY]->_22,
+_20-[:BELONGS_TO_CLASS]->_7,
+_21-[:BELONGS_TO_CLASS]->_8,
+_23-[:MAY_MANIFEST_SYMPTOMS]->_24,
+_23-[:MAY_MANIFEST_SYMPTOMS]->_25,
+_23-[:MAY_MANIFEST_SYMPTOMS]->_26,
+_27-[:SPECIALISES_IN]->_31,
+_28-[:SPECIALISES_IN]->_31,
+_29-[:SPECIALISES_IN]->_30,
+_30-[:CAN_PRESCRIBE]->_7,
+_31-[:CAN_PRESCRIBE]->_6
+....
+//graph
+
+
+From VIDAL with ♥ (`Suzanne`, `Nicolas`, `Édouard`, `Marouane`, `Sébastian`, `Thibaut`, `Olivier`, `Sylvain`, `Florent` (aka Cypher translator)).
+
+
+
+== User stories
+
+
+=== Symptom autocompletion
+
+
+> **As** an application user, +
+> **When** I start typing my symptoms
+>
+> **Then** matching symptoms are returned in alphabetical order.
+
+
+
+==== Example
+
+User types 'c'.
+
+[source,cypher]
+....
+MATCH 		(s:SYMPTOM) 
+WHERE 		UPPER(s.name)=~ UPPER('c.*')
+RETURN 		s.name AS `Symptom`
+ORDER BY 	s.name ASC
+....
+
+//table
+
+For simplicity's sake, this query will not be included in the following examples. 
+However, it would definitely be the first clause of each (as user types only symptom starts).
+Subsequent queries will assume symptom names were resolved by this first sub-query.
+
+
+
+=== Drug advisor
+
+> **As** an application user, +
+> **When** I start typing my symptoms
+> 
+> **Then** adequate drugs are returned, grouped by their therapeutic class.
+
+> An adequate drug cures illnesses that can appear with my symptoms, +
+> Whose dose does not provoke an allergy I suffer from +
+> And which is indicated for my age.
+
+
+
+==== Example
+
+Current user is a 35-year old man, manifesting **wheezing** and **chest tightness**, 
+suffering from **hypersensitivity to Betametasone** allergy.
+
+We expect all drugs of class `Bronchodilators` (`Betametasone` drug excluded, because of the aforementioned allergy) and `Xanthine` to appear
+as they are the only therapeutic classes suitable for adults in our dataset.
+
+[source,cypher]
+....
+MATCH 		(patho:PATHOLOGY)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:SYMPTOM)
+WHERE 		symptoms.name IN ['Chest tightness', 'Wheezing']
+WITH		patho
+
+MATCH		(drug_class:DRUG_CLASS)-[cures:CURES]->(patho)
+WHERE		cures.age_min <= 35 AND 35 < cures.age_max
+WITH		drug_class		
+
+MATCH 		(drug:DRUG)-[:BELONGS_TO_CLASS]->(drug_class), (allergy:ALLERGY)
+WHERE		allergy.name IN ['Hypersensitivity to Betametasone']
+AND		(NOT (drug)-[:MAY_CAUSE_ALLERGY]->(allergy))
+RETURN		drug_class.name AS `Therapeutic class`, COLLECT(DISTINCT drug.name) AS `Drugs`;
+....
+
+//table
+
+
+
+=== Doctor finder
+
+> **As** an application user, +
+> **When** I start typing my symptoms
+>
+> **Then** the doctors who (ahah!) can prescribe adequate drugs are returned with these drugs, ordered by proximity.
+
+> See definition above for what 'adequate drugs' mean.
+
+> If drugs can be purchased without prescription, the mention 'No doctor required' for these drugs should be returned, with a distance to user home of **0**.
+
+
+
+
+==== Example
+
+Current user is a 19-year old woman, manifesting **cough**, 
+suffering from hypersensitivity to Betametasone allergy
+and living at '14, rue de Bruxelles 75009 PARIS, FRANCE' (latitude:48.88344, longitude:2.33180).
+
+We expect all angiologists to be returned as the drugs they can prescribe can cure illnesses related to the user symptom.
+
+Moreover, drugs of class `Xanthine` do not require a prescription and they can cure the same kind of illnesses as well.
+
+[source,cypher]
+....
+MATCH 		(patho:PATHOLOGY)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:SYMPTOM)
+WHERE 		symptoms.name IN ['Cough']
+WITH		patho
+
+MATCH		(drug_class:DRUG_CLASS)-[cures:CURES]->(patho)
+WHERE		cures.age_min <= 19 AND 19 < cures.age_max
+WITH		drug_class		
+
+MATCH 		(drug:DRUG)-[:BELONGS_TO_CLASS]->(drug_class), (allergy:ALLERGY)
+WHERE		allergy.name IN ['Hypersensitivity to Betametasone']
+AND		(NOT (drug)-[:MAY_CAUSE_ALLERGY]->(allergy))
+WITH		drug_class, drug
+
+OPTIONAL MATCH	(doctor:DOCTOR)-->(spe:DOCTOR_SPECIALIZATION)-[:CAN_PRESCRIBE]->(drug_class)
+RETURN		COALESCE(doctor.name + ' (' + spe.name + ')', 'No doctor required') AS `Doctor`, COLLECT(DISTINCT drug.name) AS `Drugs for your symptoms`, 2 * 6371 * asin(sqrt(haversin(radians(48.88344 - COALESCE(doctor.latitude,48.88344))) + cos(radians(48.88344)) * cos(radians(COALESCE(doctor.latitude,90)))* haversin(radians(2.33180 - COALESCE(doctor.longitude,2.33180))))) AS `Distance to home (km)`
+ORDER BY	`Distance to home (km)` ASC;
+....
+
+//table
+
+As obfuscated as it looks, the distance computation is just a null-safe variant of the haversin formula explained in Cypher manual (indeed, there are drugs that do not require a doctor prescription).

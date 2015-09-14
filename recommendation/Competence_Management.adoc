@@ -1,0 +1,620 @@
+:neo4j-version: 2.1.3
+:author: Antonio Andrea Gentile
+:twitter: @aa_gentile
+
+'''
+[[TOP]]
+= Competency Management: a matter of filtering and recommendation engines.
+
+image::https://dl.dropboxusercontent.com/u/27566679/puzzle.png[]
+
+[[intro]]
+== Introduction
+This GraphGist simulates an *internal job recommendation engine*, in other words, a competence management system. This can be implemented when an organization is tasked with quickly finding the right employee among active personnel for a task or position, which has suddenly become vacant. This task can be tricky, and finding the best employee for the role can be difficult, especially for large organizations footnote:[We can here consider an organization 'big', if it reaches the point when it is almost impossible for anybody, to know personally everybody else. This scenario makes an internal search closer to hiring employees from external social networks, a case already dealt with in other link:http://gist.neo4j.org/?github-whatSocks/jobSNV//socialNetworks.adoc[GraphGists].]. To overcome these problems, organizations will seek out the following strategies: 
+
+- The task of finding the "ideal employee" is assigned to a single person. However, the open position may involve some technical skills, that this person is not able to evaluate alone. Also whoever performs the selection does not know everybody, so it is likely that his or her pick will be biased, because one single person cannot rapidly _explore the whole network_ of the employees. 
+
+- To overcome biases, a group of people are responsible for the choice. However, who selects the selectors and how do they do this? Their _decision making could be (too) slow_, and a way to deal with inconsistent judgments by different people must be provided at the end of the consultation.
+
+These issues may be overcome if the *organization keeps an updated track of records concerning the activities, roles and performances of its personnel*. However, _keeping track in a repository is not enough_: as always, information must be organized and easily accessible in order to be meaningful. 
+
+This GraphGist demonstrates how useful and simple it can be to *store the aforementioned repository in the Neo4j graph database, and query it in the Cypher language*. Moreover, a special effort is dedicated to *suggest the tailoring of this prototype*. The whole discussion demonstrates how using a graph database to solve this problem is optimized for flexibility, so that different organizations may build upon the same basic query structure by removing some components and improving others and adapt this prototype to their needs.
+The structure of the discussion is summarized in the following ToC.
+
+[[TOC]]
+////
+:toc:
+:toc-placement!:
+:toclevels: 2
+toc::[]
+////
+== Table of Contents
+* *<<inidata, Initial Data Model>>*
+First, a data model is introduced, that accounts for the main features of the "internal job recommendation" problem.  
+** <<setup, Setting Up the graph>>
+* *<<warmup, Warm Up: filtering out>>* 
+Next, basic filtering of the available records will be performed in Cypher.
+* *<<ranking, Ranking candidates: a "social" approach>>*
+This is the start of a further section, when formal tools (similar to a collaborative recommendation engine) are introduced. 
+In the two subsections, an improvement of collaborative results is presented, via elements of an _algebraic procedure_. This procedure is currently used in some manufacturing companies for the management of internal competencies, and some of its key features are reported as Cypher queries.
+** <<path, Improving the ranking: path-based weighting>>
+** <<jaccard, Improving the ranking: Jaccard similarity>>
+* *<<competences, Beyond opening recommendation: a competency management tool>>*
+This section outlines how the same model, used in previous sections for internal job recommendations, may also prove useful for human resource management. The use case will be how to better identify experts for a certain activity, employees in need of training, or teams which lack enough resources to perform a certain activity.
+* *<<conclusions, Conclusions>>*
+
+[[inidata]]
+=== Initial Data Model
+
+This GraphGist example is built with certain features in mind, making it capable to reproduce and improve features of existing competency management tools for  large organizations footnote:[In this GraphGist, we are mainly referring to the Algebraic Method outlined in "Optimizing a Competence Management System: An Algebraic Approach", Fortunato et al., presented at the International Symposium on Collaborative Enterprises: CENT 2011. This method, and the graph which can be built upon its assumptions, is adopted by the aeronautics manufacturing company link:http://www.aleniaaermacchi.it/home[Alenia Aermacchi spa]]. However, some general features and patterns are kept, making this example also capable of being used to represent online general-purpose recommendation systems. In this model, the prototype is flexible enough to integrate information from both internal repositories of the organization as well as external information collected from online social networks.
+
+image::https://dl.dropboxusercontent.com/u/27566679/comp%20mgt%201.1%20egonetwork.png[Figure 1]
+See link:https://twitter.com/apcj[Alistair Jones]'s link:http://www.apcjones.com/arrows/#[arrow tool].
+
+Starting from a focus on the single "ego-network" footnote:[Intended as the network including all and only the 1^st^ degree connections of that node.] of each +Employee+ in _Figure 1_, this network visualization shows  several interesting data relationships. Related to the company internal data, note that:
+
+- +WORKS_AS+, points to the current +Role+ of the +Employee+. This relationship has two properties: _duration_ (number of years the +Employee+ has spent in that role) and _location_ ( the employee’s geographic place of work). The first property could be used to infer the level of expertise acquired by the employee in a certain area, while the second may be used to understand if the resource shall be relocated, in order to work in a new +Role+. The +Role+ node itself is linked to a collection of +Activity+ nodes, and represents a certain position inside the organization.
+
+- +WORKED_AS+ is highly equivalent to the previous relationship, with the only difference that it also illustrates an Employee’s previous footnote:[Graph DBs provide a very intuitive and easy-to-query way to search for the whole career path of an employee, making every position point to the previous one. Here, we did not fully exploit this capability in order to keep our model immediate to grasp. The interested reader can refer to "Graph Databases", O'Reilly, 2013, pg. 71 and following] role. 
+
+- +CAN_PERFORM+ is an almost binary statement about the capabilities of the +Employee+: if the employee has already performed successfully a certain activity, then the link property is  _bin_threshold=1_; if instead the +Employee+ is assumed to be capable of performing the activity but never tried, in the graph it is set _bin_threshold=-1_ ; and finally, if it is reknown that the +Employee+ is not capable to perform the related activity, the property _bin_threshold=0_.
+
+- +IN_TEAM+ indicates if the employee is, or has been, part of a certain team, where the current status of the employee’s participation is embedded in the link property _current_ (which is 0 if the employee is not anymore an active part of the team)
+
+The employee’s personal information may be derived from the +Employee+ profile in a professional social network, data based on profiling activities inside the organization, or integrating these two data sources:
+
+- +HAS_DEGREE+ highlights the employee’s +Degree+ (characterized by the institution who awarded it, the subject/area of study, and the final grade). This connection may be very important especially for knowledge workers or newbies.
+
+- +HAS_SKILL+ indicates that the +Employee+ has a specific skill. Now, the command of this skill is not embedded in the link (which may suggest a self-assessment of the skill), rather than, it can be derived from the endorsements of other colleagues.
+
+- +ENDORSES+ represents the possibility for the +Employees+ to assign scores to their colleagues. These scores (_1<level<4_) are not generic - they refer to a specific +Personal Skill+, since a colleague may be confident to evaluate a specific skill, but not another one.
+
+image::https://dl.dropboxusercontent.com/u/27566679/comp%20mgt%201.1%20roles.png[Figure 2]
+
+Figure 2 demonstrates the network of activities and roles in the organization graph. 
+Each +Role+ node is characterized by a few properties:
+
+- _dept_ indicates to which department that role belongs
+
+- _hierarchy_ is a basic distinction between employee and manager roles – when needed, a more complex structure can be assigned
+
+- _open_status_ is a binary value which flags: "1" if the position is open, and "0" if filled).
+
++Activity+ nodes are assigned a _complexity_ (with _1<complexity<5_), an index whch measures how difficult a certain +Activity+ is, taking into account both the technical expertise required, as well as the level of social-interaction with other colleagues, advisors, customers...
+
++Role+ nodes can be linked to one or more +Activity+ nodes via a +RELATED_ACTIVITY+ link. This connection is enriched by the property level_weight (also in a discrete scale _1->4_), indicating that the +Role+ requires a certain level of command of the corresponding +RELATED_ACTIVITY+, in order to be performed in a satisfactory way by the employee. Manager Roles may also be connected via an +SUPERVISES_ACTIVITY+ link: in this case, the employee may be expected to have a good capability in directing the activity, but not necessarily in performing it directly.
+
+Finally, each +Activity+ can be connected to only one +Competence Area+ node, via the +IN_AREA+ link (i.e. in this model no overlap among different competence areas is allowed, but this assumption may be obviously relaxed). competency Areas shall be understood as high-level classifications of the different Activities performed by the organization.
+
+[[setup]]
+=== Setting Up the graph <<TOC, ^TOC^>>
+
+Here is the set of commands to generate the model with Cypher. 
+
+//setup
+//hide
+[source,cypher]
+----
+CREATE
+(u1:Employee {name:'Employee 1'}),
+(u2:Employee {name:'Employee 2'}),
+(u3:Employee {name:'Employee 3'}),
+(u4:Employee {name:'Employee 4'}),
+(u5:Employee {name:'Employee 5'}),
+(u7:Employee {name:'Employee 7'}),
+(u8:Employee {name:'Employee 8'}),
+
+(rol1:Role {name:'Role 1', dept:'dept 1', hierarchy:'employee', open_status:0}),
+(rol3:Role {name:'Role 3', dept:'dept 2', hierarchy:'employee', open_status:0}),
+(rol4:Role {name:'Role 4', dept:'dept 1', hierarchy:'manager', open_status:0}),
+(rol5:Role {name:'Role 5', dept:'dept 6', hierarchy:'employee', open_status:0}),
+(rol6:Role {name:'Role 6', dept:'dept 1', hierarchy:'employee', open_status:1}),
+(rol7:Role {name:'Role 7', dept:'dept 1', hierarchy:'manager', open_status:0}),
+(rol8:Role {name:'Role 8', dept:'dept 2', hierarchy:'manager', open_status:0}),
+
+(skill1:Personal_Skill {name:'Personal Skill 1', set:'Skill Set 1'}),
+(skill2:Personal_Skill {name:'Personal Skill 2', set:'Skill Set 2'}),
+(skill3:Personal_Skill {name:'Personal Skill 3', set:'Skill Set 3'}),
+(skill5:Personal_Skill {name:'Personal Skill 5', set:'Skill Set 1'}),
+
+(comp1:Competence_area {name:'Competence Area 1'}),
+(comp2:Competence_area {name:'Competence Area 2'}),
+(comp3:Competence_area {name:'Competence Area 3'}),
+
+(deg1:Degree {name:'Degree 1', institution:'Uni 1', area:'area 1', grade:'grade A'}),
+(deg2:Degree {name:'Degree 2', institution:'Uni 1', area:'area 1', grade:'grade A'}),
+(deg3:Degree {name:'Degree 3', institution:'Uni 2', area:'area 1', grade:'grade A'}),
+(deg4:Degree {name:'Degree 4', institution:'Uni 3', area:'area 1', grade:'grade A'}),
+(deg5:Degree {name:'Degree 5', institution:'Uni 4', area:'area 2', grade:'grade A'}),
+
+(t1:Team {name:'Team 1', team_size: 1}),
+(t2:Team {name:'Team 2', team_size: 2}),
+(t3:Team {name:'Team 3', team_size: 1}),
+
+(act1:Activity {name:'Activity 1', complexity:4.0}),
+(act2:Activity {name:'Activity 2', complexity:2.0}),
+(act3:Activity {name:'Activity 3', complexity:1.0}),
+(act4:Activity {name:'Activity 4', complexity:2.0}),
+(act5:Activity {name:'Activity 5', complexity:4.0}),
+(act6:Activity {name:'Activity 6', complexity:3.0}),
+
+(u1)-[:WORKS_AS {duration:2, location:'Location 1'}]->(rol1),
+(u2)-[:WORKS_AS {duration:3, location:'Location 2'}]->(rol1),
+(u3)-[:WORKS_AS {duration:2, location:'Location 2'}]->(rol3),
+(u4)-[:WORKS_AS {duration:1, location:'Location 3'}]->(rol4),
+(u5)-[:WORKS_AS {duration:3, location:'Location 2'}]->(rol5),
+(u7)-[:WORKS_AS {duration:1, location:'Location 2'}]->(rol7),
+(u8)-[:WORKS_AS {duration:1, location:'Location 1'}]->(rol8),
+
+(u4)-[:WORKED_AS {duration:5, location:'Location 1'}]->(rol6),
+
+(u1)-[:IN_TEAM {current: 1}]->(t1),
+(u2)-[:IN_TEAM {current: 1}]->(t2),
+(u3)-[:IN_TEAM {current: 1}]->(t2),
+(u4)-[:IN_TEAM {current: 0}]->(t1),
+(u5)-[:IN_TEAM {current: 1}]->(t3),
+
+(u1)-[:CAN_PERFORM {bin_threshold: 1}]->(act1),
+(u1)-[:CAN_PERFORM {bin_threshold: -1}]->(act4),
+(u2)-[:CAN_PERFORM {bin_threshold: 1}]->(act2),
+(u3)-[:CAN_PERFORM {bin_threshold: 1}]->(act3),
+(u4)-[:CAN_PERFORM {bin_threshold: 1}]->(act6),
+(u4)-[:CAN_PERFORM {bin_threshold: -1}]->(act4),
+(u5)-[:CAN_PERFORM {bin_threshold: 1}]->(act5),
+
+(u1)-[:HAS_DEGREE]->(deg1),
+(u2)-[:HAS_DEGREE]->(deg2),
+(u3)-[:HAS_DEGREE]->(deg3),
+(u4)-[:HAS_DEGREE]->(deg4),
+(u5)-[:HAS_DEGREE]->(deg5),
+
+(u1)-[:HAS_SKILL]->(skill1),
+(u2)-[:HAS_SKILL]->(skill2),
+(u3)-[:HAS_SKILL]->(skill3),
+(u5)-[:HAS_SKILL]->(skill5),
+
+(act1)-[:REQUIRES]->(skill1),
+(act2)-[:REQUIRES]->(skill2),
+(act3)-[:REQUIRES]->(skill3),
+(act5)-[:REQUIRES]->(skill5),
+
+(u2)-[:ENDORSES {level:4.0}]->(skill1),
+(u2)-[:ENDORSES {level:3.0}]->(skill3),
+(u4)-[:ENDORSES {level:4.0}]->(skill1),
+(u4)-[:ENDORSES {level:2.0}]->(skill3),
+(u5)-[:ENDORSES {level:4.0}]->(skill3),   
+
+(act1)-[:IN_AREA]->(comp1),
+(act2)-[:IN_AREA]->(comp1),
+(act3)-[:IN_AREA]->(comp3),
+(act4)-[:IN_AREA]->(comp2),
+(act5)-[:IN_AREA]->(comp2),
+(act6)-[:IN_AREA]->(comp2),
+
+(rol1)-[:RELATED_ACTIVITY {level_weight: 4.0}]->(act1),
+(rol1)-[:RELATED_ACTIVITY {level_weight: 3.0}]->(act2),
+(rol3)-[:RELATED_ACTIVITY {level_weight: 3.0}]->(act3),
+(rol4)-[:RELATED_ACTIVITY {level_weight: 2.0}]->(act4),
+(rol5)-[:RELATED_ACTIVITY {level_weight: 2.0}]->(act5),
+(rol6)-[:RELATED_ACTIVITY {level_weight: 3.0}]->(act6),
+
+(rol4)-[:SUPERVISES_ACTIVITY {level_weight: 3.0}]->(act6),
+(rol7)-[:SUPERVISES_ACTIVITY {level_weight: 3.0}]->(act1),
+(rol8)-[:SUPERVISES_ACTIVITY {level_weight: 4.0}]->(act2);
+----
+//set-up of the dataset
+
+'''
+
+The whole graph looks like:
+//hide
+[source, cypher]
+----
+MATCH (n) RETURN n;
+----
+//graph
+
+[[warmup]]
+== Filtering out Unqualified Candidates <<TOC, ^TOC^>>
+Excluding some employees from the search is the first task to complete. This requirement may derive from common-sense reasoning, internal regulations, or requests made by the Human Resources department. Moreover, it will minimizethe number of nodes and links to traverse in subsequentqueries, resulting in improved performance.
+
+Changing positions frequently or promoting a recent hire is usually not the desired outcome. Therefore, a first query will search for employees that have just joined the organization or started a new position recently, and filter those candidates out of the prospective pool. To keep track of the unqualified candidates, an additional property _exclude_ is set to these employee nodes in the graph. Here, the property is binary: "exclude=1" means that person has been discarded, at least for now. The Cypher query to add the _exclude_ property will be:
+
+[source, cypher]
+----
+MATCH (n:Employee)
+SET n.exclude=1
+WITH n AS person
+MATCH (person)-[r:WORKS_AS]-() 
+WHERE r.duration>1
+SET person.exclude=0
+RETURN person.name AS matching_candidate;
+----
+
+The resulting table is populated to only include candidates that satisfy the preliminary condition of working for the organization for over one year. 
+
+Another filter for recommending a job candidate is to require a certain degree. This is very common for public job advertisements but it could also be an essential requirement for internal promotions. Therefore, to exclude those who do not hold such a degree, query:
+
+[source, cypher]
+----
+MATCH (n:Employee {exclude:0})
+WHERE NOT (n)-[:HAS_DEGREE]-(:Degree {area:"area 1"})
+SET n.exclude=1;
+----
+
+These filters could be easily implemented with another database management system. For example, one could have used a "WHERE" query in SQL, setting both the _degree_ and the _duration_ properties as column values for the last position held by the employees. A simple spreadsheet is capable of performing these operations.
+
+However, it may be critical to only select those candidates who have skills, required by activities, within a certain competency area. Therefore, *not to filter through node properties, but through their links or data relationships*. Furthermore, it is also essential to expand the search to (and eventually beyond) 3^rd^ degree connections between skills, activities and areas. In other words, we are looking for how potential candidates are connected to competency areas, within a depth of 3. A SQL database will need to execute more "JOIN" operations to provide the answer – a task that is difficult to code and creates a time-consuming query. As the depth of connections queried expands, this search will become increasingly difficult with an RDBMS and will result in incredibly poor performance.
+
+To be more quantitative, suppose the organization has the following attributes:
+
+ - 10,000 current employees
+
+ - each employee has an average of 1 degree and 13 different personal skills
+ 
+ - each team consists of 5 people and stays active for 1 year on average
+ 
+ - activities are single tasks [footnote:[Indeed, Tasks can be easier to keep track of, as this can be automated via the collection of log-files and immediate reviews by other team members and supervisors.]] assigned to teams at a rate of 1 per day.
+ 
+After 1 year of operations, these parameters result in a graph of approximately 1M nodes. For a graph of this size, the query traversing paths of depth 3 (see above) requires over 30 seconds for a RDBMS to perform, but will only take less than 0.2 seconds with Neo4j footnote:[Estimates from "Graph Databases", O'Reilly, 2013]. 
+The difference can be critical, whenever querying the database is part of an online tool. For example, an optimal internal use of the   drill-down process shall avoid to filter out too many candidates (so that nobody in the organization matches the desired characteristics). If the pre-filtered network is queried for candidates connected to a +Competence_area+ within depth 3, the filtering returns zero candidates matching all the requirements so far:
+
+[source, cypher]
+----
+MATCH (n:Employee {exclude:0})
+WHERE (n)-[:HAS_SKILL]-(:Personal_Skill)<-[:REQUIRES]-(:Activity)-[:IN_AREA]->(:Competence_area {name:'Competence Area 2'})
+SET n.exclude=1
+RETURN distinct count(n);
+----
+
+The organization (and especially their HR department) will need to be able to share their candidate profiling with colleagues. This requires to process the drill-down via an online tool, so that any modifications to the profiling can be updated and evaluated in real-time against the availability of active personnel. 
+With this specific goal, we can streamline the query as:
+
+[source, cypher]
+----
+MATCH (n:Employee)-[:HAS_DEGREE]-(:Degree {area:"area 1"})
+WHERE (n)-[:HAS_SKILL]-(:Personal_Skill)<-[:REQUIRES]-(:Activity)-[:IN_AREA]->(:Competence_area {name:'Competence Area 2'})
+WITH n AS person
+MATCH (person)-[r:WORKS_AS]-() 
+WHERE r.duration>1
+RETURN person.name AS matching_candidate;
+----
+//table
+
+This query results in an empty table, which immediately highlights the necessity to exclude some of our pattern matching requirements.
+Written as a Cypher query, this may look trivial: people with very little coding knowledge could be easily trained to update such a query, in order to try different requirements'combinations.
+The very same query, instead, would be *inadvisable to be implemented for a RDBMS-backed online system, due to the long query time*.
+
+[[ranking]]
+== Ranking candidates: a "social" approach <<TOC, ^TOC^>>
+
+In the previous paragraph, there is a list of queries that easily exclude candidates, and it has been demonstrated how some combinations of requests may be too restrictive. Considering again our example, it is now interesting to see a few options to rank the candidates available, according to some different approaches. It is now pertinent to rank the availble candidates, and in order to do so, it is necessary to relax the final condition about Personal Skills footnote:[e.g. this could be plausible whenever the employee in the new role may learn progressively the new Skills from other colleagues, or some other interpersonal qualities may play a more important role, etc.]. The two options to accomplish this are collaborative ranking and content-based filtering. 
+
+=== Collaborative ranking for competency management
+
+In order to rank the best possible candidates, the first approach will be to compile a hiring committee of employees that may work or will work with the candidate within a team. To demonstrate the advantage of collaborative ranking, assume the the team offering the open position (+Team 3+) currently consists of only one employee.
+
+[source, cypher]
+----
+MATCH (n:Employee)-[:IN_TEAM]-(m:Team {name:'Team 3'})
+RETURN n.name as Team_Member;
+----
+
+This illustrates the bias problem outlined in the introduction <<intro, ^(go to)^>>: when choosing the ideal candidate, we must integrate the knowledge of the employee already working in the team with the open position (+Employee 5+). In this case, an intuitive and effective solution is to rely on data relationships like:
+
++(Employee A)-[:Endorses {level:x}]-(Personal_Skill a)-[:HAS]-(Employee B)+ 
+
+where the property +level x+ is a rating of the +Personal Skill+ of Employee B evaluated by +Employee A+. This kind of Cypher queries provide an understanding of the candidates' skills as perceived by their colleagues.  
+
+To make this analysis quantitative, a metric of difference or similarity among the employees will be introduced to understand which employees have similar opinions regarding their colleagues. With this metric, it is possible to query for a ranking of who would best fit the open position in a certain group, even if the people in the group do not know the candidate directly. 
+The approach then closely resembles an *user-based recommendation system*, one basic collaborative filtering technique. In order to associate a quantitative distance metric, an easy solution is to apply cosine-similarity (this approach is thoroughly explained in this link:http://gist.neo4j.org/?8173017[GraphGist] by link:https://github.com/nicolewhite[Nicole White]). The basic concept is that colleagues of a specific team member, who have evaluated other employees in a similar manner, are likely to be an appropriate option to join the hiring committee. The committee is thus expanded to employees who are not team members, but nevertheless good fits to the team hiring committee.  
+
+Cosine-similarity ranking can also be the basis for the recommendation analysis. However, it is important to remember that employees endorse +Personal Skills+ and not other employees in our data model. Therefore, an additional directed relation among Employees A and B (+[:RATES {rating: ...}]+) must be included, with:
+
+[subs = none]
+\( rating_{ A \to B }= \frac{ \sum_{ i=1 }^{ N } \textrm{ level }(\textrm{ Personal Skill }(i))} {N} \)
+
+where latexmath:[N:= \textrm{# endorsed Personal_Skills of B, by A }], and the property +rating+ is the average of the endorsements' +levels+ made by A about single +Personal Skills+ of B.
+
+[source, cypher]
+----
+MATCH (u1:Employee)-[x:ENDORSES]->(:Personal_Skill)<-[:HAS_SKILL]-(u2:Employee)
+WITH  AVG(x.level) AS rating_score, 
+      u1, u2
+CREATE UNIQUE (u1)-[:RATES {rating:rating_score}]->(u2);
+----
+
+These preliminary calculations provide the ability to calculate the cosine similarities for +Employee 5+. However, adding a further step can be useful to express a more general query. The query should also be able to handle the case of Team 3 being composed of more than only one member. In this case, the required approach would be to calculate a vector of averaged group ratings for each employee that is _not_ in the group, but who has been evaluated by at least one group member. This averaged score is labeled _team_rating_ and set as a property on the data relationship from the +Team+ to the +Employee+ being evaluated.
+
+[source, cypher]
+----
+MATCH (u1:Employee)-[x:RATES]->(u2:Employee)
+WHERE (u1)-[:IN_TEAM]-(:Team {name:'Team 3'}) AND NOT (u2)-[:IN_TEAM]-(:Team {name:'Team 3'})
+WITH  AVG(x.rating) AS team_score, 
+      u2
+MATCH (t:Team {name:'Team 3'})
+CREATE UNIQUE (t)-[:RATES {team_rating:team_score}]->(u2);
+----
+
+The portion of the graph with the +[:ENDORSES]+ and +[:RATES]+ data relationships can be visualized with:
+
+[source, cypher]
+----
+MATCH (t:Team)--(u:Employee)
+OPTIONAL MATCH (u)-[:ENDORSES]-(p:Personal_Skill)
+RETURN t,u,p;
+----
+
+After calculating a group rating, it is now possible to introduce the similarity of +Team 3+ as a whole with other employees who are _not_ members of +Team 3+. The similarity works in the same manner as if it were calculated for a single employee. Note that in order to retrieve co-ratings, it is critical to perform a +MATCH+ clause against 2^nd^ order connections with explicit filters according to the type of data relationships. With a graph database, this is simple since the data relationships are objects themselves. 
+
+[source, cypher]
+----
+MATCH (t:Team {name:'Team 3'})-[x:RATES]->(:Employee)<-[y:RATES]-(u2:Employee)
+WHERE not (u2)-[:IN_TEAM]-(t)
+WITH  SUM(x.team_rating * y.rating) AS xyDotProduct,
+      SQRT(REDUCE(xDot = 0.0, a IN COLLECT(x.team_rating) | xDot + a^2)) AS xLength,
+      SQRT(REDUCE(yDot = 0.0, b IN COLLECT(y.rating) | yDot + b^2)) AS yLength,
+      t, u2
+MERGE (t)<-[s:SIMILARITY]-(u2)
+SET   s.similarity = xyDotProduct / (xLength * yLength)
+----
+
+To account also for direct recommendations from team members, set _s.similarity=2_ as the similarity of the members of +Team 3+ with the team itself. Being _similarity<1_ for all other employees in the graph, prioritizing the team members’ evaluations ahead of others is simple.
+
+[source, cypher]
+----
+MATCH (t:Team {name:'Team 3'})-[x:IN_TEAM]-(u1:Employee)
+MERGE (t)<-[s:SIMILARITY]-(u1)
+SET   s.similarity = 2.0
+----
+
+Once the similarities among +Team 3+ and all other employees footnote:[Similarities are calculated only with those colleagues, who at least once have co-rated a certain employee, that is, they both have co-endorsed some of his skills] are known, a first recommendation can be made about which employees may be ideal matches for the open position.
+
+For the calculation of this first score, assume that all the colleagues outside of +Team 3+ are equally copmetent in evaluating the skills of other colleagues. Algorithmically, this means there will be no extra weight or score for those people who have been evaluated directly by +Employee 5+. To cap the number of ratings to consider, it is possible to limit them in accordance to the similarities of the employees who provided those ratings. Adopting a _k_-nearest neighbors footnote:[Also this algorithm is explained with good detail in the link:http://gist.neo4j.org/?8173017[Movie Recommendation GraphGist]] (_k_-NN) algorithm will allow the query to only pick the evaluations by the _k_ most similar colleagues. 
+How to choose _k_? A simple choice is to render a small team as competent in evaluating his next member, at least as the average team in the organization. If the team is above the average size, one could instead select all and only the evaluations made by team members.
+For this example footnote:[The average group size of 5 people was one of the assumptions made for the organization in this GraphGist.  However, this may be easily calculated from the graph DB as well.], _k=5_, *including* +Employee 5+, under the assumption he has evaluated at least some of the candidates. 
+////
+(with a size reflecting the limited portion of the graph considered for this example):
+[source, cypher]
+----
+MATCH (n:Employee)--(m:Team)
+with m.name as Team, count(n) as size
+return avg(size);
+----
+////
+
+Once a value for _k_ has been selected, the next step is to query the graph model for the _k_-NNs employees, and then average their evaluations as a likely estimate of how good a certain employee may perform within the +Team+ with the open position. As mentioned before, evaluations by internal employees of the +Team+ will be considered first.
+
+[source, cypher]
+----
+MATCH (b:Employee)-[r:RATES]->(m:Employee), (b)-[s:SIMILARITY]-(t:Team {name:'Team 3'}) 
+WITH     m, s.similarity AS similarity, r.rating AS rating
+ORDER BY m.name, similarity DESC
+WITH     m.name AS candidate, COLLECT(rating)[0..5] AS ratings
+WITH     candidate, REDUCE(s = 0, i IN ratings | s + i)*1.0 / LENGTH(ratings) AS reco
+ORDER BY reco DESC
+RETURN   candidate AS Candidate, toFloat(reco) AS Recommendation
+----
+//table
+This query results in the first recommendations for assigning the open position to existing employees. 
+Notice how the recommendation obtained for +Employee 1+ is even higher than the one obtained for +Employee 3+, even if no one in +Team 3+ knows +Employee 1+ directly. The only person directly known to +Team 3+ is +Employee 3+, making this pick the only possible one, without any recommendation system. Using a graph model, now the organization can explore for candidates their entire employee network and eliminate the bias originating from having a small hiring committee. 
+
+In this section, the _greatest importance is assigned to the network and data relationships composing the data model_ itself, rather than the properties and characteristics of the single member. This approach does not take into account (yet) the competency area where the open position is available. The advantage of using a graph data model is that even in cases where almost nothing is known about the single employee’s activities and areas of expertise, the method is able to rank according to mutual rating connections.
+
+[[path]]
+=== Improving the ranking: path-based weighting <<TOC, ^TOC^>>
+
+However, the graph data model in this example can provide even more insight. One can use additional criterions in order to improve the candidate ranking. The most intuitive choice is to introduce a *content-based* weighting to the recommendations based on the social data relationships of the employees' graph. In fact, the start was a purely "social" collaborative filtering, where the expertise of the evaluating employees is not taken into account. This approach is fine when no information is available about the required or desired skills and experiences for the open position. However, additional features that characterize the ideal candidate and the team with the available opening can now be used to further improve the ranking through a variety of approaches. 
+
+Emphasizing the role of _competency area_ nodes instead of _employee_ nodes, it is for example possible to weight the recommendation scores of the candidates, according to the distance in the organization graph of a certain +employee+ from the +Competence Area+ associated with the open position. The weights will be based on the length of the path +(Employee)--(Competence Area)+. Considering that for the open position of +Role 6+ we know that: +(Role 6)-[:RELATED_ACTIVITY]-(Activity 6)-[:IN_AREA]-(Competence Area 2)+, an improved query for recommendations looks like:
+
+[source, cypher]
+----
+MATCH (b:Employee)-[r:RATES]->(m:Employee), (b)-[s:SIMILARITY]-(t:Team {name:'Team 3'}), p=shortestPath ( (n1:Competence_area {name:"Competence Area 2"})-[*..5]-(b) ) 
+WITH m.name as candidate, s.similarity AS similarity, r.rating as rating, p
+ORDER BY candidate, similarity DESC
+WITH candidate, COLLECT(rating*1.0/(length(p)-1))[0..5] AS ratings
+WITH candidate, REDUCE(s = 0.0, i IN ratings | s + i)*1.0 / LENGTH(ratings) AS reco
+ORDER BY reco DESC
+RETURN candidate as Candidate, toFloat(reco) as Recommendation
+----
+//table
+
+Constrained by +shortestPath+, it is possible to:
+
+ - restrict the ratings to only those employees, who are not more than 5 hops away from the +Competence+ node (by specifying +[*..5]+ length in the shortestPath +MATCH+ clause, employees not matching this requirement will be removed from further evaluation)
+
+ - for all those who satisfy the conditions, the query weights their ratings as inversely proportional to their distance (expressed as the shortest available path footnote:[This approach resembles the _distance-weighted reach_ which has been widely adopted in studies about collaboration networks, e.g. see Shilling & Phelp, 2007])) from the +Competence Area+ of interest.
+
+When calculating the weights of the candidate ratings, subtract _1_ because in this GraphGist, the shortest path possible for whatever employee towards a Competency Area has precisely length _2_: (+(Employee)-[:CAN_PERFORM]-(Activity)-[:IN_AREA]-(Competence Area)+). Ratings from those employees who minimize this thematic distance are left unaffected. 
+Specifically in this example, the purely collaborative ranking above was further confirmed, even assigning priority to evaluations made by employees more familiar with the competency Area involved in the open positions. +Employee 1+ is still calculated as the optimal choice, even if now his advantage over other colleagues is smaller.
+
+[[jaccard]]
+=== Improving the ranking: Jaccard similarity <<TOC, ^TOC^>>
+
+Another possible refinement strategy relies on the so called "link:http://en.wikipedia.org/wiki/Jaccard_index[Jaccard similarity coefficient]". The _cosine similarity_ used in the first paragraph is indeed derived from this index, which is widely used in Social and Economic Sciences to evaluate the diversity or similarity of two samples. Here it is possible to use the simplest case: in fact, we may refer to the presence/absence of matches with the required features as a binary value, stating if the feature belongs or not to the sample.
+Another refinement strategy will use link:http://en.wikipedia.org/wiki/Jaccard_index[Jaccard similarity coefficient]. _Cosine similarity_ used earlier in this GraphGist is derived from this index, which is widely used in academics to evaluate the diversity or similarity of two samples. Here, it is used in the simplest case: _thematic_ features are used to build samples, and binary values state if the feature belongs or not to the sample. This building two kinds of sets:
+
+ - _T_ (for +Team 3+) 
+ 
+ - _E~i~_ (one for each i^th^ +Employee+ whose evaluation will be used)
+ 
+Included in _T_ are all of the required criterions for the evaluation of the candidates, like +Personal Skills+ possessed in a certain +Competence Area+, +Activities+ performed or related to their own +Roles+, +Degrees+ held in the Competency Area of interest. These cumulatively characterize the whole set of Employees already within +Team 3+.
+The criterions included in _T_ will be matched against those possessed by the _i^th^_ +Employee+, and filtered in set _E~i~_ only if a certain path connects the criterion with this +Employee+.
+
+Once these two sets have been retrieved, one can use the Jaccard formula for the coefficient _J_ as:
+
+[subs = none]
+\( J = \frac{|T \; \cap \; E_i |}{|T|}  \)
+
+(remembering that latexmath:[T \cup E_i = T] by definition footnote:[One may object that collecting features from a whole group, and comparing them with single +Employee+ may pose issues of underestimation of the coefficient. Again, however, notice that the coefficient will be used for ranking applications, and not as a measure of its own: therefore, rescaling or other normalization procedures are certainly possible, but they do not alter our conclusions and therefore are skipped here]. 
+
+Now, all of the elements for this refinement query have been introduced. First set the binary property  _pool_ for all those nodes that are worth being included in the candidates’ evaluation. To refine the results, adopt the same criterion as above for this preliminary selection: a maximum of _5_ nearest-neighbour employees, those with highest cosine similarity to +Team 3+ in evaluating other colleagues.
+
+[source, cypher]
+----
+MATCH (b)-[s:SIMILARITY]-(t:Team {name:'Team 3'}) 
+WITH DISTINCT b, s.similarity as similarity
+ORDER BY similarity DESC limit 5
+SET b.pool=1
+----
+
+Next set the property _t_feature_ to label those nodes representing the selected team features. For example, one could include +Competence Areas+ linked to the employees in the team via personal skills and activities, +Degrees+ in a certain area(s), and the ability to perform specific +Activities+.
+
+[source, cypher]
+----
+MATCH (u1)-[:IN_TEAM]-(:Team {name:'Team 3'})
+WITH u1
+OPTIONAL MATCH (u1)-[:HAS_SKILL]-(:Personal_Skill)-[:REQUIRES]-(:Activity)-[:IN_AREA]-(c1:Competence_area)
+OPTIONAL MATCH (u1)-[:CAN_PERFORM]-(:Activity)-[:IN_AREA]-(c2:Competence_area)
+OPTIONAL MATCH (u1)-[:HAS_DEGREE]->(d:Degree)
+   WHERE d.area="area 1" OR d.area="area 2"
+OPTIONAL MATCH (u1)-[:CAN_PERFORM]-(a1:Activity)
+OPTIONAL MATCH (u1)--(:Role)--(a2:Activity)
+SET c1.t_feature=1, c2.t_feature=1, d.t_feature=1, a1.t_feature=1, a2.t_feature=1;
+----
+
+Now, to calculate the Jaccard coefficient, evaluate how many of the team features are possessed by each of the +Employees+ contributing to the evaluation. This can be done by querying for nodes within the set _T_:
+
+[source, cypher]
+----
+MATCH (feats {t_feature:1})
+WITH count(distinct feats) as T_size
+MATCH (u2 {pool:1})
+WITH u2, T_size
+OPTIONAL MATCH (u2)-[:HAS_SKILL]-(:Personal_Skill)-[:REQUIRES]-(:Activity)-[:IN_AREA]-(c3:Competence_area {t_feature:1})
+OPTIONAL MATCH (u2)-[:CAN_PERFORM]-(:Activity)-[:IN_AREA]-(c4:Competence_area {t_feature:1})
+OPTIONAL MATCH (u2)-[:HAS_DEGREE]->(d2:Degree)
+   WHERE d2.area="area 1" OR d2.area="area 2"
+OPTIONAL MATCH (u2)-[:CAN_PERFORM]-(a3:Activity {t_feature:1})
+OPTIONAL MATCH (u2)--(:Role)--(a4:Activity {t_feature:1})
+WITH u2, count(distinct d2) AS counter, [a3,a4] as activity, [c3,c4] as competence, T_size
+UNWIND activity AS activities
+UNWIND competence as competences
+WITH u2, (counter+count(distinct activities)+count(distinct competences))*1.0/T_size as jaccard
+SET u2.jaccard=toFloat(jaccard)
+----
+
+The final step is to use the Jaccard coefficients as weights: this can be done with a query very similar to the path-based refinement. Here, an additional +WHERE+ clause filters evaluations by employees for whom no Jaccard coefficient can be provided.
+
+[source, cypher]
+----
+MATCH (b:Employee)-[r:RATES]->(m:Employee), (b)-[s:SIMILARITY]-(t:Team {name:'Team 3'})
+WHERE b.jaccard>0
+WITH m.name as candidate, s.similarity AS similarity, b.jaccard as jaccard, r.rating as rating
+ORDER BY candidate, similarity DESC
+WITH candidate, COLLECT(rating*jaccard*1.0)[0..5] AS ratings
+WITH candidate, REDUCE(s = 0.0, i IN ratings | s + i)*1.0 / LENGTH(ratings) AS reco
+ORDER BY reco DESC
+RETURN candidate as Candidate, toFloat(reco) as Recommendation
+----
+//table
+
+Looking at the results, +Employee 3+ is given a slightly higher ranking now, accounting for criterions such as +Degree+ or +Personal Skill+ related to the same +Competence area+. Note that this challenges the previous ranking of +Employee 1+ as the optimal choice.
+
+In this example, shortest-path and Jaccard distances are adopted only as metrics improving the _k-NN_ and _cosine similarity_ recommendations. However, these metrics based on established criterions may also replace recommendations based on collaborative filtering when handling a *cold start* problem. This occurs when the organization, or the evaluating group, started too recently to provide a sufficient number of evaluations about other colleagues, for different activities. This may prevent a successful adoption of the similarity as outlined above. If the organization keeps an updated and detailed record of its employees’ profiles, though, feature-based similarities could be used for the ranking of the (few) evaluations, and help to solve the problem.
+
+[[competences]]
+== Beyond job recommendation: a competency management tool <<TOC, ^TOC^>>
+
+Previously in this GraphgGist, the main goal was to handle the situation of promoting an internal hire, by ranking current employees based on their compatibility with the new +Role+, and the related +Team+. However, the organization may also need to perform other tasks related to competency management. This may prove useful with activities like: assessing the performance of the +Employee+ within a +Role+, evaluating if a +Team+ has all the competencies available, improving the organization of training sessions. By understanding the details of the algebraic model for competency management introduced earlier, one finds other advantages to the graph data model.
+
+The original graph data model fit the previous task very well, but when focusing on competency management, it is necessary to introduce also generic +Skill+ nodes, previously embedded as properties on the +Personal Skills+ nodes. Personal skills are possessed by single employees, but one needs to navigate and traverse the graph according to a certain skill set, without the need to deal with duplicates (several employees may have the same skill set in the organization). This simple modification would be cumbersome in an RDBMS, as one would need to query the whole database to retrieve the data relationships of the +Personal Skills+ nodes, and then reassign some of those connections to newly added +Skill+ nodes. In a graph data model, this update can be expressed with very few lines of Cypher and executed quickly:
+
+[source, cypher]
+----
+MATCH (a:Activity)-[rel:REQUIRES]-(ps:Personal_Skill)
+MERGE (s:Skill {name:ps.set})
+MERGE (a)-[:REQUIRES]->(s)<-[:IN_SKILLSET]-(ps)
+DELETE rel
+REMOVE ps.set;
+----
+
+In the new model, +Activities+ may +[:REQUIRES]+ a generic +Skill+, and the various +Personal Skills+ of the employees may or not be +[:IN_SKILLSET]+. Note that this query easily updated a property to a link classification of the personal skills.
+How does one calculate the competency of an +Employee+ to perform a certain +Activity+? First, query the graph against the +Skills+ required by the +Activity+. Then for each of the skills, evaluate if the +Employee+ has a +Personal_Skill+ that is in the corresponding skillset – if not, assign a null score. If this +Personal Skill+ has also been endorsed by other colleagues, then the average of their _levels_ will be the score for the Employee competency level. Otherwise, this score will be null. Taking as an example +Employee 1+ and +Activity 1+, this Cypher query looks like:
+
+[source, cypher]
+----
+MATCH (a:Activity {name:"Activity 1"})-[:REQUIRES]->(s:Skill)
+WITH a, count(s) as skill_req
+MATCH (a)-[:REQUIRES]-(r:Skill)-[:IN_SKILLSET]-(p:Personal_Skill)-[:HAS_SKILL]-(u:Employee {name:"Employee 1"})
+OPTIONAL MATCH (:Employee)-[x:ENDORSES]->(p)<-[:HAS_SKILL]-(u) 
+WITH a, u, p.name as personal_skill, toFloat(AVG(x.level)*1.0) AS rating, skill_req
+WITH a, u, REDUCE(a=0.0, b IN COLLECT(rating)|a+b)*1.0/skill_req as comp_level
+MERGE (u)-[r:CAN_PERFORM]-(a)
+  ON CREATE SET 
+    r.comp_level=comp_level,
+    r.bin_threshold=(-1)
+  ON MATCH SET r.comp_level=comp_level
+----
+Notice how the calculation of the _competence level_ of +Employee(k)+, related to a certain +Activity(i)+, updated the +[:CAN_PERFORM]+ link in the graph. This skill-based assessment represents the employee’s ability footnote:[In fact, we set _bin_threshold=-1_ to indicate that this is no evaluation based upon an actual observation, but rather an evaluation performed according to his competencies, and their match with the corresponding +Activity+] to perform a certain activity, and with what degree of competency. 
+To assess how competent an employee may be for a certain +Role+ latexmath:[R_j] (involving the set of activities latexmath:[A(R_j)]), one can use three parameters: the newly calculated competency levels (latexmath:[l_{ik}]), the complexity of each activity (latexmath:[K_i]), and the presence of supervisors as a reference footnote:[Referring again to the model, it was useful to express the level of competency as a ratio, compared to the level the organization requires to supervise the activity: it is a useless and misleading information to state that an Employee is better at performing an activity, than the maximum ability required by the organization for that activity]. Embedded in this model is an evaluation of the maximum level of competency required for each +Activity(i)+ in the set latexmath:[A(R_j)] through the property _level_weight_ (latexmath:[v_{ij}]) of the +[:RELATED_ACTIVITY]+ data relationship. One can assume that a supervisor role identified by the condition _hierarchy:"manager"_ matches the _level_weight_ for each activity required. Therefore the _Supervisor Role index_ is:
+
+[subs = none]
+\( SupR_j = \sum_{ i \in A(R_j)} K_i v_{ ij}\)
+
+Equivalently, the _Role index_ of +Employee(k)+ for an _employee_-level +Role(j)+ will be: 
+
+[subs = none]
+\( R_k = \sum_{i \in A(R_j)}  K_i \tilde{l}_{ik}\)
+
+where latexmath:[\tilde{l}_{ik}=min(l_{ik},v_{ij})]. Finally, the attitude of +Employee(k)+ towards the +Role(j)+ can be measured as the ratio:
+
+[subs = none]
+\( LR_{kj} = \frac{R_k}{SupR_j} \)
+
+Now, reproduce these calculations with a Cypher query in the Neo4j graph:
+
+[source, cypher]
+----
+MATCH(r:Role {name:"Role 1"})-[l:RELATED_ACTIVITY]->(a:Activity)
+WITH a, l.level_weight AS v_param, toFloat(l.level_weight*a.complexity*1.0) AS sup_param
+MATCH (u:Employee {name:"Employee 1"})-[x:CAN_PERFORM]->(a) 
+WITH u.name AS Employee, a, sup_param,
+  CASE
+    WHEN toFloat(x.comp_level)>toFloat(v_param) THEN v_param*a.complexity*1.0
+    ELSE x.comp_level*a.complexity*1.0
+  END AS role_param
+WITH Employee, REDUCE(a=0.0, b IN COLLECT(role_param)|a+b)*1.0 AS role_index, reduce(a=0.0, b IN COLLECT(sup_param)|a+b)*1.0 AS sup_index
+RETURN Employee, toFloat(role_index/sup_index) AS Competence_Ratio
+----
+//table
+
+Given that the competency Ratio is bound to the threshold of the Supervisor Role expertise, it varies in the range _[0,1]_. Values close to _0_ mean the Employee should not be considered for that Role, while values close to _1_ suggest the possibility for the Employee to be promoted to a Supervisor Role for those activities. By removing the specification of an individual employee in line 3 of the query above, the same query can be used to directly search for the employees footnote:[A full formal implementation of the algebraic competency model outlined so far requires tools aiming properly at data analytics. Indeed, the interested reader may be willing to explore the link:http://neo4j.com/contrib/rneo4j[RNeo4j] plugin. Nevertheless, already Cypher queries can handle the most important features for extracting useful information from the organization database.] with the best competency for the specific Role.
+
+Finally, one can write a very simple query that also highlights the managers who have insufficient ratings, compared to the expected level of expertise for the +Activity+ they supervise:
+
+[source, cypher]
+----
+MATCH (u:Employee)-[:WORKS_AS]->(:Role)-[s:SUPERVISES_ACTIVITY]-(a)
+OPTIONAL MATCH (u)-[t:CAN_PERFORM]-(a)
+WHERE toFloat(t.comp_level)<s.level_weight
+RETURN u.name AS Flagged_Manager
+----
+
+Managers highlighted by the query, according to our graph data model, may need further training, or have their colleagues endorse their competencies footnote:[Indeed, the query will return both employees who have no :CAN_PERFORM link to the corresponding +Activity+, and people who have had no :ENDORSES to their +Personal_Skills+ so far].
+
+[[conclusions]]
+== Conclusions
+The scope of this GraphGist was to address and explain through examples the following points:
+
+i) the network of employees, their activities and competencies can easily be _modelled in terms of a graph database_, thus making it simple and intuitive to write queries across the network;
+ii) some  _information can be extracted much more fast and efficiently via a graph database_, in contrast to querying a RDBMS; 
+iii) graph database queries may increase the _awareness of problems hidden in the formulation of the selection model_. The database or queries can be corrected in real-time, while other databases may be monolithic and pose severe perfomance problems when executing modifications and updates.
+
+First, it was demonstrated how a graph data model perfectly suits the representation of an organization’s internal structure. Nodes can be assigned to employees, roles, activity and competency areas. Data relationships and their properties can be used to indicate how long a certain position has been held, which activities an employee has performed, and how the employee has been evaluated by colleagues or supervisors. When modeling the job recommendation system starting from this graph, elements from an algebraic model for competency management in manufacturing companies were also included.
+
+Filtering and ranking candidates based on requirements for an open position is a task that benefits greatly from complex *traversal queries*. The _depth_ searched by these queries can go much further than just the nearest neighbours of a node in the graph. In this GraphGist, traversal queries were used to:
+
+- filter out some employees
+
+- calculate similarities among employees (or among teams and employees) in evaluating other colleagues
+
+- infer the "proximity" of an employee to a certain competency area, and therefore his own competency related to it
+
+- infer a feature-based similarity among employees (or comparing single employees with whole teams)
+
+All of these queries can be essential for successfully building an _internal job recommendation system_ that is able to allocate or reallocate internal human resources according to their competencies. 
+The intention of this GraphGist was _not_ to provide a comprehensive review of all the possible recommendation mechanisms footnote:[There exists indeed a whole independent library of recommendation methods built upon Neo4j: _Reco4j_, more info link::http://neo4j.com/news/using-neo4j-and-reco4j-for-graph-based-recommendations/[here]]) that may play a role in this system, but to outline the implementation of some methods available to provide the necessary recommendations. In our examples, employees "1" and "3" were ranked differently, based on the prioritization of different criterions, and the specific recommendation method used.
+
+Representing an organization network as a graph data model makes it much easier and quicker to explore and navigate, according to the specific needs of each internal job search. Querying the graph database – to match openings with those employees having the right competencies or to provide better integration within a team – requires often highly complex traversal queries. Implementing this recommendation tool in an online system will require substantially more coding in a relational database solution with slower query performance and increased difficulty in updating the data model. Using Neo4j, the internal recommendation tool provides much faster query responses with the flexibility to accommodate real-time changes to the data model.
