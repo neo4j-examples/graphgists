@@ -1,7 +1,7 @@
 = Behavioral Health Treatment Planning
 Greg Ricker <rickeg0@gmail.com>
 v1.0, 22-2-2015
-:neo4j-version: 2.0.0-RC1
+:neo4j-version: 2.0.0
 :author: Greg Ricker
 :twitter: greg_ricker
  

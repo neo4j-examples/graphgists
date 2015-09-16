@@ -1,9 +1,9 @@
+= Books Management Graph
 :author: Justyna Gromada
+:neo4j-version: 2.2.0
 :twitter: @gromajus
 :linkedIn: http://www.linkedin.com/in/jgromada
 :email: jgromada@gmail.com
-
-= BOOKS MANAGEMENT GRAPH
 
 == GOAL
 The aim of this graphgist is to order the information about books. The idea can be used by books management systems, content recommendations systems, etc. Firstly, the designed data model is presented. Next, exemplary data is loaded and exemplary cipher queries run to show the applications of this model.

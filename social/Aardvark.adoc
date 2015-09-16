@@ -1,4 +1,6 @@
 = Aardvark: The Anatomy of a Large-Scale Social Search Engine
+:neo4j-version: 2.2.0
+
 The paper: http://www.cse.fau.edu/~xqzhu/courses/cap6777/social.search.engine.pdf
 
 == Introduction to Aardvark, the Defunct Social Search Engine

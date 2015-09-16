@@ -1,4 +1,5 @@
 == Interpreting Citation Patterns in Academic Publications: A research aid
+:neo4j-version: 2.2.0
 
 Academic research largely consists in reading and writing texts. These texts can be modelled as a conversation. To be a reasercher, on this model, is to enter into a scientific conversation, to listen (read) and occassionaly to speak (write).  
 

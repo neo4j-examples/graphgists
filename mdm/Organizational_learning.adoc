@@ -1,4 +1,5 @@
 = Organization Learning
+:neo4j-version: 2.0.0
 
 Learning Management Systems (LMS) are typically deployed in large organizations to support learning processes that align with business goals. These systems tie together their employees, organizations, certifications, courses, jobs in order to supplement business strategy.
 This graph gist models a slice of this ecosystem- certification paths and position dependencies on certifications.

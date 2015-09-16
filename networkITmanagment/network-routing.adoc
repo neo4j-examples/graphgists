@@ -1,5 +1,5 @@
-
-# Information Flow Through a Network
+= Information Flow Through a Network
+:neo4j-version: 2.0.0
 
 ## Introduction
 

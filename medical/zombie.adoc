@@ -1,4 +1,5 @@
-# Zombie Apocalypse
+= Zombie Apocalypse
+:neo4j-version: 2.0.0
 
 image::http://media.giphy.com/media/ColbXXtLhOz0k/giphy.gif[]
 
