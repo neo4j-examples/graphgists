@@ -1,4 +1,5 @@
 = (Product) Hierarchy GraphGist =
+:neo4j-version: 2.2.0
  
 This gist is a complement to http://blog.bruggen.com/2014/03/using-neo4j-to-manage-and-calculate.html[blogpost that I wrote] about managing hierarchical data structures in http://www.neo4j.org[neo4j]..
 

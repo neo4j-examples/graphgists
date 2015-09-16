@@ -1,11 +1,11 @@
-:neo4j-version: 2.1.3
+= Competency Management: a matter of filtering and recommendation engines.
+
+:neo4j-version: 2.2.0
 :author: Antonio Andrea Gentile
 :twitter: @aa_gentile
 
 '''
 [[TOP]]
-= Competency Management: a matter of filtering and recommendation engines.
-
 image::https://dl.dropboxusercontent.com/u/27566679/puzzle.png[]
 
 [[intro]]

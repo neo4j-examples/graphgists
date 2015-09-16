@@ -1,4 +1,6 @@
 = Amazon Web Services Global Infrastructure Graph =
+:neo4j-version: 2.0.0
+
 
 Amazon Web Services global infractructure is steadily expanding and now serves thousands of customers in over 190 countries.
 Certain services are only available in some regions and compute prices vary across the globe.

@@ -1,4 +1,5 @@
 = What's on the menu?
+:neo4j-version: 2.2.0
 
 New York Public Library has over 45,000 menus from 1840s to present-day in its http://menus.nypl.org/about[What's on the menu?] collection. This graph list dishes from four menus from that collection.
 

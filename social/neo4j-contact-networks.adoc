@@ -1,8 +1,8 @@
-:neo4j-version: 2.2
+= Contact networks
+:neo4j-version: 2.2.0
 :author: Marcello Dalponte
 :twitter: @m_dalp
 
-## Contact networks
 
 A contact network is one of the typologies of dynamic networks described in the famous paper of Holme and Saramäki[1]. 
 A dynamic network is a mathematical representation of the evolution of the relationships between entities through graphs. 

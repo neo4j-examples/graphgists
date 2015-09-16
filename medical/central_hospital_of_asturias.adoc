@@ -1,4 +1,5 @@
 = Medicine & drugs classification for the Central Hospital of Asturias
+:neo4j-version: 2.0.0
 
 :author: Alberto Roque Carrizo Fernández
 :twitter: @Roqueeeeee

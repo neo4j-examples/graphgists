@@ -1,0 +1,183 @@
+= How to create a GraphGist
+Anders Nawroth <anders@neotechnology.com>
+v0.1, 2013-09-01
+:neo4j-version: 2.2.0
+:author: Anders Nawroth
+:twitter: @nawroth
+
+You create a GraphGist by creating a https://gist.github.com/[GitHub Gist] in http://asciidoctor.org/docs/asciidoc-quick-reference/[AsciiDoc] and enter the URL to it in the form on this page.
+Alternatively, you can put an AsciiDoc document in https://www.dropbox.com/[Dropbox] and enter the public URL in the form.
+
+This GraphGist shows the basics of using AsciiDoc syntax and a few additions for GraphGists.
+The additions are entered as comments on their own line.
+They are:  +//console+ for a query console; +//hide+, +//setup+ and +//output+ to configure a query; +//graph+ and +//table+ to visualize queries and show a result table.
+
+Click on the Page Source button in the menu to see the source for this GraphGist.
+Read below to get the full details.
+
+== Define a http://docs.neo4j.org/chunked/snapshot/cypher-query-lang.html[Cypher] query
+
+ [source,cypher]
+ ----
+ MATCH (who:Person {name:'Me'})-[likes:LIKES]->(what)
+ RETURN who,likes,what
+ ----
+
+becomes:
+
+[source,cypher]
+----
+MATCH (who:Person {name:'Me'})-[likes:LIKES]->(what)
+RETURN who,likes,what
+----
+
+_Queries are executed in the order they appear on the page during rendering, so make sure they can be performed in that order._
+Each query has a green or red button to indicate if the query was successful or not.
+The console is set up after the executions, with an empty database, for the reader to play around with the queries.
+
+There's three additional settings you can use for queries.
+They all go as comments, on their own lines, before the query.
+The settings are:
+
+[width="50%",cols="1m,5"]
+|===
+| hide | Hide the query. The reader can still expand it to see it.
+  Useful for long queries like setting up initial data.
+| setup | Initialize the console with this query.
+| output | Show the output from the query.
+  The output is always there, but this option makes it visible at page load for this query.
+|===
+
+Let's try all the settings together, which means this query will be used to initialize the console, it will be hidden, and the raw output will be shown:
+
+ //hide
+ //setup
+ //output
+ [source,cypher]
+ ----
+ CREATE (me:Person {name:'Me'})-[r:LIKES]->(neo4j:Database:Graph:NoSQL {name:'Neo4j'})
+ RETURN me.name, r, neo4j
+ ----
+
+which becomes:
+
+//hide
+//setup
+//output
+[source,cypher]
+----
+CREATE (me:Person {name:'Me'})-[r:LIKES]->(neo4j:Database:Graph:NoSQL {name:'Neo4j'})
+RETURN me.name, r, neo4j
+----
+
+
+== Show a graph visualization
+
+The visualization is based on the **database contents** after the preceding query in the page.
+
++//graph+
+
+becomes:
+
+//graph
+
+
+== Show a graph visualization
+
+[source,cypher]
+----
+MATCH (who:Person {name:'Me'})-[likes:LIKES]->(what)
+RETURN who,likes,what
+----
+
+The visualisation is based on the **results** returned by the preceding query in the page.
+
++//graph_result+
+
+becomes:
+
+//graph_result
+
+== Show a result table for a query
+
+This will show a result table for the preceding query.
+
++//table+
+
+becomes:
+
+//table
+
+== Query with error ==
+
+This is what happens if a query causes an error:
+
+[source,cypher]
+----
+CREATE (n:QueryLanguage {name:'cypher'}
+----
+
+== Include a query console
+
+A console button will be included anyway to hide or show the console. 
+This will place the cypher-console where you want it and open it by default.
+
++//console+
+
+becomes:
+
+//console
+
+== Basic AsciiDoc formatting
+
+[width="50%",cols="1m,1a"]
+|===
+| \_Italic_ | _Italic_
+| \*Bold* | *Bold*
+| \`Monospace` | `Monospace`
+| `http://www.neo4j.org/` | http://www.neo4j.org/
+| `http://www.neo4j.org/[neo4j.org]` | http://www.neo4j.org/[neo4j.org]
+| `link:./?5956246[Link to a GraphGist]` | link:./?5956246[Link to a GraphGist]
+|===
+
+Document Info:
+ = Graph Gist Title
+ :neo4j-version: 2.0.0-M06
+ :author: Author Name
+ :twitter: twitterhandle
+
+Headings:
+
+ = Heading 1
+ == Heading 2
+ === Heading 3
+
+Images:
+
+ image::http://assets.neo4j.org/img/still/cineasts.gif[]
+
+image::http://assets.neo4j.org/img/still/cineasts.gif[]
+
+----
+* Item 1
+** Item 1.1
+* Item 2
+----
+
+* Item 1
+** Item 1.1
+* Item 2
+
+----
+. First
+. Second
+----
+
+. First
+. Second
+
+Monospaced block: indent lines with one space.
+
+Tables are well supported.
+See http://asciidoctor.org/docs/asciidoc-quick-reference/[AsciiDoc Quick Reference] for information on that and more.
+

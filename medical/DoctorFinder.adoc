@@ -1,4 +1,5 @@
 = DoctorFinder!
+:neo4j-version: 2.0.0
 
 This GraphGist represents a mobile application backend helping users to find adequate drugs and 
 specialists given their physical characteristics, location and current symptoms.
