@@ -1,152 +1,161 @@
-= (Product) Hierarchy GraphGist =
-:neo4j-version: 2.2.0
- 
-This gist is a complement to http://blog.bruggen.com/2014/03/using-neo4j-to-manage-and-calculate.html[blogpost that I wrote] about managing hierarchical data structures in http://www.neo4j.org[neo4j]..
+= (Product) Hierarchy GraphGist
+:Neo4j-version:2.2.0
+:twitter:@rvanbruggen
 
-In this example, we are using a "product hierarchy", essentially holding information about the composition of a product (what is it made of, how many of the components are used, and at the lowest level, what is the price of these components). The model looks like this:
+:toc:
 
+== Introduction
+
+This gist is a complement to http://blog.bruggen.com/2014/03/using-Neo4j-to-manage-and-calculate.html[a blogpost that I wrote] about managing hierarchical data structures in http://www.Neo4j.org[Neo4j].
+
+In this example, we are using a "product hierarchy", essentially holding information about the composition of a product (what is it made of, how many of the components are used, and at the lowest level, what is the price of these components).
+The model looks like this:
+
+.Model of a Product Hierarchy
 image::http://1.bp.blogspot.com/-XIjEXWHpNmc/Uzbhuoo-9xI/AAAAAAABNWE/7zYyn3Vl3i0/s3200/Screen+Shot+2014-03-29+at+16.04.35.png[]
- 
-Note that in the graphgist, I have cut the tree depth to 5 levels (product to costs) instead of 6 in the blogpost - and that I also reduced the width of the tree to make it manageable in a gist.
 
-== Loading some data: a 5-level tree ==
+Note that in the GraphGist, I have cut the tree depth to 5 levels (product to costs) instead of 6 in the blogpost - and that I also reduced the width of the tree to make it manageable in a gist.
+
+== Loading some data: a 5-level tree
 First we have to load the data into the graph. This was a bit of work - but not difficult at all:
- 
+
 .Creating the top of the tree, the Product (just one in this case):
 [source,cypher]
 ----
-create (n1:PRODUCT {id:1});
+CREATE (n1:Product {id:1});
 ----
-.Then create the Cost Groups:
+.Then CREATE the Cost Groups:
 [source,cypher]
 ----
-match (n1:PRODUCT) foreach (r in range(1,3) | create (n2:COST_GROUP {id:r})-[:PART_OF {quantity:round(rand()*100)}]->(n1) );
+MATCH (n1:Product) foreach (r in range(1,3) | CREATE (n2:CostGroup {id:r})-[:PART_OF {quantity:round(rand()*100)}]->(n1) );
 ----
 .Then add the Cost Types to the Cost Groups:
 [source,cypher]
 ----
-match (n2:COST_GROUP) foreach (r in range(1,5) | create (n3:COST_TYPE {id:r})-[:PART_OF {quantity:round(rand()*100)}]->(n2) );
+MATCH (n2:CostGroup) foreach (r in range(1,5) | CREATE (n3:CostType {id:r})-[:PART_OF {quantity:round(rand()*100)}]->(n2) );
 ----
 .Then add the Cost Subtypes to the Cost Types:
 [source,cypher]
 ----
-match (n3:COST_TYPE) foreach (r in range(1,3) | create (n4:COST_SUBTYPE {id:r})-[:PART_OF {quantity:round(rand()*100)}]->(n3) );
+MATCH (n3:CostType) foreach (r in range(1,3) | CREATE (n4:CostSubtype {id:r})-[:PART_OF {quantity:round(rand()*100)}]->(n3) );
 ----
 .Then finally add the Costs to the Cost Subtypes:
 [source,cypher]
 ----
-match (n4:COST_SUBTYPE) foreach (r in range(1,5) | create (n5:COST {id:r,price:round(rand()*1000)})-[:PART_OF {quantity:round(rand()*100)}]->(n4) );
+MATCH (n4:CostSubtype) foreach (r in range(1,5) | CREATE (n5:COST {id:r,price:round(rand()*1000)})-[:PART_OF {quantity:round(rand()*100)}]->(n4) );
 ----
 
 The actual graph then looks like this:
 
 //graph
- 
+
 == Querying the hierarchy structure ==
 
 Then we can do some easy queries. Let's check the structure of the hierarchy and the number of nodes:
- 
+
 [source,cypher]
 ----
-match (n) return labels(n) as KindsOfNodes, count(n) as NrOfNodes;
+MATCH (n) RETURN labels(n) AS KindsOfNodes, count(n) AS NrOfNodes;
 ----
- 
+
 This is what it looks like:
- 
+
 //table
 
-Now let's start manipulating the graph and do some interesting stuff. Let's calculate the price of the product at the top of this hierarchy, by sweeping through the graph and mutiplying price with the quantities on each ot the relationships.
- 
+Now let's start manipulating the graph and do some interesting stuff. Let's calculate the price of the product at the top of this hierarchy, by sweeping through the graph and mutiplying price WITH the quantities on each ot the relationships.
+
 [source,cypher]
 ----
 //calculating price based on full sweep of the tree
-match (n1:PRODUCT {id:1})<-[r1]-(:COST_GROUP)<-[r2]-(:COST_TYPE)<-[r3]-(:COST_SUBTYPE)<-[r4]-(n5:COST)
-return sum(r1.quantity*r2.quantity*r3.quantity*r4.quantity*n5.price) as PriceOfProduct;
-
+MATCH (n1:Product {id:1})<-[r1]-(:CostGroup)<-[r2]-(:CostType)<-[r3]-(:CostSubtype)<-[r4]-(n5:COST)
+RETURN sum(r1.quantity*r2.quantity*r3.quantity*r4.quantity*n5.price) AS PriceOfProduct;
 ----
- 
+
 //table
- 
-== Optimising the calculation with intermediate price values at every level ==
+
+== Optimising the calculation WITH intermediate price values at every level
+
 But maybe we can do that more efficiently, by calculating intermediate prices for each of the levels in the hierarchy:
 
 [source, cypher]
 ----
 //calculate intermediate pricing
-match (n4:COST_SUBTYPE)<-[r4]-(n5:COST)
-with n4,sum(r4.quantity*n5.price) as Sum
-set n4.price=Sum;
+MATCH (n4:CostSubtype)<-[r4]-(n5:COST)
+WITH n4,sum(r4.quantity*n5.price) AS Sum
+SET n4.price=Sum;
 ----
 [source, cypher]
 ----
-match (n3:COST_TYPE)<-[r3]-(n4:COST_SUBTYPE)
-with n3,sum(r3.quantity*n4.price) as Sum
-set n3.price=Sum;
+MATCH (n3:CostType)<-[r3]-(n4:CostSubtype)
+WITH n3,sum(r3.quantity*n4.price) AS Sum
+SET n3.price=Sum;
 ----
 [source, cypher]
 ----
-match (n2:COST_GROUP)<-[r2]-(n3:COST_TYPE)
-with n2,sum(r2.quantity*n3.price) as Sum
-set n2.price=Sum;
+MATCH (n2:CostGroup)<-[r2]-(n3:CostType)
+WITH n2,sum(r2.quantity*n3.price) AS Sum
+SET n2.price=Sum;
 ----
 [source, cypher]
 ----
-match (n1:PRODUCT)<-[r1]-(n2:COST_GROUP)
-with n1, sum(r1.quantity*n2.price) as Sum
-set n1.price=Sum
-return Sum;
+MATCH (n1:Product)<-[r1]-(n2:CostGroup)
+WITH n1, sum(r1.quantity*n2.price) AS Sum
+SET n1.price=Sum
+RETURN Sum;
 ----
 //table
- 
+
 Then we can easily calculate the price of the product by just using the intermediate pricing, and scanning a MUCH smaller part of the graph:
- 
+
 [source, cypher]
 ----
-match (n1:PRODUCT {id:1})<-[r1]-(n2:COST_GROUP)
-return sum(r1.quantity*n2.price) as PriceOfProduct;
+MATCH (n1:Product {id:1})<-[r1]-(n2:CostGroup)
+RETURN sum(r1.quantity*n2.price) AS PriceOfProduct;
 ----
- 
+
 //table
- 
+
 We can check the accuracy by looking at a different level and verifying if we get the same result:
 
 [source, cypher]
 ----
-match (n1:PRODUCT {id:1})<-[r1]-(n2:COST_GROUP)<-[r2]-(n3:COST_TYPE)
-return sum(r1.quantity*r2.quantity*n3.price) as PriceOfProduct;
+MATCH (n1:Product {id:1})<-[r1]-(n2:CostGroup)<-[r2]-(n3:CostType)
+RETURN sum(r1.quantity*r2.quantity*n3.price) AS PriceOfProduct;
 ----
- 
+
 //table
 
 Yey! That seems to have confirmed the theory!
 
-== What if something changes to the hierarchy? == 
+== What if something changes to the hierarchy? ==
 Now let's see what happens if we change something to the price of one of the costs at the bottom of the tree:
 [source,cypher]
 ----
-match (n5:COST)
-with n5, n5.price as OLDPRICE limit 1
-set n5.price = n5.price*10
-with n5.price-OLDPRICE as PRICEDIFF,n5
-match (n5)-[r4:PART_OF]->(n4:COST_SUBTYPE)-[r3:PART_OF]->(n3:COST_TYPE)-[r2:PART_OF]->(n2:COST_GROUP)-[r1:PART_OF]-(n1:PRODUCT)
-set n4.price=n4.price+(PRICEDIFF*r4.quantity),
-n3.price=n3.price+(PRICEDIFF*r4.quantity*r3.quantity),
-n2.price=n2.price+(PRICEDIFF*r4.quantity*r3.quantity*r2.quantity),
-n1.price=n1.price+(PRICEDIFF*r4.quantity*r3.quantity*r2.quantity*r1.quantity)
-return PRICEDIFF as PriceDifference, n1.price as NewPriceOfProduct;
+MATCH (n5:COST)
+WITH n5, n5.price AS OldPrice limit 1
+SET n5.price = n5.price*10
+WITH n5.price-OldPrice AS PriceDiff,n5
+MATCH (n5)-[r4:PART_OF]->(n4:CostSubtype)-[r3:PART_OF]->(n3:CostType)-[r2:PART_OF]->(n2:CostGroup)-[r1:PART_OF]-(n1:Product)
+SET n4.price=n4.price+(PriceDiff*r4.quantity),
+n3.price=n3.price+(PriceDiff*r4.quantity*r3.quantity),
+n2.price=n2.price+(PriceDiff*r4.quantity*r3.quantity*r2.quantity),
+n1.price=n1.price+(PriceDiff*r4.quantity*r3.quantity*r2.quantity*r1.quantity)
+RETURN PriceDiff AS PriceDifference, n1.price AS NewPriceOfProduct;
 ----
 //table
 
 Then we can also go back and replay the queries above and see what has happened in the console below:
- 
-//console
- 
+
 == Conclusion ==
 
-I hope this gist complements the blogpost and gives you some ideas around how to work with any kind of hierarchy using neo4j.
+I hope this gist complements the blogpost and gives you some ideas around how to work with any kind of hierarchy using Neo4j.
+
+== About the Author
 
 This gist was created by link:mailto:rik@neotechnology.com[Rik Van Bruggen]
- 
+
 * link:http://blog.bruggen.com[My Blog]
 * link:http://twitter.com/rvanbruggen[On Twitter]
 * link:http://be.linkedin.com/in/rikvanbruggen/[On LinkedIn]
+
+//console
