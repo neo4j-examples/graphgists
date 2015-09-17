@@ -1,23 +1,26 @@
 = Contact networks
-:neo4j-version: 2.2.0
-:author: Marcello Dalponte
-:twitter: @m_dalp
+:neo4j-version:2.2.0
+:author:Marcello Dalponte
+:twitter:@m_dalp
 
+:toc:
 
-A contact network is one of the typologies of dynamic networks described in the famous paper of Holme and Saramäki[1]. 
-A dynamic network is a mathematical representation of the evolution of the relationships between entities through graphs. 
+== Introduction
+
+A contact network is one of the typologies of dynamic networks described in the famous paper of Holme and Saramäki[1].
+A dynamic network is a mathematical representation of the evolution of the relationships between entities through graphs.
 It's interesting to catch this dynamicity because describes the transitivity of the order of the interactions: if A meets B and after B meets C then A can transmit something to C but not the opposite; this is useful to study the spreading of informations or infections.
-An interesting project that aims to collect this kind of data is Sociopatterns[2], where Cattuto and others developed a framework to collect contacts data from RFID sensors [3]. 
+An interesting project that aims to collect this kind of data is Sociopatterns[2], where Cattuto and others developed a framework to collect contacts data from RFID sensors [3].
 
-### Definition of contact
+== Definition of contact
 A contact is the interaction between two actors in a specific time lapse (frame).
 
-### Characteristic measures
+== Characteristic measures
 These networks can be measured in many ways. Holme and Saramäki show us some [1], like
 
 - connectivity and components,
 - distances,
-- latencies, 
+- latencies,
 - fastest paths,
 - and others.
 
@@ -30,25 +33,30 @@ Three kind of journeys are:
 - foremost journey: the first journey between two nodes where the arrival time is the earliest,
 - foremost journeys tree: the collection of foremost journeys between a certain node and all the others.
 
-## Previous model
+== Previous model
 In the literature there is a work of Cattuto and others that explains how to model a contact network with Neo4j [4].
-They represent the network with mainly three kind of nodes: ACTOR, INTERACTION, FRAME. Each actor represents the owner of an RFID, each interaction represents a link between two actors and each frame is a time interval. Interactions are linked with relative Actor nodes and, together with frame nodes, are the key of the representation of a contact. Indeed each contact above defined is a relationship between an interaction and the frame where it was active.
+They represent the network with mainly three kind of nodes: ACTOR, INTERACTION, FRAME.
+Each actor represents the owner of an RFID, each interaction represents a link between two actors and each frame is a time interval.
+Interactions are linked with relative Actor nodes and, together with frame nodes, are the key of the representation of a contact.
+Indeed each contact above defined is a relationship between an interaction and the frame where it was active.
 They also presented an interesting way to navigate the frames through a tree of human readable temporal units (hours, days, etc.), but here is not the topic.
 
-### Limits
-Such representation is pretty complete and interesting, however I encountered some problems when I wanted to describe characteristic patterns in temporal networks with Cypher queries. For instance I have not been able to find any kind of journey.
+=== Limits
+Such representation is pretty complete and interesting, however I encountered some problems when I wanted to describe characteristic patterns in temporal networks with Cypher queries.
+For instance I have not been able to find any kind of journey.
 
-## My model
-My model solves the problems I encoutered with the previous model. I use two kind of nodes: ACTOR and CONTACT, where the first describes the interacting subject and the second is exactly the definition of contact given before (actor1, actor2, timestamp). Each contact is linked with the actors partecipating and with the latest previous contacts of its actors.
+== My model
+My model solves the problems I encountered with the previous model.
+I use two kind of nodes: ACTOR and CONTACT, where the first describes the interacting subject and the second is exactly the definition of contact given before (actor1, actor2, timestamp).
+Each contact is linked with the actors participating and with the latest previous contacts of its actors.
 With this representation is possible to track the paths through time.
 
-### Initial Data Setup
+=== Initial Data Setup
 '''
 //setup
+//hidden
 [source,cypher]
-
 ----
-
 create index on :`Contact`(`a1`);
 create index on :`Contact`(`a2`);
 create index on :`Contact`(`t`);
@@ -103,184 +111,162 @@ _22-[:`NEXT_CONTACT`]->_26,
 _22-[:`NEXT_CONTACT`]->_24,
 _22-[:`NEXT_CONTACT`]->_23,
 _23-[:`NEXT_CONTACT`]->_24
-
 ----
 
 '''
-Graph is shown as the static image below to enlight the shape of data. The label of each contact is the time frame when it took place:
+Graph is shown as the static image below to illustrate the shape of data.
+The label of each contact is the time frame when it took place:
 
+.Our Graph
 image::https://www.dropbox.com/s/m51sgf92j78w9by/Contact%20Network%20Model%20-%20neo4j.png?dl=1[]
 
-## Set of useful queries
+== Set of useful queries
 To show the goodness of this model I selected some example queries where some are specific of temporal networks to find journeys and others are just for exercise.
 
-### Temporal network measures
+=== Temporal network measures
 
-#### Fastest journey
+=== Fastest journey
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor{id:4})-[:ACTOR]->(c:Contact),(a2 :Actor{id:3})-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c)-[:NEXT_CONTACT*0..]->(c1))
 WITH collect(p) as ps, min(length(p)) as l
 RETURN FILTER(p in ps WHERE LENGTH(p) = l) as PATHS, l AS LENGTH
-
 ----
-
 //table
 
-#### Fastest journeys tree
+==== Fastest journeys tree
+
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor{id:0})-[:ACTOR]->(c:Contact),(a2 :Actor)-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c {t:0})-[:NEXT_CONTACT*0..]->(c1))
 WHERE a1 <> a2
 WITH DISTINCT a2, collect(p) as ps, min(length(p)) as l
 RETURN a2.id AS actorReached, FILTER(p in ps WHERE LENGTH(p) = l) as PATHS, l AS LENGTH
 ORDER BY LENGTH
-
 ----
-
 //table
 
-#### Foremost journey
+==== Foremost journey
+
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor{id:1})-[:ACTOR]->(c:Contact),(a2 :Actor{id:3})-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c)-[:NEXT_CONTACT*0..]->(c1))
 WITH collect(p) as ps, min(c1.t) as t
 RETURN FILTER(p in ps WHERE LAST(NODES(p)).t = t) as PATHS, t AS TIME
-
 ----
-
 //table
 
-#### Foremost journeys tree
+==== Foremost journeys tree
+
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor{id:0})-[:ACTOR]->(c:Contact),(a2 :Actor)-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c {t:0})-[:NEXT_CONTACT*0..]->(c1))
 WHERE a1 <> a2
 WITH DISTINCT a2, collect(p) as ps, min(c1.t) as t
 RETURN a2.id AS actorReached, FILTER(p in ps WHERE LAST(NODES(p)).t = t) as PATHS, t AS TIME
 ORDER BY TIME
-
 ----
-
 //table
 
-### Others
-#### All actors infected by an actor
+=== Others
+
+==== All actors infected by an actor
+
 [source,cypher]
-
 ----
-
 MATCH (a1:Actor {id:2})-[:ACTOR]->(c:Contact)-[:NEXT_CONTACT*0..]->(:Contact)<-[:ACTOR]-(a2:Actor)
 WHERE a1<>a2
 RETURN DISTINCT a2
-
 ----
-
 //graph_result
 
-#### All actors infected by an actor starting from a certain frame
+==== All actors infected by an actor starting from a certain frame
+
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor{id:2})-[:ACTOR]->(c:Contact),(a2 :Actor)-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c {t:3})-[:NEXT_CONTACT*0..]->(c1))
 WHERE a1 <> a2
 RETURN DISTINCT a2
-
 ----
-
 //graph_result
 
-#### Smallest number of contacts to infect all others starting from a specific actor
-Here I show the _id_ of the actor reached and the number (_minFrame_) of the first frame
-in which he could be infected.
+==== Smallest number of contacts to infect all others starting from a specific actor
+
+Here I show the _id_ of the actor reached and the number (_minFrame_) of the first frame in which he could be infected.
+
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor{id:1})-[:ACTOR]->(c:Contact),(a2 :Actor)-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c)-[:NEXT_CONTACT*0..]->(c1))
 WHERE a1 <> a2
 RETURN a2.id AS actorReached, min(c1.t) as minFrame
 ORDER BY minFrame
-
 ----
-
 //table
 
-#### Average number of contacts separing a specific actor from those he can reach, starting from a specific frame
+==== Average number of contacts separing a specific actor from those he can reach, starting from a specific frame
 Here is returned the number of actors reached by a specific one and the average length of the paths.
+
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor{id:4})-[:ACTOR]->(c:Contact),(a2 :Actor)-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c)-[:NEXT_CONTACT*0..]->(c1))
 WHERE a1 <> a2 AND c.t >= 0
 WITH DISTINCT a2, collect(p) as ps, min(length(p)) as l
 RETURN COUNT(a2) as NumReached, AVG(l) AS AvgLENGTH
-
 ----
-
 //table
 
-#### Count of the actors reachable from each actor and the average length of the contact path
+==== Count of the actors reachable from each actor and the average length of the contact path
+
+
 [source,cypher]
-
 ----
-
 MATCH (a1 :Actor)-[:ACTOR]->(c :Contact),(a2 :Actor)-[:ACTOR]->(c1 :Contact),
 p=shortestPath((c)-[:NEXT_CONTACT*0..]->(c1))
 WHERE a1 <> a2
 WITH DISTINCT a1, a2, MIN(LENGTH(p)) AS minStep
 RETURN a1.id AS Actor, COUNT(a2) AS actorReached, AVG(minStep) as avgStep
-
 ----
-
 //table
 
 
-## Extensions
+== Extensions
 
-My work is a nice way to represent contact networks with Neo4j. I think that would be interesting to extend my work in many directions.
+My work is a nice way to represent contact networks with Neo4j.
+I think that would be interesting to extend my work in many directions.
 
-### Use of INTERACTION nodes like Cattuto and others [4]
+=== Use of INTERACTION nodes like Cattuto and others [4]
 
-My model is really useful to investigate temporal features of networks but I cannot be able to define queries to study the features of aggregated portions of the graph. I think that the only way to do this would be to introduce the use of INTERACTION nodes to represent the relationship between two actors in the whole network. These are linked to all the contacts where the interaction took place.
+My model is really useful to investigate temporal features of networks but I cannot be able to define queries to study the features of aggregated portions of the graph.
+I think that the only way to do this would be to introduce the use of INTERACTION nodes to represent the relationship between two actors in the whole network.
+These are linked to all the contacts where the interaction took place.
 
-### Performance analysis
+=== Performance analysis
 
-I tryied this model on my old battle laptop and I did not considered performances because it would be meaningless. However I think that a performance study would be great to show its usability.
+I tried this model on my old battle laptop and I did not considered performances because it would be meaningless.
+However I think that a performance study would be great to show its usability.
 
-### Real data examples
+=== Real data examples
 
 To enrich the value of this work would be interesting to perform analysis on real data.
 
-### Extension of the query set
+=== Extension of the query set
 
 The set of query that I presented is not exhaustive and would be nice to extend the query set with other useful measures from literature.
 
-### Visualization
+=== Visualization
 
-To show this data I used the Neo4j visualization that is great 
-to display bidimensional graphs but not precise dealing with 
-"multidimensional graph" like temporal networks.
-It would be interesting to implement a visualization to aggregate graphs
-according to some definition to help displaying data. For instance
-in my case could be nice to aggregate per frame. 
+To show this data I used the Neo4j visualization that is great to display bidimensional graphs but not precise dealing with "multidimensional graph" like temporal networks.
+It would be interesting to implement a visualization to aggregate graphs according to some definition to help displaying data.
+For instance in my case could be nice to aggregate per frame.
+
+== References
 
 [1]: http://arxiv.org/pdf/1108.1780v2.pdf "Temporal Networks"
 
