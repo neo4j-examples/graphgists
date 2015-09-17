@@ -1,8 +1,10 @@
 = A March Madness Recommendation Engine
 Kevin Van Gundy <kevin@neotechnology.com>
-:neo4j-version: 2.2.0
-:author: Kevin Van Gundy
-:twitter: @kevinvangundy
+:neo4j-version:2.2.0
+:author:Kevin Van Gundy
+:twitter:@kevinvangundy
+
+:toc:
 
 [cols="1*", border="3"]
 |===
@@ -13,20 +15,34 @@ a|image::http://i.imgur.com/5nlEMrk.jpg?1[align="center"]
 
 Download the full dataset and all snippets of the code found in this blog post at: https://github.com/kvangundy/graph-graph-baby/blob/master/marchMadnessReco
 
-March madness is one of the rare moments that it pays off in a social context to be a data geek. It’s a rare concord of well documented data and pop culture. http://www.ibtimes.com/billion-dollar-bracket-challenge-2015-why-warren-buffett-yahoo-wont-do-college-1846246[Warren Buffet’s billion dollar bet] grabbed the interest of everyone from Wall St. quants to Silicon Valley engineers to arm chair http://www.imdb.com/title/tt1210166/[MoneyBallers] everywhere.
+March madness is one of the rare moments that it pays off in a social context to be a data geek. It’s a rare concord of well documented data and pop culture.
+http://www.ibtimes.com/billion-dollar-bracket-challenge-2015-why-warren-buffett-yahoo-wont-do-college-1846246[Warren Buffet’s billion dollar bet] grabbed the interest of everyone from Wall St. quants to Silicon Valley engineers to arm chair http://www.imdb.com/title/tt1210166/[MoneyBallers] everywhere.
 
 == It’s All Relative
 
-To me, basketball is all about relationships— there are of course teams that are unambiguously better than others. However, there is nearly always some sort of relative performance bias. Wherein a team performs better or worse than their average performance would project due to some confluence of factors, whether it’s a team with an infamously brutal crowd of fans, a Point Guard that dissects your league-leading zone, or a decades long rivalry that motivates your players to dig just a little more. *Performance is relative.* These statistics are difficult to track across a single season and often incredibly difficult to track across time. 
+To me, basketball is all about relationships— there are of course teams that are unambiguously better than others.
+However, there is nearly always some sort of relative performance bias.
+Wherein a team performs better or worse than their average performance would project due to some confluence of factors, whether it’s a team with an infamously brutal crowd of fans, a Point Guard that dissects your league-leading zone, or a decades long rivalry that motivates your players to dig just a little more.
+*Performance is relative.*
+These statistics are difficult to track across a single season and often incredibly difficult to track across time.
 
-Secondly, being able to iterate on that model is taxing both in terms of writing the queries and in maintaining any reasonable performance. I accrued a mountain of data from the past 4 seasons (~50,000 games). Including points scored, location, date, etc. etc. We could easily add more granular information or more historic data-- though not for any true statistical reason and only because it made my life easier, I decided that in my model these "win power relationships" should churn almost entirely every four years (as current players graduate and move on). We’ll expand  on these “win power” relationship between teams as a function of the Pythagorean Expectation model later.
+Secondly, being able to iterate on that model is taxing both in terms of writing the queries and in maintaining any reasonable performance.
+I accrued a mountain of data from the past 4 seasons (~50,000 games).
+Including points scored, location, date, etc. etc.
+We could easily add more granular information or more historic data--though not for any true statistical reason and only because it made my life easier, I decided that in my model these "win power relationships" should churn almost entirely every four years (as current players graduate and move on).
+We’ll expand  on these “win power” relationship between teams as a function of the Pythagorean Expectation model later.
 
-== STEP 1: From Idea —> Graph Model
+== The Steps
+
+=== STEP 1: From Idea —> Graph Model
 
 I am not a clever boy.
 
-However, I have several clever tools at my disposal. The most chief of which is Neo4j (https://neo4j.com[Neo Technology’s graph database]). So, I started as I do all of my graphy projects— with the questions I planned to ask most frequently and a whiteboard (or a piece of paper in this case).
+However, I have several clever tools at my disposal.
+The most chief of which is Neo4j (https://neo4j.com[Neo Technology’s graph database]).
+So, I started as I do all of my graphy projects— with the questions I planned to ask most frequently and a whiteboard (or a piece of paper in this case).
 
+.The Idea
 [cols="1*", border="3"]
 |===
 a|image::http://i.imgur.com/eT6VsHM.jpg?1[align="center"]
@@ -34,14 +50,16 @@ a|image::http://i.imgur.com/eT6VsHM.jpg?1[align="center"]
 
 Which after a little effort becomes:
 
+.The Idea v2
 [cols="1*", border="3"]
 |===
 a|image::http://i.imgur.com/zvTPnin.png[align="center"]
 |===
 
-== STEP 2: _just in_ *TIME!*
+=== STEP 2: _just in_ *TIME!*
 
-Before I loaded any data into Neo4j, I first needed to create the time-tree seen in the above model. One of Neo4j’s brilliant engineers ( Thanks https://twitter.com/markhneedham[Mark!] ) did the heavy lifting for me and wrote a short Cypher snippet to generate the time-model I needed.
+Before I loaded any data into Neo4j, I first needed to create the time-tree seen in the above model.
+One of Neo4j’s brilliant engineers ( Thanks https://twitter.com/markhneedham[Mark!] ) did the heavy lifting for me and wrote a short Cypher snippet to generate the time-model I needed.
 
 I stole this snippet from his http://www.markhneedham.com/blog/2014/04/19/neo4j-cypher-creating-a-time-tree-down-to-the-day[blog post] on creating time trees.
 
@@ -79,14 +97,20 @@ FOREACH(i in RANGE(0, length(days)-2) |
 
 The result is something like this:
 
+.My time model
 [cols="1*", border="3"]
 |===
 a|image::http://i.imgur.com/lTG2TKf.png[align="center"]
 |===
 
-== STEP 3: my.csv —> Graph.db
+=== STEP 3: my.csv —> Graph.db
 
-Neo4j ships with a very powerful ETL tool called http://neo4j.com/docs/stable/query-load-csv.html[“+LOAD CSV+.”] We’re going to use that. I downloaded a mess of NCAA scores, then surreptitiously converted the data I downloaded from excel spreadsheets into CSV format. I’ve hosted them in a public dropbox with links found in the gitHub repo linked above. We’ll be bringing in several csv files, each one representing a given season and then sewing that all together based on team names. Because this is only a Gist, we're going to only load in about a thousand games instead of the 50,000 we have for the past 4 seasons.
+Neo4j ships with a very powerful ETL tool called http://neo4j.com/docs/stable/query-load-csv.html[“+LOAD CSV+.”]
+We’re going to use that.
+I downloaded a mess of NCAA scores, then surreptitiously converted the data I downloaded from Excel spreadsheets into CSV format.
+I’ve hosted them in a public dropbox with links found in the GitHub repo linked above.
+We’ll be bringing in several CSV files, each one representing a given season and then sewing that all together based on team names.
+Because this is only a Gist, we're going to only load in about a thousand games instead of the 50,000 we have for the past 4 seasons.
 
 [source, cypher]
 ----
@@ -106,12 +130,13 @@ WITH line, toINT(line.opponentScore) as oppScore, toINT(line.teamScore) as teamS
 CREATE (team)-[:PLAYED_IN {scored:teamScore, differential:teamDiff, location:line.teamLocation}]->(game)<-[:PLAYED_IN {scored:oppScore, differential:oppDiff, location:line.oppLocation}]-(opp);
 ----
 
-== Step 4: History, Victory, and a little Math
+=== Step 4: History, Victory, and a little Math
 
-I’ve decided to create a relationship between each team called :WINPOWER based on a concept from baseball called http://en.wikipedia.org/wiki/Pythagorean_expectation[Pythagorean Expectation]. It essentially assigns a win probability based on points scored vs points allowed. I added in a decay factor to weigh more recent games more heavily than those played long ago.
+I’ve decided to create a relationship between each team called ``:WINPOWER` based on a concept from baseball called http://en.wikipedia.org/wiki/Pythagorean_expectation[Pythagorean Expectation].
+It essentially assigns a win probability based on points scored vs points allowed.
+I added in a decay factor to weigh more recent games more heavily than those played long ago.
 
-
-
+.Pythagorean Expectation
 [cols="1*", border="3"]
 |===
 a|image::http://upload.wikimedia.org/math/b/0/d/b0da4b28fff6eb1edcdc59da5cff7934.png[align="center"]
@@ -155,14 +180,14 @@ a|image::http://i.imgur.com/UBcDDF6.gif[align="center"]
 
 ----
 MATCH (a)-[w:WINPOWER]->(b)
-RETURN a.name as Team_1, w.winPower as WINPOWER_Against, b.name as Team_2 
+RETURN a.name as Team_1, w.winPower as WINPOWER_Against, b.name as Team_2
 ORDER BY w.winPower DESC
 LIMIT 10;
 ----
 
 // table
 
-== STEP 5: the big payout
+=== STEP 5: The Big Payout
 
 Now this is the fun part, lets go through a few games to see if we can accurately predict will win.
 
@@ -216,9 +241,11 @@ RETURN a, g, b
 
 darn...no results, this means during our regular season Kentucky and UT Arlington haven't played each other (nor have they played each other in the past 4 years of NCAA Championships)
 
-Well, why don't we just compare the teams they've both played previously and take either an average or a sum of their "win power scores." For example, we can infer that if Kentucky always beats Michigan State and Michigan State always beats Hampton then most likely Kentucky is going to beat Hampton. We can easily compare all mutual teams and how they fare against them and create a good guess as to who should win.*
+Well, why don't we just compare the teams they've both played previously and take either an average or a sum of their "win power scores."
+For example, we can infer that if Kentucky always beats Michigan State and Michigan State always beats Hampton then most likely Kentucky is going to beat Hampton.
+We can easily compare all mutual teams and how they fare against them and create a good guess as to who should win.*
 
-*With the full dataset we can do this for the entirety of the Round of 64, however with the truncated "Graph Gist" dataset, I cherry picked an example to illustrate. 
+*With the full dataset we can do this for the entirety of the Round of 64, however with the truncated "Graph Gist" dataset, I cherry picked an example to illustrate.
 
 [source, cypher]
 ----
@@ -250,4 +277,6 @@ a|image::http://cdn0.sbnation.com/imported_assets/1545119/Z2t3Hee_medium.gif[ali
 |===
 [source, cypher]
 
+== References
 
+//console
