@@ -1,40 +1,45 @@
 = Aardvark: The Anatomy of a Large-Scale Social Search Engine
-The paper: http://www.cse.fau.edu/~xqzhu/courses/cap6777/social.search.engine.pdf
+:neo4j-version:2.2.0
+:author:Cristina Escalante
+:twitter:
+:tags:social
+:toc:
 
 == Introduction to Aardvark, the Defunct Social Search Engine
 
 === The Gist of It
 
-Aardvark (2008 - 2011) was a social search service that connected users live with friends or friends-of-friends who were able to answer their questions. Users submitted questions via the Aardvark website, email or instant messenger. Aardvark then connected the user the person in the user’s social network most likely to be able to answer that question. 
+Aardvark (2008 - 2011) was a social search service that connected users live with friends or friends-of-friends who were able to answer their questions.
+Users submitted questions via the Aardvark website, email or instant messenger.
+Aardvark then connected the user the person in the user’s social network most likely to be able to answer that question.
 
-In contrast to ‘conventional’ search engines, which find the best _document_ to respond to the query, Aardvark determined the best _person_ to satisfy a user’s information needs. 
+In contrast to ‘conventional’ search engines, which find the best _document_ to respond to the query, Aardvark determined the best _person_ to satisfy a user’s information needs.
 
 === Posing a Query
 
-User Sam joins Aardvark, and connects to some buddies from his social network. 
+User Sam joins Aardvark, and connects to some buddies from his social network.
 
 Sam wants to know more about the topic of elephants, and poses the question:
+
 ----
 "What do elephants eat during the wintertime?"
 ----
 
-In reality, the question would be more precise (like below) and less findable on Wikipedia, but the premise is the same. 
+In reality, the question would be more precise (like below) and less findable on Wikipedia, but the premise is the same.
 ----
-“Do you have any good babysitter recommendations in Palo Alto for my 6-year-old twins? 
-I’m looking for somebody that won’t let them watch TV."
+“Do you have any good babysitter recommendations in Palo Alto for my 6-year-old twins?I’m looking for somebody that won’t let them watch TV."
 ----
 
-=== Respondng to a Query 
+=== Responding to a Query
 
-After receving the query, the Conversation Manager (in this example, me, in reality, a computer) determines that it is a valid query and what topic it belongs to. In this example, the topic is "elephant". 
+After receiving the query, the Conversation Manager (in this example, me, in reality, a computer) determines that it is a valid query and what topic it belongs to.
 
-The Community Manager then informs the user of the topic of the query and asks potential respondents from Sam's social network if they'd like to respond to the query. 
+In this example, the topic is "elephant".
 
-Once a respondent is found, the response to the query sent to Sam, who then has the opportunity to ask followup questions. 
+The Community Manager then informs the user of the topic of the query and asks potential respondents from Sam's social network if they'd like to respond to the query.
+Once a respondent is found, the response to the query sent to Sam, who then has the opportunity to ask followup questions.
 
-==== Other Details
-
-- Aardvark periodically updates its user ranking algorithm (to be defined below) so users expert in topics that have buddies also expert in those topics have higher ranking than isolated experts. 
+Aardvark periodically updates its user ranking algorithm (to be defined below) so users expert in topics that have buddies also expert in those topics have higher ranking than isolated experts.
 
 
 == Aardvark: Main Components
@@ -45,22 +50,22 @@ Once a respondent is found, the response to the query sent to Sam, who then has 
 -- "Understands" the information need of a user
 - *Ranking Function*
 -- Selects the best resource to answer a question
-- *UI* 
+- *UI*
 -- Presents information to the user in an easy-to-process form
 
 == The Model
 
-The core of Aardvark is a statistical model, described in two parts. 
+The core of Aardvark is a statistical model, described in two parts.
 
 === Relevance Score
 
-The probability that user _i_ will successfully answer question _q_, given that question _q_ is about topics _t_ that user _i_ is knowledgable about. 
+The probability that user _i_ will successfully answer question _q_, given that question _q_ is about topics _t_ that user _i_ is knowledgable about.
 
 ++++
 \[p(u_i \mid q) = \sum p(u_i \mid t)p(t \mid q) \]
 ++++
 
-=== Quality Score 
+=== Quality Score
 
 A query-indpendent probability of success for a pair of users _i_ and _j_, denoted
 
@@ -68,21 +73,22 @@ A query-indpendent probability of success for a pair of users _i_ and _j_, denot
 \[p(u_i \mid u_j)\]
 ++++
 
-In other words, the probability that user _i_ will deliver a satisfactory answer to _j_ no matter the question. Aardvark used a variety of methods to calcuate this score, including profile similarity from data supplied by user profiles, social connectedness, and other shared characteristics. 
+In other words, the probability that user _i_ will deliver a satisfactory answer to _j_ no matter the question.
+
+Aardvark used a variety of methods to calcuate this score, including profile similarity from data supplied by user profiles, social connectedness, and other shared characteristics.
 
 === Scoring
 
-The scoring function, with paramenters user _i_, user _j_, and quesiton _q_ is the compsition of the two above probabilities. 
-
-The goal is to combine the query-dependent relevance score and the query-independent quality score. 
+The scoring function, with parameters user _i_, user _j_, and question _q_ is the composition of the two above probabilities.
+The goal is to combine the query-dependent relevance score and the query-independent quality score.
 
 ++++
 \[s(u_i, u_j, q) = p(u_i \mid u_j) \cdot p(u_i \mid q)\]
 ++++
 
-=== Connections 
+=== Connections
 
-Aardvark took into account the following when analyzing the connection between users _i_ and _j_. 
+Aardvark took into account the following when analyzing the connection between users _i_ and _j_.
 
 - Social connection
 - Shared demographic features
@@ -91,7 +97,7 @@ Aardvark took into account the following when analyzing the connection between u
 - Match of politeness (example, ending messages with "Thanks")
 - Speed of responsiveness to other users
 
-Connection strengths between users are computed with a weighted cosine similarity over the feature set described above, normallized so that:
+Connection strengths between users are computed with a weighted cosine similarity over the feature set described above, normalized so that:
 
 ++++
 \[\sum p(u_i \mid u_j) = 1\]
@@ -113,7 +119,7 @@ Step 2: Generating Topics
 - _SalientTermTopicMapper_ extracts salient phrases and finds semantically similar topics
 - _UserTagTopicMapper_ uses user-supplied 'tags' and maps these to semantically similar user topics
 
-Outputs from these classifiers were combined using weighted linear combinations, and were continuously evaluated by human judges. 
+Outputs from these classifiers were combined using weighted linear combinations, and were continuously evaluated by human judges.
 
 
 == Analysis
@@ -122,12 +128,13 @@ Outputs from these classifiers were combined using weighted linear combinations,
 
 - Opened for beta release in March 2009, Aardvark had 90,361 active users, 225,047 questions and 386,702 answers
 - The majority of users were mobile users
-- Questions were highly contextualized, with an average query length of 18.6 words. In comparison, query lengths in regular search engines are usually between two and three words. 
+- Questions were highly contextualized, with an average query length of 18.6 words, in contrast to query lengths in regular search engines, which are usually between two and three words.
 - Lots of subjective ("what do you think...")  questions
 - Questions were answered quickly: 87% of questions submitted received at least 1 answer, and 57% received their first answer in less than 10 minutes
-- Social proxomimity matters: answers from within the asker's network (most frequently a second degree connection) were rated as _good_ (the highest ranking) about 76% of the time, whereas those outside the asker's network were rated as _good_ about 68% of the time
+- Social proximity matters: answers from within the asker's network (most frequently a second degree connection) were rated as _good_ (the highest ranking) about 76% of the time, whereas those outside the asker's network were rated as _good_ about 68% of the time
 
-== Creating a Social Search Engine: A Prototype 
+== Creating a Social Search Engine: A Prototype
+
 //hide
 //setup
 [source,cypher]
@@ -152,19 +159,18 @@ RETURN *
 
 === Relevance Score
 
-Let's say user Josh wants to search his social network for someone who knows about hyraxes. 
-
-Since this is the first time the network has been used, and this is a simple example, everyone will start out with the same level knowledge of their assigned topics. 
+Let's say user Josh wants to search his social network for someone who knows about hyraxes.
+Since this is the first time the network has been used, and this is a simple example, everyone will start out with the same level knowledge of their assigned topics.
 
 [source,cypher]
 ----
-MATCH (a:user {name:'Josh'})-[:IS_BUDDY*1..2]-(b:user)-[r:SABE]-(:topic {name:'hyrax'}) 
+MATCH (a:user {name:'Josh'})-[:IS_BUDDY*1..2]-(b:user)-[r:SABE]-(:topic {name:'hyrax'})
 RETURN DISTINCT b.name AS Name, (r.right)/toFloat(r.total) AS Score
 ORDER BY Score DESC
 ----
 //table
 
-Since all options are the same, let's pose David a question about hyraxes that he will respond to correctly. 
+Since all options are the same, let's pose David a question about hyraxes that he will respond to correctly.
 
 [source,cypher]
 ----
@@ -178,17 +184,18 @@ RETURN a,q1,b,t
 ----
 
 Let's see what happens when another user, let's say, Jacob, looks for a good candidate for responding to questions about hyraxes now:
+
 [source,cypher]
 ----
-MATCH (a:user {name:'Jacob'})-[:IS_BUDDY*1..2]-(b:user)-[r:SABE]-(:topic {name:'hyrax'}) 
+MATCH (a:user {name:'Jacob'})-[:IS_BUDDY*1..2]-(b:user)-[r:SABE]-(:topic {name:'hyrax'})
 RETURN DISTINCT b.name AS Name, (r.right)/toFloat(r.total) AS Score
 ORDER BY Score DESC
 ----
 //table
 
-Since David has responded to a question about hyraxes correctly, his score on the topic of hyraxes is now higher than the default .5. 
-
-Let's put more questions in the system. Now Mohammed has asked David two questions, one he responds to correctly, and one he responds to incorrectly. 
+Since David has responded to a question about hyraxes correctly, his score on the topic of hyraxes is now higher than the default .5.
+Let's put more questions in the system.
+Now Mohammed has asked David two questions, one he responds to correctly, and one he responds to incorrectly.
 
 //hide
 [source,cypher]
@@ -198,7 +205,7 @@ MATCH (a:user {name:'Mohammed'}),(b:user {name:'David'})-[r1:SABE]-(t1:topic {na
 MERGE (a)-[:ASKS]->(q3:query {id:3, text:"What is your favourite type of aardvark?"})
 MERGE (q3)-[:RESPONDENT {correct:1}]->(b)
 MERGE (q3)-[:ABOUT]->(t1)
-SET r1.right = r1.right + 1 
+SET r1.right = r1.right + 1
 SET r1.total = r1.total +1
 
 MERGE (a)-[:ASKS]->(q4:query {id:4, text:"What is your favourite type of stegedont?"})
@@ -218,7 +225,7 @@ MATCH (a:user {name:'Jacob'}),(b:user {name:'David'})-[r1:SABE]-(t1:topic {name:
 MERGE (a)-[:ASKS]->(q3:query {id:3, text:"What is your favourite type of hyrax?"})
 MERGE (q3)-[:RESPONDENT {correct:1}]->(b)
 MERGE (q3)-[:ABOUT]->(t1)
-SET r1.right = r1.right + 1 
+SET r1.right = r1.right + 1
 SET r1.total = r1.total +1
 
 MERGE (a)-[:ASKS]->(q4:query {id:4, text:"What is your favourite type of golden-mole?"})
@@ -241,7 +248,9 @@ RETURN DISTINCT  sum(DISTINCT r.right) AS `Correct Responses to Topic`,sum(DISTI
 
 === Quality Score
 
-Since this a small model made with a random number generator (semi-important detail as the users aren't clustering like an acutal social group), the users don't have that many shared characteristics. However, we can still take a look at the graph. Let's see who might be the best responder to any question a particular user might have. 
+Since this a small model made with a random number generator (semi-important detail as the users aren't clustering like an actual social group), the users don't have that many shared characteristics.
+However, we can still take a look at the graph.
+Let's see who might be the best responder to any question a particular user might have.
 
 //hide
 [source,cypher]
@@ -253,9 +262,11 @@ ORDER BY `Shared Buddies` DESC, `User A` ASC
 ----
 //table
 
-
 == Conclusions
 
-Although defunct, Aardvark did a decent job at finding to responses to subjective questions. It was an excellent demonstration of how classification and filtering, in combination with social networking, can be leveraged in future search engines. 
+Although defunct, Aardvark did a decent job at finding to responses to subjective questions.
+It was an excellent demonstration of how classification and filtering, in combination with social networking, can be leveraged in future search engines.
 
+== References
 
+The paper: http://www.cse.fau.edu/~xqzhu/courses/cap6777/social.search.engine.pdf
