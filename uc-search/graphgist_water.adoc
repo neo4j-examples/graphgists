@@ -1,0 +1,187 @@
+= Piping Water
+:neo4j-version:2.2.0
+:author:Shaun Daley
+:twitter:@shaundaley1
+:tags:resources
+domain:Shutting Valves and Migrating Infrastructure
+
+:toc:
+
+== Inspiration
+
+London's antique water distribution network is infamous: it loses a http://www.theguardian.com/commentisfree/2012/may/08/water-industry-pipes-scandal[quarter of the water] supplied to London (spilt into the ground). Consequence: http://www.bbc.co.uk/news/10213835[desalination], massive additional CO~2~ emissions, road congestion caused by too many emergency excavations and very high water prices for consumers.
+London's case is severe but not atypical: most cities suffer from the same underlying infrastructure problem. Pipes and valves buried below busy urban streets are inherently difficult and expensive to maintain.
+Inaccessibility, lack of information, failure to efficiently process data and the high cost of each human intervention in legacy systems all compound to undermine efficient resource distribution.
+
+Modern wireless networking offers the first crucial part in reducing the human time and cost of maintenance, and avoiding environmental damage: modern valves can be remotely (and even autonomously) operated to isolate components and pipe sections; modern flow sensors can transmit cross-section flow rates minute-by-minute.
+The remaining challenge is to log, model and process these resources on a city scale (London sized) with several hundred million components (pipe sections, valves, pumps, flow sensors, outlets, sources, etc) and the sparse, evolving relations between those components.
+Neo4j fits this bill perfectly.
+
+To illustrate the domain, we'll eliminate most complexity and focus on a single (but ubiquitous) problem.
+
+
+_Using the Design for Queryability modeling approach by http://twitter.com/ianrobinson[Ian Robinson]_
+
+== Illustrating the Domain
+
+=== Application/End-User Goals
+
+____
+*As an* engineer for a water utility
+
+*I want* to know the accessible (remotely controllable, man-hole-accessible or excavation-accessible) valves for shutting off a set of components.
+
+*So that* we can rapidly isolate a burst pipe, leaking valve or a set of components for replacement.
+____
+
+=== Questions To Ask of the Domain
+
+____
+What is the set of valves that must be closed to isolate the smallest possible part of the network including a set of components?
+What is the minimum set of network controllable (or manhole-accessible) valves that must be closed to isolate a set of components?
+____
+
+
+=== Identify Entities
+
+____
+* Component (pipes, sources, outlets, pumps, flow sensors, etc)
+* Connection
+* Valve
+____
+
+== Identify Relationships Between Entities
+
+----
+(:Component)  <- [:CONNECTS] - (:Connection) - [:CONNECTS] -> (:Component)
+(:Valve)      - [:CLOSES]   -> (:Connection)
+----
+Valves are distinct objects with their own relationships e.g. IP address, API key, state information, whether they are manually closed clockwise or anti-clockwise (both valve closing directions exist and are widely prevalent in UK legacy water distribution infrastructure).
+For efficiency of querying, the nature of connections is duplicated in the relationship also:
+----
+(:Valve{access:'API'}) -> [:CLOSES] -> (:Connection) -> [:API_CONNECTS] -> (:Component)
+(:Valve{access:'Manhole'}) -> [:CLOSES] -> (:Connection) -> [:MANHOLE_CONNECTS] -> (:Component)
+(:Valve{access:'Excavation'}) -> [:CLOSES] -> (:Connection) -> [:EXCAV_CONNECTS] -> (:Component)
+----
+
+== Candidate Data Model
+
+//hide
+//setup
+[source,cypher]
+----
+CREATE
+       (burstPipe:Component{name:"BurstPipe"}),
+       (pipe1:Component),
+       (pipe2:Component),
+       (pipe3:Component),
+       (pipe4:Component),
+       (pipe5:Component),
+       (pipe6:Component),
+       (pipe7:Component),
+       (pipe8:Component),
+       (pipe9:Component),
+       (pipe10:Component),
+       (pipe11:Component),
+       (connection1:Connection),
+       (connection2:Connection),
+       (connection3:Connection),
+       (connection4:Connection),
+       (connection5:Connection),
+       (connection6:Connection),
+       (connection7:Connection),
+       (connection8:Connection),
+       (connection9:Connection),
+       (connection10:Connection),
+       (connection11:Connection),
+       (valve1:Valve {access:'API'}),
+       (valve2:Valve {access:'Excavation'}),
+       (valve3:Valve {access:'API'}),
+       (valve4:Valve {access:'Manhole'}),
+       (valve5:Valve {access:'API'}),
+       (valve6:Valve {access:'API'}),
+       (valve7:Valve {access:'API'}),
+       (valve8:Valve {access:'API'}),
+       (connection1)-[:API_CONNECTS]->(burstPipe),
+       (connection1)-[:API_CONNECTS]->(pipe1),
+       (connection2)-[:EXCAV_CONNECTS]->(burstPipe),
+       (connection2)-[:EXCAV_CONNECTS]->(pipe2),
+       (connection3)-[:CONNECTS]->(pipe2),
+       (connection3)-[:CONNECTS]->(pipe3),
+       (connection4)-[:API_CONNECTS]->(pipe2),
+       (connection4)-[:API_CONNECTS]->(pipe4),
+       (connection5)-[:MANHOLE_CONNECTS]->(pipe3),
+       (connection5)-[:MANHOLE_CONNECTS]->(pipe5),
+       (connection6)-[:API_CONNECTS]->(pipe3),
+       (connection6)-[:API_CONNECTS]->(pipe6),
+       (connection7)-[:CONNECTS]->(pipe5),
+       (connection7)-[:CONNECTS]->(pipe7),
+       (connection8)-[:CONNECTS]->(pipe5),
+       (connection8)-[:CONNECTS]->(pipe8),
+       (connection9)-[:API_CONNECTS]->(pipe5),
+       (connection9)-[:API_CONNECTS]->(pipe9),
+       (connection10)-[:API_CONNECTS]->(pipe7),
+       (connection10)-[:API_CONNECTS]->(pipe10),
+       (connection11)-[:API_CONNECTS]->(pipe8),
+       (connection11)-[:API_CONNECTS]->(pipe11),
+       (valve1)-[:CLOSES]->(connection1),
+       (valve2)-[:CLOSES]->(connection2),
+       (valve3)-[:CLOSES]->(connection4),
+       (valve4)-[:CLOSES]->(connection5),
+       (valve5)-[:CLOSES]->(connection6),
+       (valve6)-[:CLOSES]->(connection9),
+       (valve7)-[:CLOSES]->(connection10),
+       (valve8)-[:CLOSES]->(connection11)
+RETURN *
+----
+// graph
+
+==== Isolate the Burst Pipe Using Only Remote Calls to API-Accessible Valves
+
+[source,cypher]
+----
+START burstPipe=node:node_auto_index(name='BurstPipe')
+MATCH (burstPipe)-[:CONNECTS|EXCAV_CONNECTS|MANHOLE_CONNECTS*0..]-()-[:API_CONNECTS]- (h)-[:CLOSES]-(v{access:'API'})
+RETURN v
+
+----
+
+// table
+// console
+
+==== Isolate the Burst Pipe Using Manhole-Accessible and API-Accessible Valves
+
+[source,cypher]
+----
+START burstPipe=node:node_auto_index(name='BurstPipe')
+MATCH (burstPipe)-[:CONNECTS|EXCAV_CONNECTS*0..]-()-[:MANHOLE_CONNECTS|API_CONNECTS]- (h)-[:CLOSES]-(v)
+RETURN v
+
+----
+// table
+// console
+
+==== Isolate the Burst Pipe Using Any Existing Valves
+
+[source,cypher]
+----
+START burstPipe=node:node_auto_index(name='BurstPipe')
+MATCH (burstPipe)-[:CONNECTS*0..]-()-[:EXCAV_CONNECTS|MANHOLE_CONNECTS|API_CONNECTS]- (h)-[:CLOSES]-(v)
+RETURN v
+
+----
+// table
+// console
+
+== Extension
+
+For real world application, there are some necessary modifications (e.g. modelling state information in relationships, such as whether a connection is presently closed or scheduled for opening/closing; limiting query depth and notifying of query failure in event of maximum query depth being reached).
+
+In real world application, extending the above model, there is potential for adding greater value still:
+
+- estimating the marginal water savings from replacing any defined set of components
+- estimating the resilience of network water pressure to failure of specific pumps (both current and under hypothetical modifications to the network)
+- scheduling replacement or state-change of parts, and communicating this seamlessly (and automatically) in real time to all other parties that this might affect
+
+This approach is more generic than it may initially seem.
+Many resource problems involve networks of distribution in which many components interact across sparse relationships (electricity generation and distribution, natural gas, sewage, district-piped heating); rapid and efficient querying on these relationships is necessary for efficient resource allocation and better environmental and cost outcomes.
