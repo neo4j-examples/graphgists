@@ -2,47 +2,32 @@
 :neo4j-version: 2.2.0-RC1
 :author: Jean Villedieu
 :twitter: @jvilledieu
-:tags: domain:finance, use-case:fraud-detection
+:tags:domain:finance
+use-case:fraud-detection
 
 This interactive Neo4j graph tutorial covers a common credit card fraud detection scenario.
 
-'''
-
-*Table of Contents*
-
-* *Introduction*
-** <<_introduction_to_problem, Introduction to Problem>>
-* *Scenario*
-** <<_typical_scenario, Typical Scenario>>
-* *Solution*
-** <<_explanation_of_solution, Explanation of Solution>>
-* *Data Model*
-** <<_credit_card_fraud_graph_data_model, Credit Card Fraud Graph Data Model>>
-* *Database Setup*
-** <<_sample_data_set, Sample Data Set>>
-* *Cypher Queries*
-** <<_identify_the_fraudulent_transactions, Identify the Fraudulent Transactions>>
-** <<_identify_the_point_of_origin_of_the_fraud, Identify the Point of Origin of the Fraud>>
-** <<_zero_in_on_the_criminal, Zero in on the criminal>>
-
-'''
+:toc:
 
 == Introduction to Problem
 
-Banks, merchants and credit card processors companies lose billions of dollars every year to credit card fraud. Credit card data can be stolen by criminals using a variety of methods. Bluetooth-enabled data skimming devices can be placed on the card reader on the pump that dispenses your petrol. The data might be stolen in a mass breach by hackers of a large retailer, as was the case with Target and Home Depot in recent years. Sometimes the criminal is simply the clerk at the checkout line at the grocery or in a restaurant, where the victim's card is swiped through a small device or surreptitiously jotted down.
+Banks, merchants and credit card processors companies lose billions of dollars every year to credit card fraud.
+Credit card data can be stolen by criminals using a variety of methods.
+Bluetooth-enabled data skimming devices can be placed on the card reader on the pump that dispenses your petrol.
+The data might be stolen in a mass breach by hackers of a large retailer, as was the case with Target and Home Depot in recent years.
+Sometimes the criminal is simply the clerk at the checkout line at the grocery or in a restaurant, where the victim's card is swiped through a small device or surreptitiously jotted down.
 
 '''
 
 === Typical Scenario
-In December 2013, police in Abington, Pennsylvania arrested two Post Office employees for stealing credit card information and using it to buy more than $50,000 worth of merchandise. Their scheme was quite typical; here is how they operated :
 
-* the Post Office clerks copied the credit card information of some of their customers while processing transactions ;
+In December 2013, police in Abington, Pennsylvania arrested two Post Office employees for stealing credit card information and using it to buy more than $50,000 worth of merchandise.
+Their scheme was quite typical; here is how they operated:
 
-* they then located these customers' home addresses ;
-
-* using the credit card numbers, they would place orders online for goods or gift cards, to be delivered at their victims' home address ;
-
-* with goods ordered online, an accomplice would wait at the address to intercept the deliveries ;
+* the Post Office clerks copied the credit card information of some of their customers while processing transactions;
+* they then located these customers' home addresses;
+* using the credit card numbers, they would place orders online for goods or gift cards, to be delivered at their victims' home address;
+* with goods ordered online, an accomplice would wait at the address to intercept the deliveries;
 
 The pair were apprehended not long after Post Office patron reported a man attempting to intercept one of the packages at his home, but not before the pair had bought Christmas gifts and gone on vacations with the fraudulently obtained information.
 
@@ -50,19 +35,20 @@ The pair were apprehended not long after Post Office patron reported a man attem
 
 == Explanation of Solution
 
-Graph databases can help find credit card thieves faster. By representing transactions as a graph, we can look for the common denominator in the fraud cases and find the point of origin of the scam.
-
-
-'''
+Graph databases can help find credit card thieves faster.
+By representing transactions as a graph, we can look for the common denominator in the fraud cases and find the point of origin of the scam.
 
 == Credit Card Fraud Graph Data Model
 
-A series of credit card transactions can be represented as a graph. Each transaction involves two nodes : a person (the customer) and a merchant. The nodes are linked by the transaction itself. A transaction has a date and a status.
+A series of credit card transactions can be represented as a graph. Each transaction involves two nodes: a person (the customer) and a merchant.
+The nodes are linked by the transaction itself.
+A transaction has a date and a status.
 
 Legitimate transactions have the status "Undisputed". Fraudulent transactions are "Disputed".
 
 The graph data model below represents how the data looks as a graph.
 
+.Credit Card Fraud
 image::https://linkurio.us/wp-content/uploads/2014/05/Credit-card-fraud-schema-600x337.png[Credit Card Fraud]
 
 '''
@@ -73,7 +59,6 @@ image::https://linkurio.us/wp-content/uploads/2014/05/Credit-card-fraud-schema-6
 //setup
 [source,cypher]
 ----
-
 // Create customers
 CREATE (Paul:person {id:'1', name:'Paul', gender:'man', age:'50'})
 CREATE (Jean:person {id:'2', name:'Jean', gender:'man', age:'48'})
@@ -175,8 +160,7 @@ RETURN *
 
 //graph
 
-'''
-You can download the complete dataset here : https://www.dropbox.com/s/4uij4gs2iyva5bd/credit%20card%20fraud.zip
+You can download the complete dataset here: https://www.dropbox.com/s/4uij4gs2iyva5bd/credit%20card%20fraud.zip
 
 == Identify the Fraudulent Transactions
 
@@ -194,9 +178,15 @@ ORDER BY transaction_time DESC
 //table
 
 == Identify the Point of Origin of the Fraud
-Now we know which customers and which merchants are involved in our fraud case. But where is the criminal we are looking for? What's going to help use here is the transaction date on each fraudulent transaction.
 
-The criminal we are looking for is involved in a legitimate transaction during which he captures his victims credit card numbers. After that, he can execute his illegitimate transactions. That means that we not only want the illegitimate transactions but also the transactions happening before the theft.
+Now we know which customers and which merchants are involved in our fraud case.
+But where is the criminal we are looking for?
+What's going to help use here is the transaction date on each fraudulent transaction.
+
+The criminal we are looking for is involved in a legitimate transaction during which he captures his victims credit card numbers.
+After that, he can execute his illegitimate transactions.
+That means that we not only want the illegitimate transactions but also the transactions happening before the theft.
+
 [source,cypher]
 ----
 MATCH (victim:person)-[r:HAS_BOUGHT_AT]->(merchant)
@@ -212,7 +202,11 @@ ORDER BY transaction_time DESC
 //table
 
 == Zero in on the criminal
-Now we want to find the common denominator. Is there a common merchant in all of these seemingly innocuous transactions? We just have to tweak the Cypher query to sort out the previous results according to the number of times we see each merchant.
+
+Now we want to find the common denominator.
+Is there a common merchant in all of these seemingly innocuous transactions?
+We just have to tweak the Cypher query to sort out the previous results according to the number of times we see each merchant.
+
 [source,cypher]
 ----
 MATCH (victim:person)-[r:HAS_BOUGHT_AT]->(merchant)
@@ -227,8 +221,14 @@ ORDER BY count DESC
 //output
 //table
 
-image::https://linkurio.us/wp-content/uploads/2014/05/credit-card-fraud-zoom-600x415.png[Where is the thief]
+.Where is the thief?
+image::https://linkurio.us/wp-content/uploads/2014/05/credit-card-fraud-zoom-600x415.png[Where is the thief?]
 
-In each instance of a fraudulent transaction, the credit card holder had visited Walmart in the days just prior. We now know the location and the date on which the customer's credit cards numbers were stolen. With a graph visualization solution like Linkurious, we could inspect the data to confirm our intuition. Now we can alert the authorities and the merchant on the situation. They should have enough information to take it from there!
+In each instance of a fraudulent transaction, the credit card holder had visited Walmart in the days just prior.
+We now know the location and the date on which the customer's credit cards numbers were stolen.
+With a graph visualization solution like Linkurious, we could inspect the data to confirm our intuition.
+Now we can alert the authorities and the merchant on the situation. They should have enough information to take it from there!
 
-For more graph-related use cases, make sure to check the blog of Linkurious : http://linkurio.us/blog
+For more graph-related use cases, make sure to check the blog of Linkurious: http://linkurio.us/blog
+
+//console
