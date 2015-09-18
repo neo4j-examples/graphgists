@@ -1,45 +1,28 @@
 = Bank Fraud Detection
-:neo4j-version: 2.2.0-RC1
-:author: Kenny Bastani
-:twitter: @kennybastani
-:tags: domain:finance, use-case:fraud-detection
+:neo4j-version:2.2.0-RC1
+:author:Kenny Bastani
+:twitter:@kennybastani
+domain:finance
+use-case:fraud-detection
+
+:toc:
 
 (original source: https://github.com/neo4j-contrib/gists/blob/master/other/BankFraudDetection.adoc )
 
 This interactive Neo4j graph tutorial covers bank fraud detection scenarios.
 
-'''
-
-*Table of Contents*
-
-* *Introduction*
-** <<introduction_to_problem, Introduction to Problem>>
-* *Scenario*
-** <<explanation of scenario, Explanation of Scenario>>
-** <<typical_scenario, Typical Scenario>>
-* *Solution*
-** <<explanation_of_solution, Explanation of Solution>>
-** <<how_graph_databases_can_help, How Graph Databases Can Help>>
-* *Data Model*
-** <<bank_fraud_data_model, Bank Fraud Graph Data Model>>
-* *Database Setup*
-** <<sample_data_set, Sample Data Set>>
-* *Cypher Queries*
-** <<entity_link_analysis, Entity Link Analysis>>
-** <<find_account_holders_who_share_more_than_one_piece_of_legitimate_contact_information, Find account holders who share more than one piece of legitimate contact information>>
-** <<determine_the_financial_risk_of_a_possible_fraud_ring , Determine the financial risk of a possible fraud ring>>
-
-'''
-
 == Introduction to Problem
 
-Banks and Insurance companies lose billions of dollars every year to fraud. Traditional methods of fraud detection play an important role in minimizing these losses. However, increasingly sophisticated fraudsters have developed a variety of ways to elude discovery, both by working together and by leveraging various other means of constructing false identities.
+Banks and Insurance companies lose billions of dollars every year to fraud.
+Traditional methods of fraud detection play an important role in minimizing these losses.
+However, increasingly sophisticated fraudsters have developed a variety of ways to elude discovery, both by working together and by leveraging various other means of constructing false identities.
 
 '''
 
 == Explanation of Scenario
 
-While no fraud prevention measures can ever be perfect, significant opportunities for improvement lie in looking beyond the individual data points to the connections that link them. Oftentimes these connections go unnoticed until it is too late--something that is unfortunate, as these connections oftentimes hold the best clues to insuring early detection.
+While no fraud prevention measures can ever be perfect, significant opportunities for improvement lie in looking beyond the individual data points to the connections that link them.
+Oftentimes these connections go unnoticed until it is too late--something that is unfortunate, as these connections oftentimes hold the best clues to insuring early detection.
 
 === Typical Scenario
 
@@ -77,10 +60,12 @@ Real time graph traversals tied to the right kinds of events can help banks iden
 
 == Bank Fraud Graph Data Model
 
-Graph databases have emerged as an ideal tool for overcoming these hurdles. Languages like Cypher provide a simple semantic for detecting rings in the graph, navigating connections in memory, in real time.
+Graph databases have emerged as an ideal tool for overcoming these hurdles.
+Languages like Cypher provide a simple semantic for detecting rings in the graph, navigating connections in memory, in real time.
 
 The graph data model below represents how the data actually looks to the graph database, and illustrates how one can find rings by simply walking the graph:
 
+.Bank Fraud
 image::https://raw.github.com/neo4j-contrib/gists/master/other/images/BankFraud-1.png[Bank Fraud]
 
 '''
@@ -191,7 +176,8 @@ RETURN *
 
 == Entity Link Analysis
 
-Performing entity link analysis on the above data model is demonstrated below. We use brackets in the below table is to isolate individual elements of a http://neo4j.com/docs/stable/syntax-collections.html[collection]. 
+Performing entity link analysis on the above data model is demonstrated below.
+We use brackets in the below table is to isolate individual elements of a http://neo4j.com/docs/stable/syntax-collections.html[collection].
 
 ==== Find account holders who share more than one piece of legitimate contact information
 
@@ -239,3 +225,5 @@ ORDER BY 	FinancialRisk DESC
 
 //output
 //table
+
+//console
