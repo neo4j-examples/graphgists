@@ -1,16 +1,19 @@
-
 = Graphing our way through the ICIJ offshore jurisdiction data
 :neo4j-version: 2.2.0
 :author: Maarten Hermans
 :twitter: @hermansm
 
-'''
+:toc:
 
 == Introduction
 
-In 2013 the http://www.icij.org[International Consortium of Investigative Journalism] (ICIJ) released a subset of the leaked dataset on offshore jurisdictions to the public. This dataset contains ownership information about companies created in 10 offshore jurisdictions including the British Virgin Islands, the Cook Islands and Singapore. It covers nearly 30 years until 2010.
+In 2013 the http://www.icij.org[International Consortium of Investigative Journalism] (ICIJ) released a subset of the leaked dataset on offshore jurisdictions to the public.
+This dataset contains ownership information about companies created in 10 offshore jurisdictions including the British Virgin Islands, the Cook Islands and Singapore.
+It covers nearly 30 years until 2010.
 
-The http://offshoreleaks.icij.org/about/caveats[publicly released dataset] is a small part of a cache of 2.5 million leaked offshore files that ICIJ analysed. Even so, it still contains around 250k nodes, 500k edges and 1.2 million properties. This size and relational nature of the complex, international networks between offshore entities make it an excellent match for graph databases such as Neo4j.
+The http://offshoreleaks.icij.org/about/caveats[publicly released dataset] is a small part of a cache of 2.5 million leaked offshore files that ICIJ analysed.
+Even so, it still contains around 250k nodes, 500k edges and 1.2 million properties.
+This size and relational nature of the complex, international networks between offshore entities make it an excellent match for graph databases such as Neo4j.
 
 For this GraphGist-walkthrough we select a very small subset of this public dataset, and demonstrate how this data can be modeled, queried and displayed.
 
@@ -18,15 +21,25 @@ For this GraphGist-walkthrough we select a very small subset of this public data
 
 == Simplified Data Model
 
-We restructure the ICIJ-data into a simplified version. Our datamodel consists of three node types, +Entity+ nodes, +Location+ nodes and +Jurisdiction+ nodes, related with seven edge types. A limited subset of properties is included, e.g. whether the entity is still active or not ("status"), the date of incorporation, etc.
+We restructure the ICIJ-data into a simplified version.
+Our datamodel consists of three node types, `Entity` nodes, `Location` nodes and `Jurisdiction` nodes, related with seven edge types.
+A limited subset of properties is included, e.g. whether the entity is still active or not ("status"), the date of incorporation, etc.
 
+.The Simplified Data Model
 image::http://i.imgur.com/p5icHev.png[]
 
-An +Entity+ can be a natural person, organization or juridical entity and is related to other entities, either as a _OFFICER_ of the other entity, a _CLIENT_ of the other entity or as a related entity (e.g. two daughter companies). Both the _OFFICER_ and the _CLIENT_ relationships have subtypes indicated with a "type"-property on the edge, e.g. "Shareholder", "Beneficial Owner", etc. and can have a "start" and "end"-property indicating the duration of the relationship.
+An `Entity` can be a natural person, organization or juridical entity and is related to other entities, either as a _OFFICER_ of the other entity, a _CLIENT_ of the other entity or as a related entity (e.g. two daughter companies).
+Both the _OFFICER_ and the _CLIENT_ relationships have subtypes indicated with a "type"-property on the edge, e.g. "Shareholder", "Beneficial Owner", etc. and can have a "start" and "end"-property indicating the duration of the relationship.
 
-Entities are related to a geographical +Location+ through a _LOCATED_-relationship, based on a non-normalized address string. This location can have a bi-directional _COLLOCATED_-relationship with another location, indicating that while the address-string is not the same, the geographical location de facto is. For instance two entities sharing an address, but with a different postbox. This is frequently the case with offshore companies, as they can be registered with thousands at the same address.
+Entities are related to a geographical `Location` through a `LOCATED`-relationship, based on a non-normalized address string.
+This location can have a bi-directional `COLLOCATED`-relationship with another location, indicating that while the address-string is not the same, the geographical location de facto is.
+For instance two entities sharing an address, but with a different postbox.
+This is frequently the case with offshore companies, as they can be registered with thousands at the same address.
 
-Each location is _PARTOF_ a +Jurisdiction+, which can be a country, or a somewhat independent subnational territorial unit that is _PARTOF_ a larger jurisdiction/country. Making this distinction in the datamodel is highly relevant, given the structure of offshore networks. The most popular jurisdictions are neither well-established, large jurisdictions such as countries, nor small and possibly unstable independent territories, but those in between. I.e. semi-independent territories that have a certain degree of juridical and fiscal autonomy to facilitate offshore constructions, but are part of a larger territorial entity to insure stability. For instance British Crown dependencies such as http://en.wikipedia.org/wiki/Jersey[Jersey] or http://en.wikipedia.org/wiki/Guernsey[Guernsey].
+Each location is `PARTOF` a `Jurisdiction`, which can be a country, or a somewhat independent subnational territorial unit that is `PARTOF` a larger jurisdiction/country.
+Making this distinction in the datamodel is highly relevant, given the structure of offshore networks.
+The most popular jurisdictions are neither well-established, large jurisdictions such as countries, nor small and possibly unstable independent territories, but those in between. I.e. semi-independent territories that have a certain degree of juridical and fiscal autonomy to facilitate offshore constructions, but are part of a larger territorial entity to insure stability.
+For instance British Crown dependencies such as http://en.wikipedia.org/wiki/Jersey[Jersey] or http://en.wikipedia.org/wiki/Guernsey[Guernsey].
 
 Apart from their geographical location, entities are related to a jurisdiction through a _INJURD_-relationship ("in jurisdiction"), indicating that they have a tax obligation to this jurisdiction.
 
@@ -151,7 +164,8 @@ RETURN e.label AS Entity, e.type AS Type, e.status AS Status, e.incorporated AS 
 -----
 //table
 
-A first descriptive query provides an overview of the included entities: juridical type, activity-status, incorporation date, and the jurisdiction they are located in. In the query we make the distinction between the direct and the main jurisdiction: if the jurisdiction has a _PARTOF_ relation with another jurisdiction, the later is also displayed as "Main Jurisdiction".
+A first descriptive query provides an overview of the included entities: juridical type, activity-status, incorporation date, and the jurisdiction they are located in.
+In the query we make the distinction between the direct and the main jurisdiction: if the jurisdiction has a `PARTOF` relation with another jurisdiction, the later is also displayed as "Main Jurisdiction".
 
 Why this is relevant is immediately visible in the results table: while offshore entities such as the Sefren Trust are directly registered in countries such as Singapore, entities such as CorpShare Ltd are registered in http://en.wikipedia.org/wiki/Labuan[Labuan], a federal territory of Malaysia that is aggressively marketed as an offshore financial centre.
 
@@ -168,15 +182,19 @@ A second descriptive query shows us the types of _CLIENT_ and _OFFICER_ relation
 
 == Exploring hidden relationships
 
-The power of graph databases and query languages becomes more readily visible when we are interested in complex relations between entities, which would required demanding JOINS, etc. in traditional databases.
+The power of graph databases and query languages becomes more readily visible when we are interested in complex relations between entities, which would required demanding `JOINS`, etc. in traditional databases.
 
 === Should we check for companies on the 7½th floor?
 
-For instance, when looking for link that are possibly not apparent on first sight, we might look at entities that formally share the same +Location+. However, this might overlook links, as locations are matched on an non-normalized address-string, e.g. a different postbox would mean there is no formal relation.
+For instance, when looking for link that are possibly not apparent on first sight, we might look at entities that formally share the same `Location`.
+However, this might overlook links, as locations are matched on an non-normalized address-string, e.g. a different postbox would mean there is no formal relation.
 
-An example of a more inclusive query is presented below. We start from a selected entity, the offshore entity Gurker Sdn Bhd, and select its registered location using the first MATCH and the WITH statement. In the second MATCH statement we query for all entities that are (1) registered on the same location (identical address) and the entities that are registered on the locations that are collocated with the address of our starting entity.
+An example of a more inclusive query is presented below.
+We start from a selected entity, the offshore entity Gurker Sdn Bhd, and select its registered location using the first `MATCH` and the `WITH` statement.
+In the second `MATCH` statement we query for all entities that are (1) registered on the same location (identical address) and the entities that are registered on the locations that are collocated with the address of our starting entity.
 
-While Sherper Sdn Bhd, CorpDirect Ltd, CorpSec Ltd, and CorpShare Ltd share the address of Gurker Sdn Bhd, we find an additional, collocated entity: Portcullis TrustNet (Labuan) Limited. The first group of entities is registered on the 6th floor, while the later is registered on the 7th floor of the same building.
+While Sherper Sdn Bhd, CorpDirect Ltd, CorpSec Ltd, and CorpShare Ltd share the address of Gurker Sdn Bhd, we find an additional, collocated entity: Portcullis TrustNet (Labuan) Limited.
+The first group of entities is registered on the 6th floor, while the later is registered on the 7th floor of the same building.
 
 [source, cypher]
 -----
@@ -198,9 +216,13 @@ RETURN e.label AS Label, location.label AS Location
 -----
 //table
 
-The two returned entities are persons living in Antwerp, Belgium. A more interesting follow-up query would be establishing whether there is a relationship between these two persons throughout the graph of offshore entities.
+The two returned entities are persons living in Antwerp, Belgium.
+A more interesting follow-up query would be establishing whether there is a relationship between these two persons throughout the graph of offshore entities.
 
-To answer this, we use the build-in +shortestPath+-function. We specify the two nodes we are establishing a path between, and specify the types of relationships the shortest path algorithm may follow. We are explicitly interested in client/officer links, shared/collocated addresses, related entity-relations, etc. By specifying this, we also exclude paths (_PARTOF_) that go over jurisdictions--otherwise the shared jurisdiction of Belgium would of course be the shortest path.
+To answer this, we use the build-in +shortestPath+-function.
+We specify the two nodes we are establishing a path between, and specify the types of relationships the shortest path algorithm may follow.
+We are explicitly interested in client/officer links, shared/collocated addresses, related entity-relations, etc.
+By specifying this, we also exclude paths (`PARTOF`) that go over jurisdictions--otherwise the shared jurisdiction of Belgium would of course be the shortest path.
 
 [source, cypher]
 -----
@@ -209,16 +231,28 @@ RETURN p AS `Shortest Path Baumwald-Bossaerts`
 -----
 //table
 
-The query returs a single result, establishing that there is a link between the two Belgian entities. The figure below, generated by running the same query in the Neo4j 2.0 local webinterface, gives a more readily interpretable view.
+The query returs a single result, establishing that there is a link between the two Belgian entities.
+The figure below, generated by running the same query in the Neo4j 2.0 local webinterface, gives a more readily interpretable view.
 
-The path is completed by the _RELATED_-path between Portcullis TrustNet (Labuan) Limited and Portcullis Trust (Singapore) Limited. These are regional branches of http://uk.reuters.com/article/2013/06/03/uk-portcullis-wealth-insight-idUKBRE9510E920130603[Portcullis TrustNet], one of dozens of http://www.icij.org/offshore/trusted-service-provider-blends-invisible-offshore-world[offshore service providers], and the source of a large part of the leaked ICIJ-data. The main service companies such as Portcullis TrustNet--one of the largest in the industry--provide is ensuring that names, finances, business interests and political links remain hidden.
+The path is completed by the `RELATED`-path between Portcullis TrustNet (Labuan) Limited and Portcullis Trust (Singapore) Limited.
+These are regional branches of http://uk.reuters.com/article/2013/06/03/uk-portcullis-wealth-insight-idUKBRE9510E920130603[Portcullis TrustNet], one of dozens of http://www.icij.org/offshore/trusted-service-provider-blends-invisible-offshore-world[offshore service providers], and the source of a large part of the leaked ICIJ-data.
+The main service companies such as Portcullis TrustNet--one of the largest in the industry--provide is ensuring that names, finances, business interests and political links remain hidden.
 
+.The Results
 image::http://i.imgur.com/iSJFqSJ.png[]
 
 == Postscript
 
-The real value of these kind of applications lies of course not in clever queries, but in the degree that it would help investigative and data journalists in trawling through such massive datasets. This GraphGist is focussed on the technical aspects of modelling and querying the public ICIJ-dataset, and not the results as such. However, even the example data (that was selected at random from the Belgian subset), show the potential these kind of applications have for data journalism. Two comments:
+The real value of these kind of applications lies of course not in clever queries, but in the degree that it would help investigative and data journalists in trawling through such massive datasets.
+This GraphGist is focussed on the technical aspects of modelling and querying the public ICIJ-dataset, and not the results as such.
+However, even the example data (that was selected at random from the Belgian subset), show the potential these kind of applications have for data journalism. Two comments:
 
-A public search identifies Christiaan Bossaerts as the http://www.belgianconsularunion.be/nl/?page_id=33[Belgian honorary Consul-General for Indonesia]. Honorary Consulships are generally given to individuals with good connections in the representing country, especially w.r.t. business-links. A honorary Consul with involvement in entities in an infamous offshore jurisdiction such as Labuan might be an interesting start for an article.
+A public search identifies Christiaan Bossaerts as the http://www.belgianconsularunion.be/nl/?page_id=33[Belgian honorary Consul-General for Indonesia].
+Honorary Consulships are generally given to individuals with good connections in the representing country, especially w.r.t. business-links.
+A honorary Consul with involvement in entities in an infamous offshore jurisdiction such as Labuan might be an interesting start for an article.
 
-Similarly, Luscha Baumwald shows up in the news in 2012, when he was http://www.gva.be/regio-antwerpen-stad/antwerpen2018/radisson-hotel-aan-van-eycklei-verbeurd-verklaard.aspx[convicted for fraud] due to his involvement in the Radisson-case. This luxury hotel in Antwerp was used for years as a front to launder money from http://www.politics.be/nieuws/5678/[tax evasion and offshore constructions]. As far as I can tell, this case has not yet been linked in the media to the ICIJ-dataset.
+Similarly, Luscha Baumwald shows up in the news in 2012, when he was http://www.gva.be/regio-antwerpen-stad/antwerpen2018/radisson-hotel-aan-van-eycklei-verbeurd-verklaard.aspx[convicted for fraud] due to his involvement in the Radisson-case.
+This luxury hotel in Antwerp was used for years as a front to launder money from http://www.politics.be/nieuws/5678/[tax evasion and offshore constructions].
+As far as I can tell, this case has not yet been linked in the media to the ICIJ-dataset.
+
+//console
