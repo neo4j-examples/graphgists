@@ -1,21 +1,30 @@
-= Piping Water =
-:neo4j-version: 2.2.0
-:author: Shaun Daley
-:twitter: @shaundaley1
-:tags: resources domain:Shutting Valves and Migrating Infrastructure
+= Piping Water
+:neo4j-version:2.2.0
+:author:Shaun Daley
+:twitter:@shaundaley1
+:tags:resources
+domain:Shutting Valves and Migrating Infrastructure
+
+:toc:
 
 == Inspiration
 
-London's antique water distribution network is infamous: it loses a http://www.theguardian.com/commentisfree/2012/may/08/water-industry-pipes-scandal[quarter of the water] supplied to London (spilt into the ground). Consequence: http://www.bbc.co.uk/news/10213835[desalination], massive additional CO2 emissions, road congestion caused by too many emergency excavations and very high water prices for consumers. London's case is severe but not atypical: most cities suffer from the same underlying infrastructure problem. Pipes and valves buried below busy urban streets are inherently difficult and expensive to maintain. Inaccessibility, lack of information, failure to efficiently process data and the high cost of each human intervention in legacy systems all compound to undermine efficient resource distribution.
+London's antique water distribution network is infamous: it loses a http://www.theguardian.com/commentisfree/2012/may/08/water-industry-pipes-scandal[quarter of the water] supplied to London (spilt into the ground). Consequence: http://www.bbc.co.uk/news/10213835[desalination], massive additional CO~2~ emissions, road congestion caused by too many emergency excavations and very high water prices for consumers.
+London's case is severe but not atypical: most cities suffer from the same underlying infrastructure problem. Pipes and valves buried below busy urban streets are inherently difficult and expensive to maintain.
+Inaccessibility, lack of information, failure to efficiently process data and the high cost of each human intervention in legacy systems all compound to undermine efficient resource distribution.
 
-Modern wireless networking offers the first crucial part in reducing the human time and cost of maintenance, and avoiding environmental damage: modern valves can be remotely (and even autonomously) operated to isolate components and pipe sections; modern flow sensors can transmit cross-section flow rates minute-by-minute. The remaining challenge is to log, model and process these resources on a city scale (London sized) with several hundred million components (pipe sections, valves, pumps, flow sensors, outlets, sources, etc) and the sparse, evolving relations between those components. Neo4j fits this bill perfectly.
+Modern wireless networking offers the first crucial part in reducing the human time and cost of maintenance, and avoiding environmental damage: modern valves can be remotely (and even autonomously) operated to isolate components and pipe sections; modern flow sensors can transmit cross-section flow rates minute-by-minute.
+The remaining challenge is to log, model and process these resources on a city scale (London sized) with several hundred million components (pipe sections, valves, pumps, flow sensors, outlets, sources, etc) and the sparse, evolving relations between those components.
+Neo4j fits this bill perfectly.
 
 To illustrate the domain, we'll eliminate most complexity and focus on a single (but ubiquitous) problem.
 
 
 _Using the Design for Queryability modeling approach by http://twitter.com/ianrobinson[Ian Robinson]_
 
-=== 1. Application/End-User Goals ===
+== Illustrating the Domain
+
+=== Application/End-User Goals
 
 ____
 *As an* engineer for a water utility
@@ -25,7 +34,7 @@ ____
 *So that* we can rapidly isolate a burst pipe, leaking valve or a set of components for replacement.
 ____
 
-=== 2. Questions To Ask of the Domain ===
+=== Questions To Ask of the Domain
 
 ____
 What is the set of valves that must be closed to isolate the smallest possible part of the network including a set of components?
@@ -33,7 +42,7 @@ What is the minimum set of network controllable (or manhole-accessible) valves t
 ____
 
 
-=== 3. Identify Entities ===
+=== Identify Entities
 
 ____
 * Component (pipes, sources, outlets, pumps, flow sensors, etc)
@@ -41,27 +50,27 @@ ____
 * Valve
 ____
 
-=== 4. Identify Relationships Between Entities ===
+== Identify Relationships Between Entities
 
 ----
 (:Component)  <- [:CONNECTS] - (:Connection) - [:CONNECTS] -> (:Component)
 (:Valve)      - [:CLOSES]   -> (:Connection)
 ----
-Valves are distinct objects with their own relationships e.g. IP address, API key, state information, whether they are manually closed clockwise or anti-clockwise (both valve closing directions exist and are widely prevalent in UK legacy water distribution infrastructure). For efficiency of querying, the nature of connections is duplicated in the relationship also:
+Valves are distinct objects with their own relationships e.g. IP address, API key, state information, whether they are manually closed clockwise or anti-clockwise (both valve closing directions exist and are widely prevalent in UK legacy water distribution infrastructure).
+For efficiency of querying, the nature of connections is duplicated in the relationship also:
 ----
 (:Valve{access:'API'}) -> [:CLOSES] -> (:Connection) -> [:API_CONNECTS] -> (:Component)
 (:Valve{access:'Manhole'}) -> [:CLOSES] -> (:Connection) -> [:MANHOLE_CONNECTS] -> (:Component)
 (:Valve{access:'Excavation'}) -> [:CLOSES] -> (:Connection) -> [:EXCAV_CONNECTS] -> (:Component)
 ----
 
-=== Candidate Data Model ===
-
+== Candidate Data Model
 
 //hide
 //setup
 [source,cypher]
 ----
-CREATE 
+CREATE
        (burstPipe:Component{name:"BurstPipe"}),
        (pipe1:Component),
        (pipe2:Component),
@@ -127,7 +136,7 @@ RETURN *
 ----
 // graph
 
-==== Isolate the Burst Pipe Using Only Remote Calls to API-Accessible Valves ====
+==== Isolate the Burst Pipe Using Only Remote Calls to API-Accessible Valves
 
 [source,cypher]
 ----
@@ -140,7 +149,7 @@ RETURN v
 // table
 // console
 
-==== Isolate the Burst Pipe Using Manhole-Accessible and API-Accessible Valves ====
+==== Isolate the Burst Pipe Using Manhole-Accessible and API-Accessible Valves
 
 [source,cypher]
 ----
@@ -149,11 +158,10 @@ MATCH (burstPipe)-[:CONNECTS|EXCAV_CONNECTS*0..]-()-[:MANHOLE_CONNECTS|API_CONNE
 RETURN v
 
 ----
-
 // table
 // console
 
-==== Isolate the Burst Pipe Using Any Existing Valves ====
+==== Isolate the Burst Pipe Using Any Existing Valves
 
 [source,cypher]
 ----
@@ -162,7 +170,6 @@ MATCH (burstPipe)-[:CONNECTS*0..]-()-[:EXCAV_CONNECTS|MANHOLE_CONNECTS|API_CONNE
 RETURN v
 
 ----
-
 // table
 // console
 
@@ -171,11 +178,10 @@ RETURN v
 For real world application, there are some necessary modifications (e.g. modelling state information in relationships, such as whether a connection is presently closed or scheduled for opening/closing; limiting query depth and notifying of query failure in event of maximum query depth being reached).
 
 In real world application, extending the above model, there is potential for adding greater value still:
-____
+
 - estimating the marginal water savings from replacing any defined set of components
 - estimating the resilience of network water pressure to failure of specific pumps (both current and under hypothetical modifications to the network)
 - scheduling replacement or state-change of parts, and communicating this seamlessly (and automatically) in real time to all other parties that this might affect
-etc
-____
 
-This approach is more generic than it may initially seem. Many resource problems involve networks of distribution in which many components interact across sparse relationships (electricity generation and distribution, natural gas, sewage, district-piped heating); rapid and efficient querying on these relationships is necessary for efficient resource allocation and better environmental and cost outcomes.
+This approach is more generic than it may initially seem.
+Many resource problems involve networks of distribution in which many components interact across sparse relationships (electricity generation and distribution, natural gas, sewage, district-piped heating); rapid and efficient querying on these relationships is necessary for efficient resource allocation and better environmental and cost outcomes.

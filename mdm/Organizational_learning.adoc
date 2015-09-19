@@ -1,21 +1,32 @@
 = Organization Learning
-:neo4j-version: 2.0.0
+:neo4j-version:2.2.0
+:twitter:@luannem
 
-Learning Management Systems (LMS) are typically deployed in large organizations to support learning processes that align with business goals. These systems tie together their employees, organizations, certifications, courses, jobs in order to supplement business strategy.
+:toc:
+
+Learning Management Systems (LMS) are typically deployed in large organizations to support learning processes that align with business goals
+These systems tie together their employees, organizations, certifications, courses, jobs in order to supplement business strategy.
 This graph gist models a slice of this ecosystem- certification paths and position dependencies on certifications.
 
 == Domain
-A certification has one or more learning paths. A learning path is an ordered sequence of items that must be completed in order to acquire the certification. A learning item can be completed by taking a course or proving work experience. A course has a delivery type- it can be web based or classroom. Work Experience specifies the number of hours one must put in to complete it.
-To aquire a certification, an employee can take take any learning path and complete every item in it.
 
-Employees hold certifications and complete courses and work experience. An employee may fill a position which requires that the incumbent possess certain certifications.  
+A certification has one or more learning paths.
+A learning path is an ordered sequence of items that must be completed in order to acquire the certification.
+A learning item can be completed by taking a course or proving work experience.
+A course has a delivery type- it can be web based or classroom.
+Work Experience specifies the number of hours one must put in to complete it.
+To acquire a certification, an employee can take take any learning path and complete every item in it.
+
+Employees hold certifications and complete courses and work experience.
+An employee may fill a position which requires that the incumbent possess certain certifications.
 
 === Exclusions
+
 Career paths, employee skills, course pricing, goals, recertification etc.
 Also missing are institutes and instructors (see: http://gist.neo4j.org/?8021580 )
 
-
 == Goal
+
 The model will help us answer the following questions:
 
 . As an employee, what are the prerequisites for a certification?
@@ -35,9 +46,12 @@ The model will help us answer the following questions:
 * Position with attribute name
 * Person with attribute name
 
-Each entity will be labeled according to its type. In addition, the delivery mode on a course is modeled as a label. For the queries we want to answer above, this is sufficient, there is no need to model the delivery mode as an attribute as well.
+Each entity will be labeled according to its type.
+In addition, the delivery mode on a course is modeled as a label.
+For the queries we want to answer above, this is sufficient, there is no need to model the delivery mode as an attribute as well.
 
 === Relationships
+
 * A certification has one or more learning paths.
 * A certification is a prerequisite for one or more certifications.
 * A learning path has an ordered list of learning items.
@@ -49,26 +63,36 @@ Each entity will be labeled according to its type. In addition, the delivery mod
 * An employee completes one or more work experiences.
 
 
-A certification path consists of one or more ordered learning items. Since a certification can have more than one path, and items on the path can be common, we need a way to identify which items constitute one learning path. So a certification path is modelled as a chain where each "next" relation is qualified by the learning path name. 
+A certification path consists of one or more ordered learning items.
+Since a certification can have more than one path, and items on the path can be common, we need a way to identify which items constitute one learning path.
+So a certification path is modelled as a chain where each "next" relation is qualified by the learning path name.
 
+.The Path to Certification
 image::https://dl.dropboxusercontent.com/u/15330610/CertPath.png[]
 
-Note above that the relation from a certification to its learning items are modeled using the same relation type: NEXT_LEARNING. This makes it easier to query for an entire path starting at the certification.
-This evolved from a model where a `(certification)-[:HAS_LEARNING_PATH]->(learningItem)-[:NEXT]->(learningItem)-[:NEXT]->(learningItem)`.
+Note above that the relation from a certification to its learning items are modeled using the same relation type: `NEXT_LEARNING`.
+This makes it easier to query for an entire path starting at the certification.
+
+This evolved from a model where a the following is true:
+
+[source,cypher]
+----
+(certification)-[:HAS_LEARNING_PATH]->(learningItem)-[:NEXT]->(learningItem)-[:NEXT]->(learningItem)
+----
+
 Two relations added no immediate value and more complexity to the kinds of queries targeted, so it was remodeled as a single relation.
 
 The other relations are self explanatory.
 
+.LMS Model
 image::https://dl.dropboxusercontent.com/u/15330610/LMS-model.jpg[]
 
-The nice advantage with the schema free property of a graph is the ability to attach any kinds of entities to fulfil learning items and still run the same kinds of queries as you would with a simplified model as above.
+The nice advantage with the schema free property of a graph is the ability to attach any kinds of entities to fulfill learning items and still run the same kinds of queries as you would with a simplified model as above.
 
 == Setup
 
 //hide
-
 //setup
-
 [source,cypher]
 ----
 CREATE (cert1:Certification { name: "Cert1" })
@@ -106,10 +130,10 @@ CREATE (person3:Person { name: "Person3" })
 CREATE (cert2)-[:IS_PREREQUISITE]->(cert1)
 CREATE (cert1)-[:IS_PREREQUISITE]->(cert3)
 
-CREATE (cert1)-[:NEXT_LEARNING {path : "cert1-scheduled"}]->(li1)-[:NEXT_LEARNING {path : "cert1-scheduled"} ]->(li2)-[:NEXT_LEARNING {path : "cert1-scheduled"}]->(li3)
-CREATE (cert1)-[:NEXT_LEARNING {path : "cert1-selfpaced"}]->(li5)-[:NEXT_LEARNING {path : "cert1-selfpaced"}]->(li6)
-CREATE (cert2)-[:NEXT_LEARNING {path : "cert2-scheduled"}]->(li1)-[:NEXT_LEARNING {path : "cert2-scheduled"}]->(li4)
-CREATE (cert3)-[:NEXT_LEARNING {path : "cert3-scheduled"}]->(li7)-[:NEXT_LEARNING {path : "cert3-scheduled"}]->(li8)-[:NEXT_LEARNING {path : "cert3-scheduled"}]->(li9)
+CREATE (cert1)-[:NEXT_LEARNING {path: "cert1-scheduled"}]->(li1)-[:NEXT_LEARNING {path: "cert1-scheduled"} ]->(li2)-[:NEXT_LEARNING {path: "cert1-scheduled"}]->(li3)
+CREATE (cert1)-[:NEXT_LEARNING {path: "cert1-selfpaced"}]->(li5)-[:NEXT_LEARNING {path: "cert1-selfpaced"}]->(li6)
+CREATE (cert2)-[:NEXT_LEARNING {path: "cert2-scheduled"}]->(li1)-[:NEXT_LEARNING {path: "cert2-scheduled"}]->(li4)
+CREATE (cert3)-[:NEXT_LEARNING {path: "cert3-scheduled"}]->(li7)-[:NEXT_LEARNING {path: "cert3-scheduled"}]->(li8)-[:NEXT_LEARNING {path: "cert3-scheduled"}]->(li9)
 
 CREATE (li1)-[:FULFILLED_BY]->(course1)
 CREATE (li2)-[:FULFILLED_BY]->(course2)
@@ -147,6 +171,7 @@ match n return n
 == Queries:
 
 === What are the prerequisites for Certification 3?
+
 [source,cypher]
 ----
 MATCH (c:Certification {name:"Cert3"})<-[:IS_PREREQUISITE]-(prereq)
@@ -155,18 +180,21 @@ RETURN prereq.name
 //table
 
 === What learning paths does Cert1 have?
+
 [source,cypher]
 ----
 MATCH p=(c:Certification {name:"Cert1"})-[lp:NEXT_LEARNING*]->(li)-[:FULFILLED_BY]->(f)
-WITH head(lp).path as startPath,lp,p,f 
+WITH head(lp).path as startPath,lp,p,f
 WHERE ALL (x in lp where x.path=startPath)
 RETURN p
 ----
 //table
 
+.Learning paths for Cert1
 image::https://dl.dropboxusercontent.com/u/15330610/paths1.png[]
 
 === To be certified in Cert1, which paths can I take which contain only web based courses?
+
 [source,cypher]
 ----
 MATCH p=(cert:Certification {name:"Cert1"})-[lp:NEXT_LEARNING*]->(li)
@@ -178,9 +206,11 @@ RETURN p
 ----
 //table
 
+.Attain Cert1 with only web-based courses
 image::https://dl.dropboxusercontent.com/u/15330610/paths2.png[]
 
 === What certifications does Person1 need to move up to Position2?
+
 [source,cypher]
 ----
 MATCH (position:Position {name:"Position2"})-[:REQUIRES]->(cert)
@@ -193,6 +223,7 @@ RETURN cert.name as missingCert
 //table
 
 === Which people do not hold required certifications for their position?
+
 [source,cypher]
 ----
 MATCH (person:Person)-[:HOLDS_POSITION]->(position:Position)-[:REQUIRES]->(cert)
@@ -202,6 +233,7 @@ RETURN person.name, collect(cert.name) as missingCerts
 //table
 
 === Based on his current certifications, what are the potential positions for Person2?
+
 [source,cypher]
 ----
 MATCH (person:Person)-[:HAS_CERTIFICATION]->(cert)
@@ -217,9 +249,5 @@ RETURN position.name
 Created by Luanne Misquitta:
 
 - link:https://twitter.com/luannem[Twitter]
-
 - link:http://thought-bytes.blogspot.in/[Blog]
-
 - link:https://in.linkedin.com/in/luannemisquitta/[LinkedIn]
-
-

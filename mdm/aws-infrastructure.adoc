@@ -1,24 +1,28 @@
-= Amazon Web Services Global Infrastructure Graph =
-:neo4j-version: 2.0.0
+= Amazon Web Services Global Infrastructure Graph
+:neo4j-version:2.2.0
+:twitter:@AIDANJCASEY
 
+:toc:
 
-Amazon Web Services global infractructure is steadily expanding and now serves thousands of customers in over 190 countries.
+Amazon Web Services global infrastructure is steadily expanding and now serves thousands of customers in over 190 countries.
 Certain services are only available in some regions and compute prices vary across the globe.
-Wouldn't it be nice if you could slice and dice through the entire AWS domain of services, data centres and prices all in one spot to optimise your AWS bill? , enter the *AWS Global Infrastructure Graph*!
+Wouldn't it be nice if you could slice and dice through the entire AWS domain of services, data centres and prices all in one spot to optimise your AWS bill?
+Enter the *AWS Global Infrastructure Graph*!
 
 At the time of writing the AWS global infrastructure graph consists of  5 continents, with 10 regions, and 21 availability zones, offering 32 services. The data shown here is current as of 21 January 2014.
 
 **disclaimer
-AWS consumers beware! The prices and services listed in the graph are correct as of January 21st 2014, please refer to the AWS price calculator for the latest prices and service offering's per region -  http://calculator.s3.amazonaws.com/calc5.html **
+AWS consumers beware!
+The prices and services listed in the graph are correct as of January 21st 2014, please refer to the AWS price calculator for the latest prices and service offering's per region -  http://calculator.s3.amazonaws.com/calc5.html **
 
 feedback to aidancasey@gmail.com  | @AIDANJCASEY  |  http://acaseyblog.wordpress.com
 
-== Setup ==
+== Setup
+
 //hide
 //setup
 [source,cypher]
 ----
-
 CREATE (continent1:Continent{name:'North America'})
 CREATE (continent2:Continent{name:'South America'})
 CREATE (continent3:Continent{name:'Asia'})
@@ -26,16 +30,16 @@ CREATE (continent4:Continent{name:'Europe'})
 CREATE (continent5:Continent{name:'Australia'})
 
 
-CREATE (region1:Region{name:'N. Virginia' , launched:2006})
-CREATE (region2:Region{name:'Oregon' , launched:2011})
-CREATE (region3:Region{name:'N. California' , launched:2009})
-CREATE (region4:Region{name:'Ireland' , launched:2007})
-CREATE (region5:Region{name:'Singapore' , launched:2010})
-CREATE (region6:Region{name:'Tokyo' , launched:2011})
-CREATE (region7:Region{name:'Sydney' , launched:2012})
-CREATE (region8:Region{name:'Sao Paulo' , launched:2011})
-CREATE (region9:Region{name:'GovCloud' , launched:2011})
-CREATE (region10:Region{name:'Beijing' , launched:2014})
+CREATE (region1:Region{name:'N. Virginia',  launched:2006})
+CREATE (region2:Region{name:'Oregon',  launched:2011})
+CREATE (region3:Region{name:'N. California',  launched:2009})
+CREATE (region4:Region{name:'Ireland',  launched:2007})
+CREATE (region5:Region{name:'Singapore',  launched:2010})
+CREATE (region6:Region{name:'Tokyo',  launched:2011})
+CREATE (region7:Region{name:'Sydney',  launched:2012})
+CREATE (region8:Region{name:'Sao Paulo',  launched:2011})
+CREATE (region9:Region{name:'GovCloud',  launched:2011})
+CREATE (region10:Region{name:'Beijing',  launched:2014})
 
 CREATE (availabilityzone1:AvailabilityZone{name:'eu-west-1a'})
 CREATE (availabilityzone2:AvailabilityZone{name:'eu-west-1b'})
@@ -380,39 +384,39 @@ CREATE (region10)-[:OFFERS_SERVICE]->(service19)
 CREATE (region10)-[:OFFERS_SERVICE]->(service21)
 CREATE (region10)-[:OFFERS_SERVICE]->(service26)
 
-CREATE (instance1:EC2InstanceType{name:'m1.small', family :'general purpose' , memory:1.7 }) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance2:EC2InstanceType{name:'m1.medium', family :'general purpose', memory:3.75}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance3:EC2InstanceType{name:'m1.large', family :'general purpose' ,memory:7.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance4:EC2InstanceType{name:'m1.xlarge', family :'general purpose' ,memory:15}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance5:EC2InstanceType{name:'m3.xlarge', family :'general purpose' , memory:15 }) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance6:EC2InstanceType{name:'m3.2xlarge', family :'general purpose', memory:30}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance7:EC2InstanceType{name:'c1.medium', family :'Compute optimized', memory:1.7}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance8:EC2InstanceType{name:'c1.xlarge', family :'Compute optimized' ,memory:7}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance9:EC2InstanceType{name:'c3.large', family :'Compute optimized' ,memory:3.75}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance10:EC2InstanceType{name:'c3.xlarge', family :'Compute optimized' ,memory:7.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance11:EC2InstanceType{name:'c3.2xlarge', family :'Compute optimized' ,memory:15}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance12:EC2InstanceType{name:'c3.4xlarge', family :'Compute optimized' ,memory:30}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance13:EC2InstanceType{name:'c3.8xlarge', family :'Compute optimized' ,memory:60}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance14:EC2InstanceType{name:'cc2.8xlarge', family :'Compute optimized' ,memory:60.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance15:EC2InstanceType{name:'m2.xlarge', family :'Memory optimized' ,memory:17.1}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance16:EC2InstanceType{name:'m2.2xlarge', family :'Memory optimized' ,memory:34.2}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance17:EC2InstanceType{name:'m2.4xlarge', family :'Memory optimized' ,memory:68.4}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance18:EC2InstanceType{name:'cr1.8xlarge', family :'Memory optimized' ,memory:244}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance19:EC2InstanceType{name:'hi1.4xlarge', family :'Storage optimized' ,memory:60.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance20:EC2InstanceType{name:'hs1.8xlarge', family :'Storage optimized' ,memory:117}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance21:EC2InstanceType{name:'i2.xlarge', family :'Storage optimized' ,memory:30.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance22:EC2InstanceType{name:'Â i2.2xlarge', family :'Storage optimized' ,memory:61}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance23:EC2InstanceType{name:'i2.4xlargeÂ ', family :'Storage optimized' ,memory:122}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance24:EC2InstanceType{name:'i2.8xlarge', family :'Storage optimized' ,memory:244}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance25:EC2InstanceType{name:'t1.micro', family :'Micro instances' ,memory:.615}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance26:EC2InstanceType{name:'cg1.4xlarge', family :'GPU instances' ,memory:22.5}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance27:EC2InstanceType{name:'g2.2xlarge', family :'GPU instances' ,memory:15}) -[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance1:EC2InstanceType{name:'m1.small', family:'general purpose',  memory:1.7 })-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance2:EC2InstanceType{name:'m1.medium', family:'general purpose', memory:3.75})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance3:EC2InstanceType{name:'m1.large', family:'general purpose', memory:7.5})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance4:EC2InstanceType{name:'m1.xlarge', family:'general purpose', memory:15})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance5:EC2InstanceType{name:'m3.xlarge', family:'general purpose',  memory:15 })-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance6:EC2InstanceType{name:'m3.2xlarge', family:'general purpose', memory:30})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance7:EC2InstanceType{name:'c1.medium', family:'Compute optimized', memory:1.7})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance8:EC2InstanceType{name:'c1.xlarge', family:'Compute optimized', memory:7})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance9:EC2InstanceType{name:'c3.large', family:'Compute optimized', memory:3.75})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance10:EC2InstanceType{name:'c3.xlarge', family:'Compute optimized', memory:7.5})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance11:EC2InstanceType{name:'c3.2xlarge', family:'Compute optimized', memory:15})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance12:EC2InstanceType{name:'c3.4xlarge', family:'Compute optimized', memory:30})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance13:EC2InstanceType{name:'c3.8xlarge', family:'Compute optimized', memory:60})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance14:EC2InstanceType{name:'cc2.8xlarge', family:'Compute optimized', memory:60.5})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance15:EC2InstanceType{name:'m2.xlarge', family:'Memory optimized', memory:17.1})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance16:EC2InstanceType{name:'m2.2xlarge', family:'Memory optimized', memory:34.2})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance17:EC2InstanceType{name:'m2.4xlarge', family:'Memory optimized', memory:68.4})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance18:EC2InstanceType{name:'cr1.8xlarge', family:'Memory optimized', memory:244})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance19:EC2InstanceType{name:'hi1.4xlarge', family:'Storage optimized', memory:60.5})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance20:EC2InstanceType{name:'hs1.8xlarge', family:'Storage optimized', memory:117})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance21:EC2InstanceType{name:'i2.xlarge', family:'Storage optimized', memory:30.5})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance22:EC2InstanceType{name:'Â i2.2xlarge', family:'Storage optimized', memory:61})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance23:EC2InstanceType{name:'i2.4xlargeÂ ', family:'Storage optimized', memory:122})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance24:EC2InstanceType{name:'i2.8xlarge', family:'Storage optimized', memory:244})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance25:EC2InstanceType{name:'t1.micro', family:'Micro instances', memory:.615})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance26:EC2InstanceType{name:'cg1.4xlarge', family:'GPU instances', memory:22.5})-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance27:EC2InstanceType{name:'g2.2xlarge', family:'GPU instances', memory:15})-[:IS_EC2_INSTANCE_TYPE]->(service1)
 
 
 //instance 9
-CREATE (price1:Price{name:'PriceBook', desc:'region 1 price book' ,cost_per_hour:0.150})
-CREATE (price2:Price{name:'PriceBook', desc:'region 2 pricebook' ,cost_per_hour:0.150})
-CREATE (price3:Price{name:'PriceBook', desc:'region 3 pricebook' , cost_per_hour:0.171})
+CREATE (price1:Price{name:'PriceBook', desc:'region 1 price book', cost_per_hour:0.150})
+CREATE (price2:Price{name:'PriceBook', desc:'region 2 pricebook', cost_per_hour:0.150})
+CREATE (price3:Price{name:'PriceBook', desc:'region 3 pricebook',  cost_per_hour:0.171})
 
 CREATE (region1)-[:CHARGES]->(price1)-[:FOR_INSTANCE]->instance9
 CREATE (region2)-[:CHARGES]->(price2)-[:FOR_INSTANCE]->instance9
@@ -420,13 +424,13 @@ CREATE (region3)-[:CHARGES]->(price3)-[:FOR_INSTANCE]->instance9
 
 
 //instance1
-CREATE (price4:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.060})
+CREATE (price4:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.060})
 CREATE (region1)-[:CHARGES]->(price4)-[:FOR_INSTANCE]->instance1
 
 //instance 10
-CREATE (price5:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.300})
-CREATE (price6:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.300})
-CREATE (price7:Price{name:'PriceBook', desc:'foo' , cost_per_hour:0.342})
+CREATE (price5:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.300})
+CREATE (price6:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.300})
+CREATE (price7:Price{name:'PriceBook', desc:'foo',  cost_per_hour:0.342})
 
 CREATE (region1)-[:CHARGES]->(price5)-[:FOR_INSTANCE]->instance10
 CREATE (region2)-[:CHARGES]->(price6)-[:FOR_INSTANCE]->instance10
@@ -434,83 +438,88 @@ CREATE (region3)-[:CHARGES]->(price7)-[:FOR_INSTANCE]->instance10
 
 
 //instance 11
-CREATE (price8:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.600})
-CREATE (price9:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:0.600})
-CREATE (price10:Price{name:'PriceBook', desc:'foo' , cost_per_hour:0.683})
+CREATE (price8:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.600})
+CREATE (price9:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.600})
+CREATE (price10:Price{name:'PriceBook', desc:'foo',  cost_per_hour:0.683})
 
 CREATE (region9)-[:CHARGES]->(price8)-[:FOR_INSTANCE]->instance11
 CREATE (region2)-[:CHARGES]->(price9)-[:FOR_INSTANCE]->instance11
 CREATE (region3)-[:CHARGES]->(price10)-[:FOR_INSTANCE]->instance11
 
 //instance 12
-CREATE (price11:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:1.200})
-CREATE (price12:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:1.200})
-CREATE (price13:Price{name:'PriceBook', desc:'foo' , cost_per_hour:1.366})
+CREATE (price11:Price{name:'PriceBook', desc:'foo', cost_per_hour:1.200})
+CREATE (price12:Price{name:'PriceBook', desc:'foo', cost_per_hour:1.200})
+CREATE (price13:Price{name:'PriceBook', desc:'foo',  cost_per_hour:1.366})
 
 CREATE (region1)-[:CHARGES]->(price11)-[:FOR_INSTANCE]->instance12
 CREATE (region2)-[:CHARGES]->(price12)-[:FOR_INSTANCE]->instance12
 CREATE (region3)-[:CHARGES]->(price13)-[:FOR_INSTANCE]->instance12
 
 //instance 13
-CREATE (price14:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:2.400})
-CREATE (price15:Price{name:'PriceBook', desc:'foo' ,cost_per_hour:2.400})
-CREATE (price16:Price{name:'PriceBook', desc:'foo' , cost_per_hour:2.732})
+CREATE (price14:Price{name:'PriceBook', desc:'foo', cost_per_hour:2.400})
+CREATE (price15:Price{name:'PriceBook', desc:'foo', cost_per_hour:2.400})
+CREATE (price16:Price{name:'PriceBook', desc:'foo',  cost_per_hour:2.732})
 
 CREATE (region1)-[:CHARGES]->(price14)-[:FOR_INSTANCE]->instance13
 CREATE (region2)-[:CHARGES]->(price15)-[:FOR_INSTANCE]->instance13
 CREATE (region3)-[:CHARGES]->(price16)-[:FOR_INSTANCE]->instance13
 ----
 
-==  The Graph  ==
+==  The Graph
 //graph1
 
 == The Domain ==
+
+.The Domain Model
 image::https://github.com/aidancasey/AWSGraphComp/blob/master/aws.jpg?raw=true[Domain Model]
 
-== Some Use Cases... ==
- 
-== What is the cheapest compute optomised EC2 instance anywhere in North America? ==
+== Some Use Cases
+
+=== What is the cheapest compute optomised EC2 instance anywhere in North America? ==
+
 [source,cypher]
 ----
 MATCH (region)-[:IS_LOCATED_IN]->(Continent{name:'North America'})
 with region as usa_regions
-MATCH usa_regions-[:CHARGES]->(price)-[:FOR_INSTANCE]->(EC2InstanceType{family :'Compute optimized'})
+MATCH usa_regions-[:CHARGES]->(price)-[:FOR_INSTANCE]->(EC2InstanceType{family:'Compute optimized'})
 RETURN usa_regions.name as aws_region, min(price.cost_per_hour) as hourly_cost, EC2InstanceType.name as instance_type
 ORDER BY hourly_cost LIMIT 1;
 ----
-
 //table1
 
-== Which AWS region has the most availability zones? ==
+== Which AWS region has the most availability zones?
+
 [source,cypher]
 ----
 MATCH (region)-[:HAS_ISOLATED]->(AvailabilityZone)
-
 RETURN region.name as aws_region , count(AvailabilityZone) as count_availibility_zones
 ORDER BY count_availibility_zones DESC LIMIT 1
 ----
 
 //table2
 
-== What are the AWS regions that offer the service AWS CloudTrail? ==
+== What are the AWS regions that offer the service AWS CloudTrail?
+
 [source,cypher]
 ----
 MATCH (region)-[:OFFERS_SERVICE]->(Service{name:'AWS CloudTrail'})
-RETURN region.name as aws_region 
+RETURN region.name as aws_region
 ----
 
 //table3
 
-== Which EC2 instance type has the most available memory? ==
+== Which EC2 instance type has the most available memory?
+
 [source,cypher]
 ----
 MATCH (ec2: EC2InstanceType)
-WHERE HAS(ec2.memory) 
+WHERE HAS(ec2.memory)
 RETURN ec2.memory as memory_GiB, ec2.name ORDER BY ec2.memory DESC LIMIT 1
 ----
 
 //table3
- 
-Created by Aidan Casey
-twitter : @AIDANJCASEY
 
+Created by Aidan Casey
+twitter: @AIDANJCASEY
+
+//console

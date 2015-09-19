@@ -1,106 +1,128 @@
 = Behavioral Health Treatment Planning
 Greg Ricker <rickeg0@gmail.com>
 v1.0, 22-2-2015
-:neo4j-version: 2.0.0
-:author: Greg Ricker
-:twitter: greg_ricker
- 
-== Domain
-A key aspect of treatment in the field of behavioral health involves creating a treatment plan. Primarily a plan consists of four parts, Problem,Goal,Objective and Intervention.
+:neo4j-version:2.2.0
+:author:Greg Ricker
+:twitter:greg_ricker
 
-The Problem states, in general terms, what the patient is suffering with. This might be Depression, Low self-Esteem, Substanace Abuse.
-The Goal is the end result. Example "Demonstrate respect and regard for self and others"
+:toc:
+
+== Domain
+
+A key aspect of treatment in the field of behavioral health involves creating a treatment plan.
+Primarily a plan consists of four parts, Problem, Goal, Objective, and Intervention.
+
+The Problem states, in general terms, what the patient is suffering with.
+This might be Depression, Low self-Esteem, Substance Abuse.
+The Goal is the end result.
+Example "Demonstrate respect and regard for self and others"
 Objectives are steps along the way, ways in which the patient is going to improve.
 
-Interventions are tasks or activities performed as part of the plan. These may be things the patient does. Or it maybe others involved in the treatment.
+Interventions are tasks or activities performed as part of the plan. These may be things the patient does.
+Or it maybe others involved in the treatment.
 
-I am using the "Wiley treatment plan" data set as the model since it is one standard that is used in BH. 
+I am using the "Wiley treatment plan" data set as the model since it is one standard that is used in BH.
+
+.The Domain Model
 [Domain Model]
 image::https://gricker.files.wordpress.com/2015/02/wiley.png[]
 
+Plans come packaged as libraries.
+Problems have goals, objectives and interventions.
+I have left diagnosis and descriptions out since they are informational.
+In using the data set one first selects a library and then a problem.
+The options for goals, objectives or interventions are based on the library and problem selected.
+There are several deviations from this that make implementation difficult.
 
+The first is a special linkage from problem to goal to intervention.
+This says only allow interventions related to a specific problem and goal.
 
-Plans come packaged as libraries. Problems have goals, objectives and interventions. I have left diagnosis and descriptions out since they are informational. In using the data set one first selects a library and then a problem. The options for goals, objectives or interventions are based on the library and problem selected. There are several deviations from this that make impementation difficult. 
+The second change is that not everyone uses the plan in this defined order(problem-> [goal,objective,intervention]).
+A system has to let the user start from any point and work from there.
+The user can start with goal then jump to intervention and then on to problem.
+I don't claim to understand why they want to do this, its a requirement.
 
-The first is a special linkage from problem to goal to intervention. This says only allow interventions related to a specific problem and goal.  
+Thirdly, the information(goals, objectives, interventions) is reused.
+GoalA maybe used for ProblemA in LibraryA but it maybe used again with other problems within the same library or span libraries.
 
-The second change is that not everyone uses the plan in this defined order(problem-> [goal,objective,intervention]). A system has to let the user start from any point and work from there. The user can start with goal then jump to intervention and then on to problem. I don't claim to understand why they want to do this, its a requirement.
+Setting this up in an SQL database required a separate table to maintain "linkages" for each plan.
+Searching requires traversing the linkage table a number of times.
+The result are queries that can run from two to ten seconds depending on how many libraries are loaded.
 
-Thirdly, the information(goals, objectives, interventions) is resused.  GoalA maybe used for ProblemA in LibraryA but it maybe used again with other problems within the same library or span libraries.
+Implementing this in Neo4 resulted in 300 nodes and 120k relationships.
+A typical query runs in about 500 ms and
+returns 500-700 values.
+Adding custom plans that deviate from the Wiley plan is easy and doesn't affect the performance.
 
-Setting this up in an SQL database required a seperate table to maintain "linkages" for each plan. Searching requires traversing the linkage table a number of times.The result are queries that can run from two to ten seconds depending on how many libraries are loaded.
-
-Implementing this in Neo4 resulted in 300 nodes and 120k relationships. A typical query runs in about 500 ms and 
-returns 500-700 values. Adding custom plans that deviate from the Wiley plan is easy and doesn't affect the performance.
-
+.Domain model
 [Domain Model]
 image::https://gricker.files.wordpress.com/2015/02/treatment-model.png[]
-
 
 ==  Identify Relationships Between Entities
 
 ----
 (:Library)  - [:HAS_PROBLEM] -> (:Problem) - [:HAS_GOAL] -> (:Goal)
-(:Problem)  - [:HAS_OBJECTIVE]   -> (:Objective) 
+(:Problem)  - [:HAS_OBJECTIVE]   -> (:Objective)
 (:Problem)  - [:HAS_INTERVENTION] -> (:Intervenion)
 ----
 
 
-===  Data Model ===
-The sample data set uses a one library, one problem and four objectives,goals and interventions.
+===  Data Model
+
+The sample data set uses a one library, one problem, and four objectives, goals, and interventions.
 
 //hide
 //setup
 //output
 [source,cypher]
 ----
-create (lib:Library { GroupID : '230', Description : 'School Counseling and Social Work' })
-create (prob1:Problem { name : '17', Description : 'Parenting Skills/Discipline',GroupID:'230' })
-create (obj1:Objective { name : '9', Description : 'Parents use natural and logical consequences to redirect the students behavior.',GroupID:'230',ProblemNumber:'17' })
-create (obj2:Objective  { name : '8', Description : 'Parents allow the student to learn from his/her mistakes.',GroupID:'230',ProblemNumber:'17'  })
-create (obj3:Objective { name : '6', Description : 'Parents set limits using positive discipline strategies.',GroupID:'230',ProblemNumber:'17'  })
-create (obj4:Objective { name : '20', Description : 'Parents work to maintain a strong, couple-centered family environment',GroupID:'230',ProblemNumber:'17'  })
-create (goal1:Goal { name : '4', Description : 'Acquire positive and moral character traits',GroupID:'230',ProblemNumber:'17' })
-create (goal2:Goal  { name : '3', Description : 'Demonstrate respect and regard for self and others.',GroupID:'230',ProblemNumber:'17'  })
-create (goal3:Goal { name : '5', Description : 'Parents acquire positive discipline strategies that set limits and encourage independence.,',GroupID:'230',ProblemNumber:'17'  })
-create (goal4:Goal { name : '6', Description : 'Family atmosphere is peaceful, loving, and harmonious.',GroupID:'230',ProblemNumber:'17'  })
-create (intervention1:Intervention { name : '7', Description : 'Suggest that the parents and the student meet weekly at a designated time to review progress, give encouragement, note continuing concerns, and keep a written progress report to share with a counselor or private therapist.',GroupID:'230',ProblemNumber:'17' })
-create (intervention2:Intervention  { name : '38', Description : 'Encourage the parents and teachers to allow the student to seek his/her own solutions with guidance even if it requires some struggle and learning from mistakes. Recommend that the parents and teachers listen to the students problems with empathy and give guidance or assistance only when requested; discuss the results of this approach in a subsequent counseling session.',GroupID:'230',ProblemNumber:'17'  })
-create (intervention3:Intervention { name : '1', Description : 'Meet with the parents to obtain information about discipline, family harmony, and the students developmental history.',GroupID:'230',ProblemNumber:'17'  })
-create (intervention4:Intervention { name : '8', Description : 'Have the student complete the (Personal Profile) informational sheet from the School Counseling and School Social Homework Planner (Knapp), which details pertinent personal data, or gather personal information in an informal interview with the student."',GroupID:'230',ProblemNumber:'17'  })
-create (lib)-[:HAS_PROBLEM]->(prob1)
-create (prob1)-[:HAS_GOAL]->(goal1)
-create (prob1)-[:HAS_GOAL]->(goal2)
-create (prob1)-[:HAS_GOAL]->(goal3)
-create (prob1)-[:HAS_GOAL]->(goal4)
-create (prob1)-[:HAS_OBJECTIVE]->(obj1)
-create (prob1)-[:HAS_OBJECTIVE]->(obj2)
-create (prob1)-[:HAS_OBJECTIVE]->(obj3)
-create (prob1)-[:HAS_OBJECTIVE]->(obj4)
-create (prob1)-[:HAS_INTERVENTION]->(intervention1)
-create (prob1)-[:HAS_INTERVENTION]->(intervention2)
-create (prob1)-[:HAS_INTERVENTION]->(intervention3)
-create (prob1)-[:HAS_INTERVENTION]->(intervention4)
+CREATE (lib:Library { GroupID : '230', Description : 'School Counseling and Social Work' })
+CREATE (prob1:Problem { name : '17', Description : 'Parenting Skills/Discipline',GroupID:'230' })
+CREATE (obj1:Objective { name : '9', Description : 'Parents use natural and logical consequences to redirect the students behavior.',GroupID:'230',ProblemNumber:'17' })
+CREATE (obj2:Objective  { name : '8', Description : 'Parents allow the student to learn from his/her mistakes.',GroupID:'230',ProblemNumber:'17'  })
+CREATE (obj3:Objective { name : '6', Description : 'Parents set limits using positive discipline strategies.',GroupID:'230',ProblemNumber:'17'  })
+CREATE (obj4:Objective { name : '20', Description : 'Parents work to maintain a strong, couple-centered family environment',GroupID:'230',ProblemNumber:'17'  })
+CREATE (goal1:Goal { name : '4', Description : 'Acquire positive and moral character traits',GroupID:'230',ProblemNumber:'17' })
+CREATE (goal2:Goal  { name : '3', Description : 'Demonstrate respect and regard for self and others.',GroupID:'230',ProblemNumber:'17'  })
+CREATE (goal3:Goal { name : '5', Description : 'Parents acquire positive discipline strategies that set limits and encourage independence.,',GroupID:'230',ProblemNumber:'17'  })
+CREATE (goal4:Goal { name : '6', Description : 'Family atmosphere is peaceful, loving, and harmonious.',GroupID:'230',ProblemNumber:'17'  })
+CREATE (intervention1:Intervention { name : '7', Description : 'Suggest that the parents and the student meet weekly at a designated time to review progress, give encouragement, note continuing concerns, and keep a written progress report to share with a counselor or private therapist.',GroupID:'230',ProblemNumber:'17' })
+CREATE (intervention2:Intervention  { name : '38', Description : 'Encourage the parents and teachers to allow the student to seek his/her own solutions with guidance even if it requires some struggle and learning from mistakes. Recommend that the parents and teachers listen to the students problems with empathy and give guidance or assistance only when requested; discuss the results of this approach in a subsequent counseling session.',GroupID:'230',ProblemNumber:'17'  })
+CREATE (intervention3:Intervention { name : '1', Description : 'Meet with the parents to obtain information about discipline, family harmony, and the students developmental history.',GroupID:'230',ProblemNumber:'17'  })
+CREATE (intervention4:Intervention { name : '8', Description : 'Have the student complete the (Personal Profile) informational sheet from the School Counseling and School Social Homework Planner (Knapp), which details pertinent personal data, or gather personal information in an informal interview with the student."',GroupID:'230',ProblemNumber:'17'  })
+CREATE (lib)-[:HAS_PROBLEM]->(prob1)
+CREATE (prob1)-[:HAS_GOAL]->(goal1)
+CREATE (prob1)-[:HAS_GOAL]->(goal2)
+CREATE (prob1)-[:HAS_GOAL]->(goal3)
+CREATE (prob1)-[:HAS_GOAL]->(goal4)
+CREATE (prob1)-[:HAS_OBJECTIVE]->(obj1)
+CREATE (prob1)-[:HAS_OBJECTIVE]->(obj2)
+CREATE (prob1)-[:HAS_OBJECTIVE]->(obj3)
+CREATE (prob1)-[:HAS_OBJECTIVE]->(obj4)
+CREATE (prob1)-[:HAS_INTERVENTION]->(intervention1)
+CREATE (prob1)-[:HAS_INTERVENTION]->(intervention2)
+CREATE (prob1)-[:HAS_INTERVENTION]->(intervention3)
+CREATE (prob1)-[:HAS_INTERVENTION]->(intervention4)
 
 ----
-// graph 
+// graph
 
- 
+
 == Use Cases
- 
+
 == All Objectives
 [source,cypher]
 ----
 MATCH (c:Objective) RETURN c.Description AS Objective
 ----
- 
+
 //table
  == All Problems
 [source,cypher]
 ----
 MATCH (c:Problem) RETURN c.Description AS Problem
 ----
- 
+
 //table
 
  == All Goals
@@ -108,18 +130,20 @@ MATCH (c:Problem) RETURN c.Description AS Problem
 ----
 MATCH (c:Goal) RETURN c.Description AS Goal
 ----
- 
+
 //table
- 
+
 == Find interventions for all libraries and problem number 17
+
 [source,cypher]
 ----
 match ( lib:Library)-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention)  return lib.Description,st.Description,i.Description;
 ----
- 
+
 //table
- 
+
 == All Problems,interventions and Objectives  for one library
+
 [source,cypher]
 ----
 match ( lib:Library{GroupID:'230'})-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention) with i,st match (st)-[:HAS_OBJECTIVE]->(m:Objective) return st.Description,m.Description, i.Description;
@@ -128,7 +152,8 @@ match ( lib:Library{GroupID:'230'})-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HA
 //table
 
 == Conclusion
-Developing the treatment planner in SQL took months to get correct and the performance to the point where it was useable. I used py2neo to populate import the data in to the graph. In all, it took less than a week from start to finish(it took longer to create this gist).
- 
+Developing the treatment planner in SQL took months to get correct and the performance to the point where it was useable.
+I used py2neo to populate import the data in to the graph.
+In all, it took less than a week from start to finish(it took longer to create this gist).
 
-
+//console

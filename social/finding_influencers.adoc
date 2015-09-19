@@ -1,20 +1,22 @@
 = Finding Influencers in a Social Network
-:neo4j-version: 2.2.0
+:neo4j-version:2.2.0
+
+:toc:
 
 == Introduction
 
-For this Graph Gist I am going to be analysing the interation between users of a social network, such as Twitter or Facebook.
+For this Graph Gist I am going to be analysing the interaction between users of a social network, such as Twitter or Facebook.
 
-Many examples using social networks focus on friends and reccomendations, I will instead focus on how people use the network and try to establish different types of behaviours and find influencers. This is important as the owner of a social network you want to know who the power users are, or as a user to know who might be a good person to follow. You could also you this to identify shoppers on an ecommerce site who have influence through their reviews.
-
-//console
+Many examples using social networks focus on friends and recommendations, I will instead focus on how people use the network and try to establish different types of behaviours and find influencers.
+This is important as the owner of a social network you want to know who the power users are, or as a user to know who might be a good person to follow.
+You could also you this to identify shoppers on an e-commerce site who have influence through their reviews.
 
 == Model
 
 The model for my graph looks like this:
 
+.How popular is Alice?
 image::http://kiwiwebdeveloper.com/talk-files/social-model.png[]
-
 
 == Setup
 
@@ -23,13 +25,13 @@ image::http://kiwiwebdeveloper.com/talk-files/social-model.png[]
 //output
 [source,cypher]
 ----
-CREATE (nAlice:User {id:'Alice', name :'Node Alice'})
-,(nBridget:User {id:'Bridget', name :'Node Bridget'})
-,(nCharles:User {id:'Charles', name :'Node Charles'})
-,(nDoug:User {id:'Doug', name :'Node Doug'})
-,(nMark:User {id:'Mark', name :'Node Mark'})
-,(nNancy:User {id:'Nancy', name :'Node Nancy'})
-,(nOliver:User {id:'Oliver', name :'Node Oliver'})
+CREATE (nAlice:User {id:'Alice', name:'Node Alice'})
+,(nBridget:User {id:'Bridget', name:'Node Bridget'})
+,(nCharles:User {id:'Charles', name:'Node Charles'})
+,(nDoug:User {id:'Doug', name:'Node Doug'})
+,(nMark:User {id:'Mark', name:'Node Mark'})
+,(nNancy:User {id:'Nancy', name:'Node Nancy'})
+,(nOliver:User {id:'Oliver', name:'Node Oliver'})
 
 CREATE (nAlice)-[:FOLLOWS]->(nBridget)
 ,(nAlice)-[:FOLLOWS]->(nCharles)
@@ -52,75 +54,75 @@ CREATE (nAlice)-[:FOLLOWS]->(nBridget)
 ,(nCharles)-[:FOLLOWS]->(nMark)
 ,(nMark)-[:FOLLOWS]->(nCharles)
 
-CREATE (msg1:Message {id:'1', contents :'This is a message', day_sent: 'Monday'})
-,(msg2:Message {id:'2', contents :'This is a message', day_sent: 'Monday'})
-,(msg3:Message {id:'3', contents :'This is a message', day_sent: 'Monday'})
-,(msg4:Message {id:'4', contents :'This is a message', day_sent: 'Monday'})
-,(msg5:Message {id:'5', contents :'This is a message', day_sent: 'Monday'})
-,(msg6:Message {id:'6', contents :'This is a message', day_sent: 'Monday'})
-,(msg7:Message {id:'7', contents :'This is a message', day_sent: 'Monday'})
-,(msg8:Message {id:'8', contents :'This is a message', day_sent: 'Monday'})
-,(msg9:Message {id:'9', contents :'This is a message', day_sent: 'Tuesday'})
-,(msg10:Message {id:'10', contents :'This is a message', day_sent: 'Tuesday'})
-,(msg11:Message {id:'11', contents :'This is a message', day_sent: 'Tuesday'})
-,(msg12:Message {id:'12', contents :'This is a message', day_sent: 'Tuesday'})
-,(msg13:Message {id:'13', contents :'This is a message', day_sent: 'Tuesday'})
-,(msg14:Message {id:'14', contents :'This is a message', day_sent: 'Monday'})
-,(msg15:Message {id:'15', contents :'This is a message', day_sent: 'Thursday'})
-,(msg16:Message {id:'16', contents :'This is a message', day_sent: 'Thursday'})
-,(msg17:Message {id:'17', contents :'This is a message', day_sent: 'Thursday'})
-,(msg18:Message {id:'18', contents :'This is a message', day_sent: 'Thursday'})
-,(msg19:Message {id:'19', contents :'This is a message', day_sent: 'Thursday'})
-,(msg20:Message {id:'20', contents :'Conversation Starter', day_sent: 'Friday'})
-,(msg21:Message {id:'21', contents :'Conversation Starter', day_sent: 'Friday'})
-,(msg22:Message {id:'22', contents :'Conversation Starter', day_sent: 'Friday'})
-,(msg23:Message {id:'23', contents :'Conversation Starter', day_sent: 'Friday'})
-,(msg24:Message {id:'24', contents :'Reply', day_sent: 'Friday'})
-,(msg25:Message {id:'25', contents :'Reply', day_sent: 'Friday'})
-,(msg26:Message {id:'26', contents :'Reply', day_sent: 'Friday'})
-,(msg27:Message {id:'27', contents :'Reply', day_sent: 'Friday'})
-,(msg28:Message {id:'28', contents :'Reply', day_sent: 'Friday'})
-,(msg29:Message {id:'29', contents :'Reply', day_sent: 'Friday'})
-,(msg30:Message {id:'30', contents :'Reply', day_sent: 'Friday'})
-,(msg31:Message {id:'31', contents :'Reply', day_sent: 'Friday'})
-,(msg32:Message {id:'32', contents :'Reply', day_sent: 'Friday'})
-,(msg33:Message {id:'33', contents :'Reply', day_sent: 'Friday'})
-,(msg34:Message {id:'34', contents :'Reply', day_sent: 'Friday'})
-,(msg35:Message {id:'35', contents :'Conversation Starter', day_sent: 'Saturday'})
-,(msg36:Message {id:'36', contents :'Conversation Starter', day_sent: 'Saturday'})
-,(msg37:Message {id:'37', contents :'Reply', day_sent: 'Saturday'})
-,(msg38:Message {id:'38', contents :'Reply', day_sent: 'Saturday'})
-,(msg39:Message {id:'39', contents :'Reply', day_sent: 'Saturday'})
-,(msg40:Message {id:'40', contents :'Reply', day_sent: 'Saturday'})
-,(msg41:Message {id:'41', contents :'Reply', day_sent: 'Saturday'})
-,(msg42:Message {id:'42', contents :'Reply', day_sent: 'Saturday'})
-,(msg43:Message {id:'43', contents :'Reply', day_sent: 'Saturday'})
-,(msg44:Message {id:'44', contents :'Reply', day_sent: 'Saturday'})
-,(msg45:Message {id:'45', contents :'Reply', day_sent: 'Saturday'})
-,(msg46:Message {id:'46', contents :'Reply', day_sent: 'Saturday'})
-,(msg47:Message {id:'47', contents :'Reply', day_sent: 'Saturday'})
-,(msg48:Message {id:'48', contents :'Reply', day_sent: 'Saturday'})
-,(msg49:Message {id:'49', contents :'Reply', day_sent: 'Sunday'})
-,(msg50:Message {id:'50', contents :'Reply', day_sent: 'Sunday'})
-,(msg51:Message {id:'51', contents :'Reply', day_sent: 'Sunday'})
-,(msg52:Message {id:'52', contents :'Reply', day_sent: 'Sunday'})
-,(msg53:Message {id:'53', contents :'Reply', day_sent: 'Sunday'})
-,(msg54:Message {id:'54', contents :'Conversation Starter', day_sent: 'Sunday'})
-,(msg55:Message {id:'55', contents :'Conversation Starter', day_sent: 'Sunday'})
-,(msg56:Message {id:'56', contents :'Conversation Starter', day_sent: 'Sunday'})
-,(msg57:Message {id:'57', contents :'Reply', day_sent: 'Sunday'})
-,(msg58:Message {id:'58', contents :'Reply', day_sent: 'Sunday'})
-,(msg59:Message {id:'59', contents :'Reply', day_sent: 'Sunday'})
-,(msg60:Message {id:'60', contents :'Reply', day_sent: 'Sunday'})
-,(msg61:Message {id:'61', contents :'Reply', day_sent: 'Sunday'})
-,(msg62:Message {id:'62', contents :'Reply', day_sent: 'Sunday'})
-,(msg63:Message {id:'63', contents :'Reply', day_sent: 'Sunday'})
-,(msg64:Message {id:'64', contents :'Reply', day_sent: 'Sunday'})
-,(msg65:Message {id:'65', contents :'Reply', day_sent: 'Sunday'})
-,(msg66:Message {id:'66', contents :'Reply', day_sent: 'Sunday'})
-,(msg67:Message {id:'67', contents :'Reply', day_sent: 'Sunday'})
-,(msg68:Message {id:'68', contents :'Reply', day_sent: 'Sunday'})
-,(msg69:Message {id:'69', contents :'Reply', day_sent: 'Sunday'})
+CREATE (msg1:Message {id:'1', contents:'This is a message', day_sent: 'Monday'})
+,(msg2:Message {id:'2', contents:'This is a message', day_sent: 'Monday'})
+,(msg3:Message {id:'3', contents:'This is a message', day_sent: 'Monday'})
+,(msg4:Message {id:'4', contents:'This is a message', day_sent: 'Monday'})
+,(msg5:Message {id:'5', contents:'This is a message', day_sent: 'Monday'})
+,(msg6:Message {id:'6', contents:'This is a message', day_sent: 'Monday'})
+,(msg7:Message {id:'7', contents:'This is a message', day_sent: 'Monday'})
+,(msg8:Message {id:'8', contents:'This is a message', day_sent: 'Monday'})
+,(msg9:Message {id:'9', contents:'This is a message', day_sent: 'Tuesday'})
+,(msg10:Message {id:'10', contents:'This is a message', day_sent: 'Tuesday'})
+,(msg11:Message {id:'11', contents:'This is a message', day_sent: 'Tuesday'})
+,(msg12:Message {id:'12', contents:'This is a message', day_sent: 'Tuesday'})
+,(msg13:Message {id:'13', contents:'This is a message', day_sent: 'Tuesday'})
+,(msg14:Message {id:'14', contents:'This is a message', day_sent: 'Monday'})
+,(msg15:Message {id:'15', contents:'This is a message', day_sent: 'Thursday'})
+,(msg16:Message {id:'16', contents:'This is a message', day_sent: 'Thursday'})
+,(msg17:Message {id:'17', contents:'This is a message', day_sent: 'Thursday'})
+,(msg18:Message {id:'18', contents:'This is a message', day_sent: 'Thursday'})
+,(msg19:Message {id:'19', contents:'This is a message', day_sent: 'Thursday'})
+,(msg20:Message {id:'20', contents:'Conversation Starter', day_sent: 'Friday'})
+,(msg21:Message {id:'21', contents:'Conversation Starter', day_sent: 'Friday'})
+,(msg22:Message {id:'22', contents:'Conversation Starter', day_sent: 'Friday'})
+,(msg23:Message {id:'23', contents:'Conversation Starter', day_sent: 'Friday'})
+,(msg24:Message {id:'24', contents:'Reply', day_sent: 'Friday'})
+,(msg25:Message {id:'25', contents:'Reply', day_sent: 'Friday'})
+,(msg26:Message {id:'26', contents:'Reply', day_sent: 'Friday'})
+,(msg27:Message {id:'27', contents:'Reply', day_sent: 'Friday'})
+,(msg28:Message {id:'28', contents:'Reply', day_sent: 'Friday'})
+,(msg29:Message {id:'29', contents:'Reply', day_sent: 'Friday'})
+,(msg30:Message {id:'30', contents:'Reply', day_sent: 'Friday'})
+,(msg31:Message {id:'31', contents:'Reply', day_sent: 'Friday'})
+,(msg32:Message {id:'32', contents:'Reply', day_sent: 'Friday'})
+,(msg33:Message {id:'33', contents:'Reply', day_sent: 'Friday'})
+,(msg34:Message {id:'34', contents:'Reply', day_sent: 'Friday'})
+,(msg35:Message {id:'35', contents:'Conversation Starter', day_sent: 'Saturday'})
+,(msg36:Message {id:'36', contents:'Conversation Starter', day_sent: 'Saturday'})
+,(msg37:Message {id:'37', contents:'Reply', day_sent: 'Saturday'})
+,(msg38:Message {id:'38', contents:'Reply', day_sent: 'Saturday'})
+,(msg39:Message {id:'39', contents:'Reply', day_sent: 'Saturday'})
+,(msg40:Message {id:'40', contents:'Reply', day_sent: 'Saturday'})
+,(msg41:Message {id:'41', contents:'Reply', day_sent: 'Saturday'})
+,(msg42:Message {id:'42', contents:'Reply', day_sent: 'Saturday'})
+,(msg43:Message {id:'43', contents:'Reply', day_sent: 'Saturday'})
+,(msg44:Message {id:'44', contents:'Reply', day_sent: 'Saturday'})
+,(msg45:Message {id:'45', contents:'Reply', day_sent: 'Saturday'})
+,(msg46:Message {id:'46', contents:'Reply', day_sent: 'Saturday'})
+,(msg47:Message {id:'47', contents:'Reply', day_sent: 'Saturday'})
+,(msg48:Message {id:'48', contents:'Reply', day_sent: 'Saturday'})
+,(msg49:Message {id:'49', contents:'Reply', day_sent: 'Sunday'})
+,(msg50:Message {id:'50', contents:'Reply', day_sent: 'Sunday'})
+,(msg51:Message {id:'51', contents:'Reply', day_sent: 'Sunday'})
+,(msg52:Message {id:'52', contents:'Reply', day_sent: 'Sunday'})
+,(msg53:Message {id:'53', contents:'Reply', day_sent: 'Sunday'})
+,(msg54:Message {id:'54', contents:'Conversation Starter', day_sent: 'Sunday'})
+,(msg55:Message {id:'55', contents:'Conversation Starter', day_sent: 'Sunday'})
+,(msg56:Message {id:'56', contents:'Conversation Starter', day_sent: 'Sunday'})
+,(msg57:Message {id:'57', contents:'Reply', day_sent: 'Sunday'})
+,(msg58:Message {id:'58', contents:'Reply', day_sent: 'Sunday'})
+,(msg59:Message {id:'59', contents:'Reply', day_sent: 'Sunday'})
+,(msg60:Message {id:'60', contents:'Reply', day_sent: 'Sunday'})
+,(msg61:Message {id:'61', contents:'Reply', day_sent: 'Sunday'})
+,(msg62:Message {id:'62', contents:'Reply', day_sent: 'Sunday'})
+,(msg63:Message {id:'63', contents:'Reply', day_sent: 'Sunday'})
+,(msg64:Message {id:'64', contents:'Reply', day_sent: 'Sunday'})
+,(msg65:Message {id:'65', contents:'Reply', day_sent: 'Sunday'})
+,(msg66:Message {id:'66', contents:'Reply', day_sent: 'Sunday'})
+,(msg67:Message {id:'67', contents:'Reply', day_sent: 'Sunday'})
+,(msg68:Message {id:'68', contents:'Reply', day_sent: 'Sunday'})
+,(msg69:Message {id:'69', contents:'Reply', day_sent: 'Sunday'})
 ,(nAlice)-[:SENT]->(msg2)
 ,(nBridget)-[:SENT]->(msg3)
 ,(nBridget)-[:SENT]->(msg4)
@@ -258,13 +260,13 @@ MATCH (p:User)-[s:SENT]->(t:Message) RETURN p,s,t;
 
 As you can see, it is hard to spot any patterns from this view.
 
-=== Finding User Counts 
+=== Finding User Counts
 
 Remember our goal here is to find the influencers in the network, we could start with the most simple measure which is the number of people who follow a user.
 
 [source,cypher]
 ----
-MATCH (p:User)-[f:FOLLOWS]->(p1:User)<-[f1:FOLLOWS]-(p2:User) 
+MATCH (p:User)-[f:FOLLOWS]->(p1:User)<-[f1:FOLLOWS]-(p2:User)
 RETURN p1 as Person, COUNT(distinct f) as Followers, COUNT(distinct f1) as Following
 ----
 
@@ -306,9 +308,9 @@ Remember that we are trying to find the influencers, so we need to know who sent
 
 [source,cypher]
 ----
-MATCH (rt:Message)-[r:FORWARD]->(t:Message)<-[:SENT]-(p:User) 
+MATCH (rt:Message)-[r:FORWARD]->(t:Message)<-[:SENT]-(p:User)
 RETURN p.id as User, COUNT(r) as Retweeted_Messages
-ORDER BY COUNT(r) 
+ORDER BY COUNT(r)
 DESC LIMIT 5
 ----
 
@@ -317,42 +319,43 @@ DESC LIMIT 5
 From this we can see that Bridget get's lots of her messages forwarded, but Mark's message got more forwards
 
 
-If you are a user of Twitter or a similar social network, you will be aware that there are lot's of bots on twitter that simply forward others messages, we want to remove these bots from our analysis.
+If you are a user of Twitter or a similar social network, you will be aware that there are lot's of bots on Twitter that simply forward others messages, we want to remove these bots from our analysis.
 
 Find the forward bots:
 
 [source,cypher]
 ----
-MATCH (p:User)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message), (p:User)-[s2:SENT]->(t2:Message) 
-WITH p, COUNT(distinct t) as forwards, COUNT(distinct t2) as messages 
-WHERE (forwards* 1.00)/messages> 0.8  
-RETURN p, (forwards* 1.00)/messages * 100 as Percent_RT 
+MATCH (p:User)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message), (p:User)-[s2:SENT]->(t2:Message)
+WITH p, COUNT(distinct t) as forwards, COUNT(distinct t2) as messages
+WHERE (forwards* 1.00)/messages> 0.8
+RETURN p, (forwards* 1.00)/messages * 100 as Percent_RT
 ORDER BY Percent_RT DESC
 ----
 
-As you can see, Doug only forwards messages so is probably a bot. To get a better idea of influence we need to remove him and any other bots from the analysis:
+As you can see, Doug only forwards messages so is probably a bot.
+To get a better idea of influence we need to remove him and any other bots from the analysis:
 
 
 [source,cypher]
 ----
-MATCH (p:User)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message), (p:User)-[s2:SENT]->(t2:Message) 
-WITH p, COUNT(distinct t) as forwards, COUNT(distinct t2) as messages 
-WHERE (forwards* 1.00)/messages< 0.8 
+MATCH (p:User)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message), (p:User)-[s2:SENT]->(t2:Message)
+WITH p, COUNT(distinct t) as forwards, COUNT(distinct t2) as messages
+WHERE (forwards* 1.00)/messages< 0.8
 WITH p
 MATCH (p)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message)<-[:SENT]-(p1:User)
 RETURN p1.id as User, COUNT(t) as Retweeted_Messages
 ORDER BY COUNT(t) DESC LIMIT 15
 ----
-
 //table
 
 Note we now look for users for whom forwards make up LESS THAN 80% of their messages.
 
-As you can see this shows a slightly different picture, as Mark only had messages forwarded by bots. The reason I want to remove the forwarders from the analysis is that a human forwarding will do some filtering and only forward things they like.
+As you can see this shows a slightly different picture, as Mark only had messages forwarded by bots.
+The reason I want to remove the forwarders from the analysis is that a human forwarding will do some filtering and only forward things they like.
 
 We now have a couple of measures of influence, based on follower count and how many forwards a user gets.
 
-There is a third measure that I want to investigate which is how often a user starts a conversation or discussion on twitter and amougst how many people.
+There is a third measure that I want to investigate which is how often a user starts a conversation or discussion on Twitter and amongst how many people.
 
 === Finding conversations
 
@@ -365,7 +368,7 @@ To begin this analysis, let's start by getting a list of conversations, note tha
 MATCH p=(t:Message)-[r:REPLY_TO*1..10]->(c:Message) RETURN p;
 ----
 
-We can restrict this to a single conversation if we like 
+We can restrict this to a single conversation if we like
 
 [source,cypher]
 ----
@@ -387,8 +390,8 @@ and find out who sent the messages that started the conversation
 
 [source,cypher]
 ----
-MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User) 
-WHERE NOT (c)-[:REPLY_TO]->() 
+MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User)
+WHERE NOT (c)-[:REPLY_TO]->()
 RETURN DISTINCT c,p;
 ----
 
@@ -403,10 +406,10 @@ We also want to get an idea of how large the conversations are and how many peop
 
 [source,cypher]
 ----
-MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User) 
-WHERE NOT (c)-[:REPLY_TO]->() 
+MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User)
+WHERE NOT (c)-[:REPLY_TO]->()
 WITH DISTINCT c,p
-MATCH conv=(participant:User)-[:SENT]->(t:Message)-[r:REPLY_TO*0..10]->(c) 
+MATCH conv=(participant:User)-[:SENT]->(t:Message)-[r:REPLY_TO*0..10]->(c)
 RETURN c, p, COUNT(DISTINCT t), COUNT(DISTINCT participant);
 ----
 
@@ -414,20 +417,21 @@ Finally modify the query again to add the number of conversations started by the
 
 [source,cypher]
 ----
-MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User) 
-WHERE NOT (c)-[:REPLY_TO]->() 
+MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User)
+WHERE NOT (c)-[:REPLY_TO]->()
 WITH DISTINCT c,p
-MATCH conv=(participant:User)-[:SENT]->(t:Message)-[r:REPLY_TO*0..10]->(c) 
+MATCH conv=(participant:User)-[:SENT]->(t:Message)-[r:REPLY_TO*0..10]->(c)
 WITH c, p, COUNT(DISTINCT t) as messageCount, COUNT(DISTINCT participant) as participantCount
 WHERE participantCount > 2
 RETURN p.id, COUNT(p) as Number_Conversations, AVG(messageCount) as Average_Length, AVG(participantCount) as Average_Participants;
 ----
-
 //table
 
-As you can see, Alice starts more conversations, but the conversation Mark started had more engagement. You will need to determine yourself which of these has greater influence in your network.
+As you can see, Alice starts more conversations, but the conversation Mark started had more engagement.
+You will need to determine yourself which of these has greater influence in your network.
 
 == Conclusion
 
-As you can see, Neo4j is a powerfull tool for analysing social networks and you can use some of the values above to observe who the influencers are in your network.
+As you can see, Neo4j is a powerful tool for analysing social networks and you can use some of the values above to observe who the influencers are in your network.
 
+//console

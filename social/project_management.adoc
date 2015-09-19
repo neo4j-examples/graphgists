@@ -1,17 +1,23 @@
 = Project Management
-:neo4j-version: 2.2.0
-:author: Nicole White
-:twitter: @_nicolemargaret
+:neo4j-version:2.2.0
+:author:Nicole White
+:twitter:@_nicolemargaret
 
-In my optimization class last semester we briefly talked about project management, where there is a set of activities with given durations and some activities need to be completed before other activities can begin. We were taught to explore the management of the project's timeline in Excel, which was link:http://nicolemargaretwhite.blogspot.com/2014/01/project-management-in-excel.html[tedious and prone to errors due to its manual process].
+:toc:
+
+== Introduction
+
+In my optimization class last semester we briefly talked about project management, where there is a set of activities with given durations and some activities need to be completed before other activities can begin.
+We were taught to explore the management of the project's timeline in Excel, which was tedious and prone to errors due to its manual process.
 
 video::5IZv7pyhdLY[youtube, align="center", width=640, height=360]
 
-'''
-
 == The Project
 
-In this example, an insurance company is wanting to build an office LAN. They will want to know the ins and outs of the project; i.e., the earliest start / finish time and the latest start / finish time of each activity, as these details play critical roles in the management of the project. Ultimately, they will want to know the _slack time_ of each activity and the _critical path_, which will be defined soon. The activities and their durations are given below.
+In this example, an insurance company is wanting to build an office LAN.
+They will want to know the ins and outs of the project; i.e., the earliest start / finish time and the latest start / finish time of each activity, as these details play critical roles in the management of the project.
+Ultimately, they will want to know the _slack time_ of each activity and the _critical path_, which will be defined soon.
+The activities and their durations are given below.
 
 ++++
 <table>
@@ -100,6 +106,7 @@ In this example, an insurance company is wanting to build an office LAN. They wi
 
 The dependencies of each activity are represented in this graph:
 
+.Dependencies of each activity
 image::https://dl.dropboxusercontent.com/u/94782892/projectmgmt/projectmgmtdiagram.PNG[]
 
 So, for example, activities C and D (select server and select software) need to be completed before activity G (develop user manuals) can begin.
@@ -145,7 +152,11 @@ The total time needed to complete the project is the earliest start time of the 
 [subs=none]
 \(Project Completion Time = ES_{Finish}\)
 
-This is also the longest path through the graph (from start to finish) in terms of cumulative duration, where this cumulative duration is the project completion time. This longest path is the *critical path*. The critical path consists of activities where an increase in any of their durations would increase the overall project completion time. These activities have 0 *slack* time; there is 0 room for an increase in their durations without affecting the overall project completion time. An activity \(j\) not on the critical path will have a positive slack time, which is the difference between its latest and earliest start time:
+This is also the longest path through the graph (from start to finish) in terms of cumulative duration, where this cumulative duration is the project completion time.
+This longest path is the *critical path*.
+The critical path consists of activities where an increase in any of their durations would increase the overall project completion time.
+These activities have 0 *slack* time; there is 0 room for an increase in their durations without affecting the overall project completion time.
+An activity \(j\) not on the critical path will have a positive slack time, which is the difference between its latest and earliest start time:
 
 [subs=none]
 \(slack_j = LS_j - ES_j\)
@@ -187,7 +198,7 @@ CREATE  (Start:Activity {id:1, description:'Start', duration:0, earliest_start:0
 		(N:Activity {id:15, description:'Test and debug system', duration:12}),
 		(O:Activity {id:16, description:'Get management acceptance', duration:4}),
 		(Finish:Activity {id: 17, description:'Finish', duration:0})
-		
+
 CREATE  (Start)-[:PRECEDES]->(A),
 		(A)-[:PRECEDES]->(B),
 		(B)-[:PRECEDES]->(C),
@@ -269,7 +280,8 @@ RETURN p
 ----
 //graph_result
 
-The durations of the activities shown in this critical path, if increased, would increase the overall project completion time. The project manager now knows which activities on his timeline are most sensitive to delays.
+The durations of the activities shown in this critical path, if increased, would increase the overall project completion time.
+The project manager now knows which activities on his timeline are most sensitive to delays.
 
 '''
 
@@ -310,7 +322,7 @@ RETURN f.earliest_start AS `Project Completion Time`
 ----
 //table
 
-We need to update the properties of the Finish node according to <<X1, the insight shown earlier>> before we \'move backward\' through the graph to find the LS and LF times:
+We need to update the properties of the `Finish` node according to <<X1, the insight shown earlier>> before we \'move backward\' through the graph to find the LS and LF times:
 
 [source,cypher]
 ----
@@ -367,15 +379,17 @@ ORDER BY a.id
 ----
 //table
 
-The slack times tell the project manager how many days each activity can be delayed beyond its earliest start time before affecting the overall project completion time. The activities with 0 slack are on the critical path, as they cannot be delayed; compare these activities to the list of activities from <<X2, query 5>>. 
+The slack times tell the project manager how many days each activity can be delayed beyond its earliest start time before affecting the overall project completion time.
+The activities with 0 slack are on the critical path, as they cannot be delayed; compare these activities to the list of activities from <<X2, query 5>>.
 
 '''
 
 == Answering Important Questions
 
-No project will run smoothly, so the project manager will want to know how various setbacks will affect the bottom line. These questions can all be answered by looking at the slack of an activity.
+No project will run smoothly, so the project manager will want to know how various setbacks will affect the bottom line.
+These questions can all be answered by looking at the slack of an activity.
 
-==== If setting up the server is delayed by two days, how will this affect the overall project completion time?
+=== If setting up the server is delayed by two days, how will this affect the overall project completion time?
 
 [source, cypher]
 ----
@@ -386,7 +400,8 @@ RETURN a.slack AS Slack
 
 A delay of two days in setting up the server will have no effect on the project completion time, since setting up the server has a slack of five days.
 
-==== The guy who's supposed to come in and train the users calls and says he'll arrive three days after he initially promised. How will this affect the overall project completion time?
+=== The guy who's supposed to come in and train the users calls and says he'll arrive three days after he initially promised.
+How will this affect the overall project completion time?
 
 [source,cypher]
 ----

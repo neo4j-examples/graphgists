@@ -4,50 +4,62 @@
 :twitter: @aprmayyjun
 :tags: domain:life-science, use-case:trophic-cascade
 
-This interactive Neo4j graph tutorial uncovers a recent ecological phenomenon that has infiltrated the northern half of Yellowstone.
+:toc:
 
-'''
+This interactive Neo4j graph tutorial uncovers a recent ecological phenomenon that has infiltrated the northern half of Yellowstone.
 
 == Introduction
 
-A trophic cascade is an ecological process which starts at the top of the food chain and tumbles all the way down to the bottom. A classic example is what happened in the Yellowstone National Park in the United States, when wolves were reintroduced in 1995 after a 70-year hiatus. This triggered a massive trophic cascade, involving different predators, prey, plants and even physical landscape. Wolf re-introduction may represent an effective approach for passively restoring ecosystems.
-
-'''
+A trophic cascade is an ecological process which starts at the top of the food chain and tumbles all the way down to the bottom.
+A classic example is what happened in the Yellowstone National Park in the United States, when wolves were reintroduced in 1995 after a 70-year hiatus.
+This triggered a massive trophic cascade, involving different predators, prey, plants and even physical landscape.
+Wolf re-introduction may represent an effective approach for passively restoring ecosystems.
 
 == Problem
 
-Yellowstone's northern trophic cascade involves huge ecosystems spanning multiple trophic levels. It may prove a challenge in studying these inter-dependencies and their effect on biomass levels across the entire system. 
-
-'''
+Yellowstone's northern trophic cascade involves huge ecosystems spanning multiple trophic levels.
+It may prove a challenge in studying these inter-dependencies and their effect on biomass levels across the entire system.
 
 == Solution
 
-Graphs provide an apt and intuitive representation of the ecological phenomenon above. To effectively understand and study how one changed factor can effect a particular system behavior/response, it'd be most helpful to be able to visualize the flow of causal relationships from one actor to its reactor(s). 
-
-How does re-introducing wolves improve the stability of rivers? How are the landscape features dependent on the density and behaviour of the mammals? Will the Yellowstone ecosystem be disrupted or return to equilibrium if bear-hunting increases? Let's find out!
-
-'''
+Graphs provide an apt and intuitive representation of the ecological phenomenon above.
+To effectively understand and study how one changed factor can effect a particular system behavior/response, it'd be most helpful to be able to visualize the flow of causal relationships from one actor to its reactor(s).
+How does re-introducing wolves improve the stability of rivers?
+How are the landscape features dependent on the density and behaviour of the mammals? Will the Yellowstone ecosystem be disrupted or return to equilibrium if bear-hunting increases?
+Let's find out!
 
 == Data Model: A Causal Loop Implementation
 
+.Example: Causal loop diagram of a model examining the growth or decline of a life insurance company
 image::http://imgur.com/SkgGOjM.png[]
-'Example: Causal loop diagram of a model examining the growth or decline of a life insurance company'
 
-A causal loop diagram (CLD) explains the behavior of a system by visualizing a collection of connected nodes, and the feedback loops created by these connections. 
 
+A causal loop diagram (CLD) explains the behavior of a system by visualizing a collection of connected nodes, and the feedback loops created by these connections.
+
+
+.Cause and effect
 image::http://i.imgur.com/PByQgtM.png[]
 
-The simplest entity in a CLD depicts the relationship between a cause and its direct effect, which can then double as a cause to other effects, and the list goes on.. A cause-and-effect tuple is said to be directly (positively) related if a change in the cause leads to a change in its effect in the same direction, and inversely (negatively) related if otherwise.
+The simplest entity in a CLD depicts the relationship between a cause and its direct effect, which can then double as a cause to other effects, and the list goes on...
 
+A cause-and-effect tuple is said to be directly (positively) related if a change in the cause leads to a change in its effect in the same direction, and inversely (negatively) related if otherwise.
+
+.Cause and effect, expanded
 image::http://i.imgur.com/qm34Igc.png[]
 
 'NOTE - For visualization simplicity in this GraphGist (see query (a) and (b)), the actual casual occurrence of each entity in Yellowstone's trophic cascade is included in its respective node (independent of the CLD model).'
 
-Closed cycles, defined as either a reinforcing or a balancing loop, are very important features of CLDs. A reinforcing loop is a cycle of nodes in which an increase (decrease) in any variable propagates through the cycle and returns as an increase (decrease) to the same variable. If a variable varies in a reinforcing loop, its effect of the change reinforces the initial variation. Without breaking the loop, the system will be caught in a vicious cycles of circular chain reactions. Conversely, in a balancing loop, a change in any variable propagates through and returns as an opposite deviation to the same variable. Balancing loops are thus usually associated with system stability and equilibrium. (Reinforcing loops: Even number of 'inverse' links, Balancing loops: Odd number of 'inverse' links)
+Closed cycles, defined as either a reinforcing or a balancing loop, are very important features of CLDs.
+A reinforcing loop is a cycle of nodes in which an increase (decrease) in any variable propagates through the cycle and returns as an increase (decrease) to the same variable.
+If a variable varies in a reinforcing loop, its effect of the change reinforces the initial variation.
+Without breaking the loop, the system will be caught in a vicious cycles of circular chain reactions.
+Conversely, in a balancing loop, a change in any variable propagates through and returns as an opposite deviation to the same variable.
+Balancing loops are thus usually associated with system stability and equilibrium.
 
-Graph databases have the potential to effectively model the features of huge complex systems, which are gaining prevalence in today's 'Big Data' scene. The simplified graph data model below represents how part of the Yellowstone ecosystem co-relates in the aforementioned phenomenon, and the subsequent Cypher queries illustrate some valuable insights attainable.
+(Reinforcing loops: Even number of 'inverse' links, Balancing loops: Odd number of 'inverse' links)
 
-'''
+Graph databases have the potential to effectively model the features of huge complex systems, which are gaining prevalence in today's 'Big Data' scene.
+The simplified graph data model below represents how part of the Yellowstone ecosystem co-relates in the aforementioned phenomenon, and the subsequent Cypher queries illustrate some valuable insights attainable.
 
 == Data Set
 
@@ -55,34 +67,33 @@ Graph databases have the potential to effectively model the features of huge com
 //hide
 [source,cypher]
 ----
-
 // Create :Animal factors (nodes)
-CREATE 	(wolf:Animal {Entity:"Wolves", Group:"Mammal", Factor:"Number of grey wolves", Yellowstone:"More wolves"}), 
-		(deer:Animal {Entity:"Deers", Group:"Mammal", Factor:["Number of deers", "Deers grazing on open fields"], Yellowstone:"Less deers (density) and deer-grazing on open fields (behaviorial)"}), 
-		(beaver:Animal {Entity:"Beaver", Group:"Mammal", Factor:"Number of beaver", Yellowstone:"More beaver"}), 
-		(bison:Animal {Entity:"Bisons", Group:"Mammal", Factor:"Number of bisons", Yellowstone:"More bisons"}), 
-		(songbird:Animal {Entity:"Songbirds", Group:"Bird", Factor:"Number of songbirds", Yellowstone:"More songbirds"}), 
-		(eagle:Animal {Entity:"Eagles", Group:"Bird", Factor:"Number of bald eagles", Yellowstone:"More eagles"}), 
-		(hawk:Animal {Entity:"Hawks", Group:"Bird", Factor:"Number of hawks", Yellowstone:"More hawks"}), 
-		(weasel:Animal {Entity:"Weasels", Group:"Mammal", Factor:"Number of weasels", Yellowstone:"More weasels"}), 
-		(coyote:Animal {Entity:"Coyotes", Group:"Mammal", Factor:"Number of coyotes", Yellowstone:"Less coyotes"}), 
-		(bear:Animal {Entity:"Bears", Group:"Mammal", Factor:"Number of bears", Yellowstone:"More bears"}), 
-		(carrion:Animal {Entity:"Carrions", Factor:"Number of wolf-killed carrions", Yellowstone:"More wolf-killed carrions"}), 
-		(waterfowl:Animal {Entity:"Waterfowls", Factor:"Abundance of waterfowl", Yellowstone:"More abundant waterfowl"}), 
-		(amphibian:Animal {Entity:"Amphibians", Group:"Amphibian", Factor:"Number of amphibians", Yellowstone:"More amphibians"}), 
-		(reptile:Animal {Entity:"Reptiles", Group:"Reptile", Factor:"Number of reptiles", Yellowstone:"More reptiles"}), 
-		(fish:Animal {Entity:"Fishes", Group:"Fish", Factor:"Number of fishes", Yellowstone:"Increase in fish #"}), 
-		(muskrat:Animal {Entity:"Muskrats", Group:"Mammal", Factor:"Number of muskrats", Yellowstone:"More muskrats"}), 
+CREATE 	(wolf:Animal {Entity:"Wolves", Group:"Mammal", Factor:"Number of grey wolves", Yellowstone:"More wolves"}),
+		(deer:Animal {Entity:"Deers", Group:"Mammal", Factor:["Number of deers", "Deers grazing on open fields"], Yellowstone:"Less deers (density) and deer-grazing on open fields (behaviorial)"}),
+		(beaver:Animal {Entity:"Beaver", Group:"Mammal", Factor:"Number of beaver", Yellowstone:"More beaver"}),
+		(bison:Animal {Entity:"Bisons", Group:"Mammal", Factor:"Number of bisons", Yellowstone:"More bisons"}),
+		(songbird:Animal {Entity:"Songbirds", Group:"Bird", Factor:"Number of songbirds", Yellowstone:"More songbirds"}),
+		(eagle:Animal {Entity:"Eagles", Group:"Bird", Factor:"Number of bald eagles", Yellowstone:"More eagles"}),
+		(hawk:Animal {Entity:"Hawks", Group:"Bird", Factor:"Number of hawks", Yellowstone:"More hawks"}),
+		(weasel:Animal {Entity:"Weasels", Group:"Mammal", Factor:"Number of weasels", Yellowstone:"More weasels"}),
+		(coyote:Animal {Entity:"Coyotes", Group:"Mammal", Factor:"Number of coyotes", Yellowstone:"Less coyotes"}),
+		(bear:Animal {Entity:"Bears", Group:"Mammal", Factor:"Number of bears", Yellowstone:"More bears"}),
+		(carrion:Animal {Entity:"Carrions", Factor:"Number of wolf-killed carrions", Yellowstone:"More wolf-killed carrions"}),
+		(waterfowl:Animal {Entity:"Waterfowls", Factor:"Abundance of waterfowl", Yellowstone:"More abundant waterfowl"}),
+		(amphibian:Animal {Entity:"Amphibians", Group:"Amphibian", Factor:"Number of amphibians", Yellowstone:"More amphibians"}),
+		(reptile:Animal {Entity:"Reptiles", Group:"Reptile", Factor:"Number of reptiles", Yellowstone:"More reptiles"}),
+		(fish:Animal {Entity:"Fishes", Group:"Fish", Factor:"Number of fishes", Yellowstone:"Increase in fish #"}),
+		(muskrat:Animal {Entity:"Muskrats", Group:"Mammal", Factor:"Number of muskrats", Yellowstone:"More muskrats"}),
 		(otter:Animal {Entity:"River Otters", Group:"Mammal", Factor:"Number of river otters", Yellowstone:"More otters"}),
-		(fox:Animal {Entity:"Foxes", Group:"Mammal", Factor:"Number of foxes", Yellowstone:"Increase in fox #"}), 
+		(fox:Animal {Entity:"Foxes", Group:"Mammal", Factor:"Number of foxes", Yellowstone:"Increase in fox #"}),
 		(badger:Animal {Entity:"Badgers", Group:"Mammal", Factor:"Number of badgers", Yellowstone:"More badgers"}),
 		(duck:Animal {Entity:"Ducks", Group:"Bird", Factor:"Number of ducks", Yellowstone:"More ducks"}),
-		(raven:Animal {Entity:"Ravens", Group:"Bird", Factor:"Number of ravens", Yellowstone:"More ravens"}), 
-		(yellowthroat:Animal {Entity:"Yellowthroat", Group:"Bird", Factor:"Number of yellowthroat", Yellowstone:"More yellowthroats"}), 
-		(sparrow:Animal {Entity:"Lincoln's Sparrow", Group:"Bird", Factor:"Number of Lincoln's sparrow", Yellowstone:"More Lincoln's sparrows"}), 
-		(warblingvireo:Animal {Entity:"Warbling Vireo", Group:"Bird", Factor:"Number of warbling vireo", Yellowstone:"More warbling vireo"}), 
-		(yellowwarbler:Animal {Entity:"Yellow Warbler", Group:"Bird", Factor:"Number of yellow warbler", Yellowstone:"More yellow warbler"}), 
-		(songsparrow:Animal {Entity:"Song Sparrow", Group:"Bird", Factor:"Number of song sparrow", Yellowstone:"More song sparrows"}), 
+		(raven:Animal {Entity:"Ravens", Group:"Bird", Factor:"Number of ravens", Yellowstone:"More ravens"}),
+		(yellowthroat:Animal {Entity:"Yellowthroat", Group:"Bird", Factor:"Number of yellowthroat", Yellowstone:"More yellowthroats"}),
+		(sparrow:Animal {Entity:"Lincoln's Sparrow", Group:"Bird", Factor:"Number of Lincoln's sparrow", Yellowstone:"More Lincoln's sparrows"}),
+		(warblingvireo:Animal {Entity:"Warbling Vireo", Group:"Bird", Factor:"Number of warbling vireo", Yellowstone:"More warbling vireo"}),
+		(yellowwarbler:Animal {Entity:"Yellow Warbler", Group:"Bird", Factor:"Number of yellow warbler", Yellowstone:"More yellow warbler"}),
+		(songsparrow:Animal {Entity:"Song Sparrow", Group:"Bird", Factor:"Number of song sparrow", Yellowstone:"More song sparrows"}),
 		(flycatcher:Animal {Entity:"Willow Flycatcher", Group:"Bird", Factor:"Number of willow flycatcher", Yellowstone:"More willow flycatchers"}),
 		(magpie:Animal {Entity:"Black-billed Magpies", Group:"Bird", Factor:"Number of black-billed magpies", Yellowstone:"More black-billed magpies"}),
 		(rabbit:Animal {Entity:"Rabbits", Group:"Mammal", Factor:"Number of rabbits", Yellowstone:"More rabbits"}),
@@ -90,12 +101,12 @@ CREATE 	(wolf:Animal {Entity:"Wolves", Group:"Mammal", Factor:"Number of grey wo
 
 // Create :Plant factors (nodes)
 CREATE 	(aspen:Plant {Entity:"Aspen", Factor:"Growth of aspen", Yellowstone:"More aspen growth"}),
-		(willow:Plant {Entity:"Willow", Factor:"Growth of willow", Yellowstone:"More willow growth"}), 
-		(cottonwood:Plant {Entity:"Cottonwood", Factor:"Growth of cottonwood", Yellowstone:"More cottonwood growth"}), 
+		(willow:Plant {Entity:"Willow", Factor:"Growth of willow", Yellowstone:"More willow growth"}),
+		(cottonwood:Plant {Entity:"Cottonwood", Factor:"Growth of cottonwood", Yellowstone:"More cottonwood growth"}),
 		(berry:Plant {Entity:"Berry-producing Shrubs", Factor:"Growth of berry-producing shrubs", Yellowstone:"More berry-producing shurbs"})
 
 // Create :Landscape factors (nodes)
-CREATE 	(beaverpond:Landscape {Entity:"Beaver Ponds", Factor:"Number of beaver ponds", Yellowstone:"More beaver ponds/dams"}), 
+CREATE 	(beaverpond:Landscape {Entity:"Beaver Ponds", Factor:"Number of beaver ponds", Yellowstone:"More beaver ponds/dams"}),
 		(streamchannel:Landscape {Entity:"Stream Channels", Factor:"Narrowing of stream channels", Yellowstone:"Narrower stream channels"}),
 		(streambank:Landscape {Entity:"Streambanks", Factor:"Reduction in streambank erosion", Yellowstone:"Less streambank erosion"}),
 		(river:Landscape {Entity:"Rivers", Factor:"Stability of rivers", Yellowstone:"Increased river stability"}),
@@ -103,7 +114,7 @@ CREATE 	(beaverpond:Landscape {Entity:"Beaver Ponds", Factor:"Number of beaver p
 		(rifflesection:Landscape {Entity:"Riffle Sections", Factor:"Number of riffle sections", Yellowstone:"More riffle sections"})
 
 // Connect each cause-and-effect pair (relationships)
-CREATE 	(wolf)-[:PREY_ON {Relationship:"Inverse"}]->(deer), 
+CREATE 	(wolf)-[:PREY_ON {Relationship:"Inverse"}]->(deer),
 		(wolf)-[:PREY_ON {Relationship:"Inverse"}]->(coyote),
 		(wolf)-[:HUNTING {Relationship:"Direct"}]->(carrion),
 		(coyote)-[:PREY_ON {Relationship:"Inverse"}]->(rabbit),
@@ -167,35 +178,42 @@ RETURN *
 ----
 //graph
 
-'''
-
 == Entity Link Analysis
 
-==== (a) "How exactly can the number of wolves affect the stability of rivers in Yellowstone?"
-The beauty of this trophic cascade lies in how the addition of mere 98 wolves could effect such an extensive ecological change that propagated through to the behavior of the rivers. A simple Cypher query below models the complex interdependencies beneath.
+=== (a) "How exactly can the number of wolves affect the stability of rivers in Yellowstone?"
 
-'NOTE - Table output below is limited to 5 entries. To obtain details of all possible causal relationships/paths from "Wolves" to "Rivers" (for a CLD model), run the Cypher query: MATCH path = ({Entity:"Wolves"})-[*]->({Entity:"Rivers"}) RETURN path'
+The beauty of this trophic cascade lies in how the addition of mere 98 wolves could effect such an extensive ecological change that propagated through to the behavior of the rivers.
+A simple Cypher query below models the complex interdependencies beneath.
 
 [source,cypher]
 ----
-MATCH path = (:Animal {Entity:"Wolves"})-[*]->(:Landscape {Entity:"Rivers"}) 
+MATCH path = (:Animal {Entity:"Wolves"})-[*]->(:Landscape {Entity:"Rivers"})
 WITH extract(node IN nodes(path) | node.Yellowstone) AS factor, rand() AS number
 RETURN factor AS How_Wolves_Affect_RiverStability
 ORDER BY number
 LIMIT 5
 ----
-image::http://imgur.com/uNtRzl5.png[]
 //output
 //table
 
-==== (b) "How are landscape features affected by mammals in Yellowstone?"
-Or more broadly, the interdependencies between different entity groups (e.g. specific animal classes) may also be modeled in a similar (simple yet effective) fashion.
+."How exactly can the number of wolves affect the stability of rivers in Yellowstone?"
+image::http://imgur.com/uNtRzl5.png[]
 
-'NOTE - Table output below is limited to 5 entries. To obtain details of all possible causal relationships/paths from all "Mammals" to all "Landscape" (for a CLD model), run the Cypher query: MATCH path = (:Animal {Group:"Mammal"})-[*]->(:Landscape) RETURN path'
+Note that the table output above is limited to 5 entries.
+To obtain details of all possible causal relationships/paths from "Wolves" to "Rivers" (for a CLD model), run the Cypher query:
 
 [source,cypher]
 ----
-MATCH path = (:Animal {Group:"Mammal"})-[*]->(:Landscape) 
+MATCH path = ({Entity:"Wolves"})-[*]->({Entity:"Rivers"}) RETURN path
+----
+
+=== (b) "How are landscape features affected by mammals in Yellowstone?"
+
+Or more broadly, the interdependencies between different entity groups (e.g. specific animal classes) may also be modeled in a similar (simple yet effective) fashion.
+
+[source,cypher]
+----
+MATCH path = (:Animal {Group:"Mammal"})-[*]->(:Landscape)
 WITH extract(node IN nodes(path) | node.Yellowstone) AS factor, rand() AS number
 RETURN factor AS How_Mammals_Affect_LandscapeFeatures
 ORDER BY number
@@ -204,10 +222,19 @@ LIMIT 5
 //output
 //table
 
-==== (c) "If bear-hunting increases and more bears are killed, will the Yellowstone ecosystem be disrupted exponentially (until bears go extinct!) or return to equilibrium (somewhat status quo)?" 
-In many causal loop implementations, valuable insights are attainable from identifying closed loops, and then determining if they are reinforcing (even number of inverse links within the loop) or balancing (odd number). This helps to reveal 'Reference Behaviour Patterns', i.e. possible dynamic behaviours of a system.
+Note that the table output above is limited to 5 entries.
+To obtain details of all possible causal relationships/paths from all "Mammals" to all "Landscape" (for a CLD model), run the Cypher query:
 
-Coupled with an initial assumption, e.g. "Node 1 of the loop increases", we can predict the corresponding system outcome - reinforcing loops are associated with exponential increases/decreases, while balancing loops tend to reach a plateau. 
+[source,cypher]
+----
+MATCH path = (:Animal {Group:"Mammal"})-[*]->(:Landscape) RETURN path
+----
+
+=== (c)"If bear-hunting increases and more bears are killed, will the Yellowstone ecosystem be disrupted exponentially (until bears go extinct!) or return to equilibrium (somewhat status quo)?"
+
+In many causal loop implementations, valuable insights are attainable from identifying closed loops, and then determining if they are reinforcing (even number of inverse links within the loop) or balancing (odd number).
+This helps to reveal 'Reference Behaviour Patterns', i.e. possible dynamic behaviours of a system.
+Coupled with an initial assumption, e.g. _Node 1 of the loop increases_, we can predict the corresponding system outcome - reinforcing loops are associated with exponential increases/decreases, while balancing loops tend to reach a plateau.
 
 [source,cypher]
 ----
@@ -217,17 +244,16 @@ RETURN factor AS Causal_Loop, rel AS Links
 ORDER BY length(factor) DESC
 LIMIT 1
 ----
-image::http://imgur.com/mVRBmy1.png[]
 //output
 //table
 
-In the causal loop identified above, we have an even number of inverse links, signifying a reinforcing loop. Thus, if the number of bears drops autonomously, it is likely to disrupt the system and lead to an exponential decrease in the bear population.
+.Less bears -> more deers -> less willow -> less songbirds -> less berry-producing shrubs -> less bears -> more deers -> ...
+image::http://imgur.com/mVRBmy1.png[]
 
-'Explanation with reference to the loop: less bears -> more deers -> less willow -> less songbirds -> less berry-producing shrubs -> less bears -> more deers -> ...'
+In the causal loop identified above, we have an even number of inverse links, signifying a reinforcing loop.
+Thus, if the number of bears drops autonomously, it is likely to disrupt the system and lead to an exponential decrease in the bear population.
 
 Assumption: Berries have a greater impact on bears' diet than deers.
-
-'''
 
 == References
 

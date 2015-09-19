@@ -1,16 +1,27 @@
 = Information Flow Through a Network
-:neo4j-version: 2.0.0
+:neo4j-version:2.2.0
+:twitter:@lyonwj
 
-## Introduction
+:toc:
 
-Modern financial markets operate very quickly due to algorithmic trading. Essentially, computers execute trades automatically based on information inputs and clever algorithms. All of this occurs very rapidly. The computers are so good at executing trades quickly, in fact, that the speed at which information moves from one city to another is actually a limiting factor. For example, if an announcement that impacts the financial markets is made in Washington, DC, traders in New York, NY will probably "hear" about it before those in, say, Seattle, WA.
+== Introduction
 
-Since information can travel no faster than the speed of light (in reality it travels much more slowly because of various processing that must be done along the way) we can compute a lower bound on the time it will take a particular piece of information released in one city to arrive in other cities. As you might expect, this problem involves flow through a network, and is therefore fairly simple to model in Neo4j (or any graph database, really).
+Modern financial markets operate very quickly due to algorithmic trading.
+Essentially, computers execute trades automatically based on information inputs and clever algorithms. All of this occurs very rapidly.
+The computers are so good at executing trades quickly, in fact, that the speed at which information moves from one city to another is actually a limiting factor.
+For example, if an announcement that impacts the financial markets is made in Washington, DC, traders in New York, NY will probably "hear" about it before those in, say, Seattle, WA.
 
-## Data Model
+Since information can travel no faster than the speed of light (in reality it travels much more slowly because of various processing that must be done along the way) we can compute a lower bound on the time it will take a particular piece of information released in one city to arrive in other cities.
+As you might expect, this problem involves flow through a network, and is therefore fairly simple to model in Neo4j (or any graph database, really).
 
-Our data model consists of a set of cities, each with a latitude and longitude, which we will use to compute distances (we could have entered the distances as data, but it was more fun to use Neo4j for this task, and in a more generalized case you might want the nodes to be able to move). Each city is linked to one or more other cities by +:BACKBONE_TO+ relationships. This indicates that the two cities involved in the relationship have an Internet backbone running between them. For this example, we mostly made up the backbones, although the backbones running to Tokyo are accurate given actual undersea cable topology.
+== Data Model
 
+Our data model consists of a set of cities, each with a latitude and longitude, which we will use to compute distances (we could have entered the distances as data, but it was more fun to use Neo4j for this task, and in a more generalized case you might want the nodes to be able to move).
+Each city is linked to one or more other cities by ``:BACKBONE_TO` relationships.
+This indicates that the two cities involved in the relationship have an Internet backbone running between them.
+For this example, we mostly made up the backbones, although the backbones running to Tokyo are accurate given actual undersea cable topology.
+
+.Information network data model
 image::http://i.imgur.com/uxv29rM.png[Information network data model]
 
 //hide
@@ -24,9 +35,10 @@ CREATE (chc:City { name: "Chicago", lat: 41.833, lon: -87.617 }), (sea:City { na
 
 //console
 
-## Distance Computation
+== Distance Computation
 
-Before we can establish a lower bound on the time it takes information to flow between cities, we must determine the distance between cities that are linked by an Internet backbone. We assume that the cables connecting cities lie on https://en.wikipedia.org/wiki/Great-circle_distance[great circles], in other words, that each cable lies on the shortest possible line between cities.
+Before we can establish a lower bound on the time it takes information to flow between cities, we must determine the distance between cities that are linked by an Internet backbone.
+We assume that the cables connecting cities lie on https://en.wikipedia.org/wiki/Great-circle_distance[great circles], in other words, that each cable lies on the shortest possible line between cities.
 
 [source,cypher]
 ----
@@ -37,7 +49,10 @@ RETURN 2 * 6371 * asin(sqrt(haversin(radians(c1.lat - c2.lat)) + cos(radians(c1.
 
 //table
 
-In our case we would like to record the distances between cities that are connected with an Internet backbone. We can store this data on the +:BACKBONE_TO+ edges. Note that we don't have to worry about double-computing because we have specified a relationship direction, so each distance will only be computed once. If we left out the direction, each distance would be computed twice, although the end result would be exactly the same.
+In our case we would like to record the distances between cities that are connected with an Internet backbone.
+We can store this data on the ``:BACKBONE_TO` edges.
+Note that we don't have to worry about double-computing because we have specified a relationship direction, so each distance will only be computed once.
+If we left out the direction, each distance would be computed twice, although the end result would be exactly the same.
 
 //output
 [source,cypher]
@@ -51,9 +66,12 @@ RETURN c1.name, c2.name, r.dist
 
 //graph
 
-## Mapping Information Flow
+== Mapping Information Flow
 
-Our next step is to find candidate paths from one city to another. Once we have these paths, we can compute the minimum amount of time it would take a piece of information to move along each path, and find the shortest route between them. First, we can find all unique, simple (no repeated cities) from one city to another. Here is example for Tokyo and Chicago:
+Our next step is to find candidate paths from one city to another.
+Once we have these paths, we can compute the minimum amount of time it would take a piece of information to move along each path, and find the shortest route between them.
+First, we can find all unique, simple (no repeated cities) from one city to another.
+Here is example for Tokyo and Chicago:
 
 [source,cypher]
 ----
@@ -79,11 +97,17 @@ RETURN distinct extract(n in nodes(p) | n.name), length(p), distance
 
 //table
 
-The next step is to change distance into an amount of time. We will assume that information travels between cities at the speed of light. As mentioned earlier this is not strictly true, but since we are looking for a lower bound on the time it takes information to move from one city to another, using the fastest possible speed for the information flow itself makes sense.
+The next step is to change distance into an amount of time.
+We will assume that information travels between cities at the speed of light.
+As mentioned earlier this is not strictly true, but since we are looking for a lower bound on the time it takes information to move from one city to another, using the fastest possible speed for the information flow itself makes sense.
 
-As an aside, we could make this model more complicated, and perhaps more accurate, by taking into account the processing time each each junction point along the way. When information arrives at a particular node in the network it must be routed to the next node along its path, this takes some non-zero amount of time. Therefore, we might actually want to minimize the distance information has to travel, subject to the constraint that each "hop" has a cost. In this case, we would tend to prefer less complicated paths, even if they are slightly longer.
+As an aside, we could make this model more complicated, and perhaps more accurate, by taking into account the processing time each each junction point along the way.
+When information arrives at a particular node in the network it must be routed to the next node along its path, this takes some non-zero amount of time.
+Therefore, we might actually want to minimize the distance information has to travel, subject to the constraint that each "hop" has a cost.
+In this case, we would tend to prefer less complicated paths, even if they are slightly longer.
 
-We can compute the number of milliseconds it should take information to travel between cities using the query below. Note that we simply divide the distance by 300 to get milliseconds, since light travels at 300,000 kilometers per second.
+We can compute the number of milliseconds it should take information to travel between cities using the query below.
+Note that we simply divide the distance by 300 to get milliseconds, since light travels at 300,000 kilometers per second.
 
 [source,cypher]
 ----
@@ -112,6 +136,8 @@ ORDER BY c2.name
 
 //table
 
-## About
+== About
 
 Create by George Lesica (https://twitter.com/glesica[@glesica]) and William Lyon (https://twitter.com/lyonwj[@lyonwj]).
+
+//console

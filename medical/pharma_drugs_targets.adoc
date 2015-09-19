@@ -1,50 +1,58 @@
 = Pharmaceutical Drugs and their Targets
 Josh Kunken <joshkunken@gmail.com>
 v1.0, 14-Dec-2013
-:neo4j-version: 2.0.0
-:author: Josh Kunken
-:twitter: joshkunken
- 
+:neo4j-version:2.2.0
+:author:Josh Kunken
+:twitter:joshkunken
+
+:toc:
+
 == Domain
- 
+
 A pharmaceutical portfolio is a collection of drug compounds, their respective indications, and their targets.
- 
-A pharmaceutical company or drugstore organizes its pharmaceutical products into one or more portfolios. A drug portfolio thus contains multiple pharmaceuticals, with each pharmaceutical containing a link to one or more of its targets in the human body. This lends itself to be modeled as a graph. Each pharmaceutical and drug target can also have a distinct set of attributes which also fit nicely into the property graph model. Within the examples found in this use case, most drug targets happen to be G-protein coupled receptors (GPCRs), for which structures have only recently been solved in the last several years.
- 
-A drug can have one or more targets. A target can be targetted by one or more drugs. This is not a complete solution for all the drug portfolio use cases but provides a good starting point. 
-  
+A pharmaceutical company or drugstore organizes its pharmaceutical products into one or more portfolios.
+A drug portfolio thus contains multiple pharmaceuticals, with each pharmaceutical containing a link to one or more of its targets in the human body.
+This lends itself to be modeled as a graph.
+Each pharmaceutical and drug target can also have a distinct set of attributes which also fit nicely into the property graph model.
+Within the examples found in this use case, most drug targets happen to be G-protein coupled receptors (GPCRs), for which structures have only recently been solved in the last several years.
+
+A drug can have one or more targets.
+A target can be targeted by one or more drugs.
+This is not a complete solution for all the drug portfolio use cases but provides a good starting point.
+
+.Domain Model
 image::http://www.sohosci.com/drug_portfolio.PNG[Domain Model]
- 
- 
+
+
 == Setup
- 
+
 The sample data set uses a pharmaceutical portfolio.
- 
+
 //hide
 //setup
 //output
 [source,cypher]
 ----
 CREATE (drugPortfolio:Portfolio{ name:'Pharmaceutical Portfolio' })
- 
-CREATE (drugs:Category { name:'Drugs' }) 
-CREATE drugs-[:PARENT]->drugPortfolio 
 
-CREATE (antipsychotic_agents:Category { name:'Antipsychotic Agents' }) 
+CREATE (drugs:Category { name:'Drugs' })
+CREATE drugs-[:PARENT]->drugPortfolio
+
+CREATE (antipsychotic_agents:Category { name:'Antipsychotic Agents' })
 CREATE antipsychotic_agents-[:PARENT]->drugs
-CREATE (antiparkinson_agents:Category { name:'Antiparkinson Agents' }) 
+CREATE (antiparkinson_agents:Category { name:'Antiparkinson Agents' })
 CREATE antiparkinson_agents-[:PARENT]->drugs
-CREATE (antimigraine_agents:Category { name:'Antimigraine Agents' }) 
+CREATE (antimigraine_agents:Category { name:'Antimigraine Agents' })
 CREATE antimigraine_agents-[:PARENT]->drugs
-CREATE (antidepressive_agents:Category { name:'Antidepressive Agents' }) 
+CREATE (antidepressive_agents:Category { name:'Antidepressive Agents' })
 CREATE antidepressive_agents-[:PARENT]->drugs
-CREATE (antiallergic_agents:Category { name:'Antiallergic Agents' }) 
+CREATE (antiallergic_agents:Category { name:'Antiallergic Agents' })
 CREATE antiallergic_agents-[:PARENT]->drugs
-CREATE (cns_stimulants:Category { name:'CNS Stimulants' }) 
+CREATE (cns_stimulants:Category { name:'CNS Stimulants' })
 CREATE cns_stimulants-[:PARENT]->drugs
-CREATE (bronchodilator_agents:Category { name:'Bronchodilator Agents' }) 
+CREATE (bronchodilator_agents:Category { name:'Bronchodilator Agents' })
 CREATE bronchodilator_agents-[:PARENT]->drugs
-CREATE (vasodilator:Category { name:'Vasodilator' }) 
+CREATE (vasodilator:Category { name:'Vasodilator' })
 CREATE vasodilator-[:PARENT]->drugs
 
 CREATE (HUMAN_5HT1A:DrugTarget{ name:'5HT1A_HUMAN' })
@@ -56,133 +64,138 @@ CREATE (HUMAN_AA2BR:DrugTarget{ name:'AA2BR_HUMAN' })
 
 CREATE (clozapine:Product { name:'Clozapine' })
 CREATE clozapine-[:OF_TYPE]->antipsychotic_agents
-CREATE clozapine-[:Targets]->HUMAN_5HT1A
+CREATE clozapine-[:TARGETS]->HUMAN_5HT1A
 
 CREATE (aripiprazole:Product { name:'Aripiprazole' })
 CREATE aripiprazole-[:OF_TYPE]->antipsychotic_agents
-CREATE aripiprazole-[:Targets]->HUMAN_5HT1A 
- 
+CREATE aripiprazole-[:TARGETS]->HUMAN_5HT1A
+
 CREATE (lisuride:Product { name:'Lisuride' })
 CREATE lisuride-[:OF_TYPE]->antiparkinson_agents
-CREATE lisuride-[:Targets]->HUMAN_5HT1A 
+CREATE lisuride-[:TARGETS]->HUMAN_5HT1A
 
 CREATE (methysergide:Product { name:'Methysergide' })
 CREATE methysergide-[:OF_TYPE]->antimigraine_agents
-CREATE methysergide-[:Targets]->HUMAN_5HT1A 
+CREATE methysergide-[:TARGETS]->HUMAN_5HT1A
 
 CREATE (almotriptan:Product { name:'Almotriptan' })
 CREATE almotriptan-[:OF_TYPE]->antimigraine_agents
-CREATE almotriptan-[:Targets]->HUMAN_5HT1B 
+CREATE almotriptan-[:TARGETS]->HUMAN_5HT1B
 
 CREATE (eletriptan:Product { name:'Eletriptan' })
 CREATE eletriptan-[:OF_TYPE]->antimigraine_agents
-CREATE eletriptan-[:Targets]->HUMAN_5HT1B 
+CREATE eletriptan-[:TARGETS]->HUMAN_5HT1B
 
 CREATE (ergotamine:Product { name:'Ergotamine' })
 CREATE ergotamine-[:OF_TYPE]->antimigraine_agents
-CREATE ergotamine-[:Targets]->HUMAN_5HT1B 
+CREATE ergotamine-[:TARGETS]->HUMAN_5HT1B
 
 CREATE (frovatriptan:Product { name:'Frovatriptan' })
 CREATE frovatriptan-[:OF_TYPE]->antimigraine_agents
-CREATE frovatriptan-[:Targets]->HUMAN_5HT1B 
+CREATE frovatriptan-[:TARGETS]->HUMAN_5HT1B
 
 CREATE (naratriptan:Product { name:'Naratriptan' })
 CREATE naratriptan-[:OF_TYPE]->antimigraine_agents
-CREATE naratriptan-[:Targets]->HUMAN_5HT1B 
+CREATE naratriptan-[:TARGETS]->HUMAN_5HT1B
 
 CREATE (chlorprothixene:Product { name:'Chlorprothixene' })
 CREATE chlorprothixene-[:OF_TYPE]->antipsychotic_agents
-CREATE chlorprothixene-[:Targets]->HUMAN_5HT2A 
+CREATE chlorprothixene-[:TARGETS]->HUMAN_5HT2A
 
 CREATE clozapine-[:OF_TYPE]->antipsychotic_agents
-CREATE clozapine-[:Targets]->HUMAN_5HT2A
+CREATE clozapine-[:TARGETS]->HUMAN_5HT2A
 
 CREATE (cyclobenzaprine:Product { name:'Cyclobenzaprine' })
 CREATE cyclobenzaprine-[:OF_TYPE]->antidepressive_agents
-CREATE cyclobenzaprine-[:Targets]->HUMAN_5HT2A 
+CREATE cyclobenzaprine-[:TARGETS]->HUMAN_5HT2A
 
 CREATE (cyproheptadine:Product { name:'Cyclobenzaprine' })
 CREATE cyproheptadine-[:OF_TYPE]->antiallergic_agents
-CREATE cyproheptadine-[:Targets]->HUMAN_5HT2A 
+CREATE cyproheptadine-[:TARGETS]->HUMAN_5HT2A
 
 CREATE (caffeine:Product { name:'Caffeine' })
 CREATE caffeine-[:OF_TYPE]->cns_stimulants
-CREATE caffeine-[:Targets]->HUMAN_AA1R 
-CREATE caffeine-[:Targets]->HUMAN_AA2AR 
+CREATE caffeine-[:TARGETS]->HUMAN_AA1R
+CREATE caffeine-[:TARGETS]->HUMAN_AA2AR
 
 CREATE (theophylline:Product { name:'Theophylline' })
 CREATE theophylline-[:OF_TYPE]->bronchodilator_agents
-CREATE theophylline-[:Targets]->HUMAN_AA1R 
-CREATE theophylline-[:Targets]->HUMAN_AA2AR 
-CREATE theophylline-[:Targets]->HUMAN_AA2BR
+CREATE theophylline-[:TARGETS]->HUMAN_AA1R
+CREATE theophylline-[:TARGETS]->HUMAN_AA2AR
+CREATE theophylline-[:TARGETS]->HUMAN_AA2BR
 
 CREATE (regadenoson:Product { name:'Regadenoson' })
 CREATE regadenoson-[:OF_TYPE]->vasodilator
-CREATE regadenoson-[:Targets]->HUMAN_AA2AR 
+CREATE regadenoson-[:TARGETS]->HUMAN_AA2AR
 ----
- 
+
 === Try other queries yourself!
 //console
- 
+
 == Use Cases
- 
+
 == All portfolios
+
 [source,cypher]
 ----
 MATCH (c:Portfolio) RETURN c.name AS Portfolios
 ----
- 
+
 //table
- 
+
 == All categories by Depth
+
 [source,cypher]
 ----
-MATCH p=(cats:Category)-[:PARENT|PARENT*]->(cat:Portfolio) 
-WHERE cat.name='Pharmaceutical Portfolio' 
-RETURN LENGTH(p) AS Depth, COLLECT(cats.name) AS Categories 
+MATCH p=(cats:Category)-[:PARENT|PARENT*]->(cat:Portfolio)
+WHERE cat.name='Pharmaceutical Portfolio'
+RETURN LENGTH(p) AS Depth, COLLECT(cats.name) AS Categories
 ORDER BY Depth ASC
 ----
- 
+
 //table
- 
+
 == All categories of a given level
+
 [source,cypher]
 ----
-MATCH p=(cats:Category)-[:PARENT*]->(cat:Portfolio) 
+MATCH p=(cats:Category)-[:PARENT*]->(cat:Portfolio)
 WHERE cat.name='Pharmaceutical Portfolio' AND length(p)=1
-RETURN cats.name AS CategoriesOfGivenLevel 
+RETURN cats.name AS CategoriesOfGivenLevel
 ORDER BY CategoriesOfGivenLevel
 ----
- 
+
 //table
- 
+
 == All sub-categories of a given category
+
 [source,cypher]
 ----
-MATCH p=(cats:Category)-[:PARENT]->(parentCat:Category), (parentCat)-[:PARENT*]->(c:Portfolio) 
-WHERE parentCat.name='Drugs' AND c.name='Pharmaceutical Portfolio' 
+MATCH p=(cats:Category)-[:PARENT]->(parentCat:Category), (parentCat)-[:PARENT*]->(c:Portfolio)
+WHERE parentCat.name='Drugs' AND c.name='Pharmaceutical Portfolio'
 RETURN collect(cats.name) AS SubCategories
 ----
- 
+
 //table
- 
+
 == All Parent and their child categories
+
 [source,cypher]
 ----
-MATCH p=(child:Category)-[:PARENT*]->(parent) 
+MATCH p=(child:Category)-[:PARENT*]->(parent)
 RETURN parent.name, collect(child.name)
 ----
- 
+
 //table
- 
+
 == All parent and their IMMEDIATE children
+
 [source,cypher]
 ----
-MATCH p=(child:Category)-[:PARENT]->(parent) 
+MATCH p=(child:Category)-[:PARENT]->(parent)
 RETURN labels(parent), parent.name, collect(child.name)
 ----
- 
+
 //table
- 
 
-
+//console

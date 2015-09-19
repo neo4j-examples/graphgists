@@ -1,14 +1,18 @@
 = What's on the menu?
-:neo4j-version: 2.2.0
+:neo4j-version:2.2.0
 
-New York Public Library has over 45,000 menus from 1840s to present-day in its http://menus.nypl.org/about[What's on the menu?] collection. This graph list dishes from four menus from that collection.
+:toc:
 
+== Introduction
+
+New York Public Library has over 45,000 menus from 1840s to present-day in its http://menus.nypl.org/about[What's on the menu?] collection.
+This graph list dishes from four menus from that collection.
 
 == Schema
 
 image::http://nerdycreativity.com/images/graphgist/menu.png[]
 
-(Menu) 
+=== (Menu)
 
 * name: name of the restaurant
 * event
@@ -19,7 +23,7 @@ image::http://nerdycreativity.com/images/graphgist/menu.png[]
 * status:
 * page_count: number of pages in the menu
 
-(Dish)
+=== (Dish)
 
 * name: name of dish
 
@@ -29,7 +33,7 @@ image::http://nerdycreativity.com/images/graphgist/menu.png[]
 * city
 * state
 
-[:SERVES]
+=== [:SERVES]
 
 * price: price of dish
 
@@ -41,7 +45,7 @@ image::http://nerdycreativity.com/images/graphgist/menu.png[]
 //output
 [source,cypher]
 ----
-CREATE 
+CREATE
 
 // dishes
 
@@ -319,8 +323,8 @@ CREATE
 
 === List all the menus
 
+.All the menus
 image::http://nerdycreativity.com/images/graphgist/all_menus_rev.jpg[]
-
 
 [source,cypher]
 ----
@@ -336,12 +340,14 @@ All restaurants in New York City
 
 [source,cypher]
 ----
-MATCH (location: Location {city : "New York"}) <- [:LOCATED_AT] - (menu: Menu) 
+MATCH (location: Location {city : "New York"}) <- [:LOCATED_AT] - (menu: Menu)
 RETURN menu.name as restaurant,  location.city as city, location.state as state, menu.date as date
 order by restaurant
 ----
-image::http://nerdycreativity.com/images/graphgist/menus_per_city_rev.png[]
 //table
+
+.Menus Per City
+image::http://nerdycreativity.com/images/graphgist/menus_per_city_rev.png[]
 
 
 === Find restaurants that  serve a particular dish.
@@ -354,9 +360,10 @@ MATCH (location: Location) <- [:LOCATED_AT] -  (menu: Menu) - [r:SERVES] -> (dis
 RETURN menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
 order by restaurant
 ----
-image::http://nerdycreativity.com/images/graphgist/menus_per_dish_rev.png[]
 //table
 
+.Restaurants that serve coffee
+image::http://nerdycreativity.com/images/graphgist/menus_per_dish_rev.png[]
 
 === Find restaurants in a city that  serve a particular dish.
 
@@ -372,8 +379,7 @@ order by restaurant
 
 === Find all the dishes that a particular restaurants serves
 
-All the dishes from Virginia Hotel
-
+.All the dishes from Virginia Hotel
 image::http://nerdycreativity.com/images/graphgist/Virginia_Hotel_thumb.jpeg[]
 http://nerdycreativity.com/images/graphgist/Virginia_Hotel.jpeg[full size image]
 
@@ -435,13 +441,12 @@ Least expensive dishes
 MATCH (location: Location) <- [:LOCATED_AT] - (menu: Menu) - [r:SERVES] -> (dish: Dish)
 WHERE r.price > 0
 RETURN  dish.name, menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
-order by price asc 
+order by price asc
 limit 5
 ----
 // table
 
-== Console
+== References
 
 //hide
 //console
-
