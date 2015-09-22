@@ -251,3 +251,5 @@ Created by Luanne Misquitta:
 - link:https://twitter.com/luannem[Twitter]
 - link:http://thought-bytes.blogspot.in/[Blog]
 - link:https://in.linkedin.com/in/luannemisquitta/[LinkedIn]
+
+//console
