@@ -228,7 +228,7 @@ RETURN cert.name as missingCert
 ----
 MATCH (person:Person)-[:HOLDS_POSITION]->(position:Position)-[:REQUIRES]->(cert)
 WHERE NOT((person)-[:HAS_CERTIFICATION]->(cert))
-RETURN person.name, collect(cert.name) as missingCerts
+RETURN person.name, COLLECT(cert.name) as missingCerts
 ----
 //table
 
@@ -237,10 +237,10 @@ RETURN person.name, collect(cert.name) as missingCerts
 [source,cypher]
 ----
 MATCH (person:Person)-[:HAS_CERTIFICATION]->(cert)
-WITH collect(cert) as heldCerts,person
+WITH COLLECT(cert) as heldCerts,person
 MATCH (position:Position)-[:REQUIRES]->(requiredCert)
 WHERE NOT((person)-[:HOLDS_POSITION]->(position))
-WITH collect(requiredCert) as requiredCerts,heldCerts,position
+WITH COLLECT(requiredCert) as requiredCerts,heldCerts,position
 WHERE ALL(rc in requiredCerts where rc in heldCerts)
 RETURN position.name
 ----

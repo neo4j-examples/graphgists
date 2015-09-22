@@ -512,7 +512,7 @@ RETURN region.name as aws_region
 
 [source,cypher]
 ----
-MATCH (ec2: EC2InstanceType)
+MATCH (ec2:EC2InstanceType)
 WHERE HAS(ec2.memory)
 RETURN ec2.memory as memory_GiB, ec2.name ORDER BY ec2.memory DESC LIMIT 1
 ----

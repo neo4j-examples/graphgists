@@ -51,7 +51,7 @@ The result are queries that can run from two to ten seconds depending on how man
 
 Implementing this in Neo4 resulted in 300 nodes and 120k relationships.
 A typical query runs in about 500 ms and
-returns 500-700 values.
+RETURNs 500-700 values.
 Adding custom plans that deviate from the Wiley plan is easy and doesn't affect the performance.
 
 .Domain model
@@ -137,7 +137,7 @@ MATCH (c:Goal) RETURN c.Description AS Goal
 
 [source,cypher]
 ----
-match ( lib:Library)-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention)  return lib.Description,st.Description,i.Description;
+MATCH ( lib:Library)-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention)  RETURN lib.Description,st.Description,i.Description;
 ----
 
 //table
@@ -146,7 +146,7 @@ match ( lib:Library)-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]
 
 [source,cypher]
 ----
-match ( lib:Library{GroupID:'230'})-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention) with i,st match (st)-[:HAS_OBJECTIVE]->(m:Objective) return st.Description,m.Description, i.Description;
+MATCH ( lib:Library{GroupID:'230'})-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention) with i,st MATCH (st)-[:HAS_OBJECTIVE]->(m:Objective) RETURN st.Description,m.Description, i.Description;
 
 ----
 //table
