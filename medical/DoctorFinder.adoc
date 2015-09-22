@@ -16,33 +16,33 @@ image::http://img15.hostingpics.net/pics/800451GraphGist.png[DoctorFinder! model
 [source,cypher]
 -------
 CREATE
-(_6:DRUG_CLASS  {name:"Bronchodilators"}),
-(_7:DRUG_CLASS  {name:"Corticosteroids"}),
-(_8:DRUG_CLASS  {name:"Xanthine"}),
-(_9:DRUG  {name:"Salbutamol"}),
-(_10:DRUG  {name:"Terbutaline"}),
-(_11:DRUG  {name:"Bambuterol"}),
-(_12:DRUG  {name:"Formoterol"}),
-(_13:DRUG  {name:"Salmeterol"}),
-(_14:DRUG  {name:"Beclometasone"}),
-(_15:DRUG  {name:"Budesonide"}),
-(_16:DRUG  {name:"Ciclesonide"}),
-(_17:DRUG  {name:"Fluticasone"}),
-(_18:DRUG  {name:"Mometasone"}),
-(_19:DRUG  {name:"Betametasone"}),
-(_20:DRUG  {name:"Prednisolone"}),
-(_21:DRUG  {name:"Dilatrane"}),
-(_22:ALLERGY  {name:"Hypersensitivity to Betametasone"}),
-(_23:PATHOLOGY  {name:"Asthma"}),
-(_24:SYMPTOM  {name:"Wheezing"}),
-(_25:SYMPTOM  {name:"Chest tightness"}),
-(_26:SYMPTOM  {name:"Cough"}),
-(_27:DOCTOR  {latitude:48.8573,longitude:2.35685,name:"Irving Matrix"}),
-(_28:DOCTOR  {latitude:46.83144,longitude:-71.28454,name:"Jack McKee"}),
-(_29:DOCTOR  {latitude:48.86982,longitude:2.32503,name:"Michaela Quinn"}),
-(_30:DOCTOR_SPECIALIZATION  {name:"Physician"}),
-(_31:DOCTOR_SPECIALIZATION  {name:"Angiologist"}),
-(_6)-[:CURES {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
+(_6:DrugClass  {name:"Bronchodilators"}),
+(_7:DrugClass  {name:"Corticosteroids"}),
+(_8:DrugClass  {name:"Xanthine"}),
+(_9:Drug  {name:"Salbutamol"}),
+(_10:Drug  {name:"Terbutaline"}),
+(_11:Drug  {name:"Bambuterol"}),
+(_12:Drug  {name:"Formoterol"}),
+(_13:Drug  {name:"Salmeterol"}),
+(_14:Drug  {name:"Beclometasone"}),
+(_15:Drug  {name:"Budesonide"}),
+(_16:Drug  {name:"Ciclesonide"}),
+(_17:Drug  {name:"Fluticasone"}),
+(_18:Drug  {name:"Mometasone"}),
+(_19:Drug  {name:"Betametasone"}),
+(_20:Drug  {name:"Prednisolone"}),
+(_21:Drug  {name:"Dilatrane"}),
+(_22:Allergy  {name:"Hypersensitivity to Betametasone"}),
+(_23:Pathology  {name:"Asthma"}),
+(_24:Symptom  {name:"Wheezing"}),
+(_25:Symptom  {name:"Chest tightness"}),
+(_26:Symptom  {name:"Cough"}),
+(_27:Doctor  {latitude:48.8573,longitude:2.35685,name:"Irving Matrix"}),
+(_28:Doctor  {latitude:46.83144,longitude:-71.28454,name:"Jack McKee"}),
+(_29:Doctor  {latitude:48.86982,longitude:2.32503,name:"Michaela Quinn"}),
+(_30:DoctorSpecialization {name:"Physician"}),
+(_31:DoctorSpecialization {name:"Angiologist"}),
+(_6)-[: {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
 (_7)-[:CURES {age_max:18,age_min:5,indication:"Child asthma"}]->_23,
 (_8)-[:CURES {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
 (_9)-[:BELONGS_TO_CLASS]->(_6),
@@ -89,7 +89,7 @@ User types 'c'.
 
 [source,cypher]
 ----
-MATCH (s:SYMPTOM)
+MATCH (s:Symptom)
 WHERE UPPER(s.name)=~ UPPER('c.*')
 RETURN s.name AS `Symptom`
 ORDER BY s.name ASC
@@ -119,18 +119,18 @@ We expect all drugs of class `Bronchodilators` (`Betametasone` drug excluded, be
 
 [source,cypher]
 ----
-MATCH 		(patho:PATHOLOGY)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:SYMPTOM)
+MATCH 		(patho:Pathology)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:Symptom)
 WHERE symptoms.name IN ['Chest tightness', 'Wheezing']
 WITH patho
 
-MATCH (drug_class:DRUG_CLASS)-[cures:CURES]->(patho)
+MATCH (DrugClass:DrugClass)-[cures:CURES]->(patho)
 WHERE cures.age_min <= 35 AND 35 < cures.age_max
-WITH drug_class
+WITH DrugClass
 
-MATCH (drug:DRUG)-[:BELONGS_TO_CLASS]->(drug_class), (allergy:ALLERGY)
+MATCH (drug:Drug)-[:BELONGS_TO_CLASS]->(DrugClass), (allergy:ALLERGY)
 WHERE allergy.name IN ['Hypersensitivity to Betametasone']
 AND (NOT (drug)-[:MAY_CAUSE_ALLERGY]->(allergy))
-RETURN drug_class.name AS `Therapeutic class`, COLLECT(DISTINCT drug.name) AS `Drugs`;
+RETURN DrugClass.name AS `Therapeutic class`, COLLECT(DISTINCT drug.name) AS `Drugs`;
 ----
 //table
 
@@ -157,20 +157,20 @@ Moreover, drugs of class `Xanthine` do not require a prescription and they can c
 
 [source,cypher]
 ----
-MATCH 		(patho:PATHOLOGY)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:SYMPTOM)
+MATCH 		(patho:Pathology)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:Symptom)
 WHERE symptoms.name IN ['Cough']
 WITH patho
 
-MATCH (drug_class:DRUG_CLASS)-[cures:CURES]->(patho)
+MATCH (DrugClass:DrugClass)-[cures:CURES]->(patho)
 WHERE cures.age_min <= 19 AND 19 < cures.age_max
-WITH drug_class
+WITH DrugClass
 
-MATCH (drug:DRUG)-[:BELONGS_TO_CLASS]->(drug_class), (allergy:ALLERGY)
+MATCH (drug:Drug)-[:BELONGS_TO_CLASS]->(DrugClass), (allergy:ALLERGY)
 WHERE allergy.name IN ['Hypersensitivity to Betametasone']
 AND (NOT (drug)-[:MAY_CAUSE_ALLERGY]->(allergy))
-WITH drug_class, drug
+WITH DrugClass, drug
 
-OPTIONAL MATCH	(doctor:DOCTOR)-->(spe:DOCTOR_SPECIALIZATION)-[:CAN_PRESCRIBE]->(drug_class)
+OPTIONAL MATCH	(doctor:Doctor)-->(spe:DoctorSpecialization)-[:CAN_PRESCRIBE]->(DrugClass)
 RETURN COALESCE(doctor.name + ' (' + spe.name + ')', 'No doctor required') AS `Doctor`, COLLECT(DISTINCT drug.name) AS `Drugs for your symptoms`, 2 * 6371 * asin(sqrt(haversin(radians(48.88344 - COALESCE(doctor.latitude,48.88344))) + cos(radians(48.88344)) * cos(radians(COALESCE(doctor.latitude,90)))* haversin(radians(2.33180 - COALESCE(doctor.longitude,2.33180))))) AS `Distance to home (km)`
 ORDER BY `Distance to home (km)` ASC;
 ----

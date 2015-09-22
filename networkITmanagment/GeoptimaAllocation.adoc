@@ -171,73 +171,73 @@ CREATE
 (devices {name:'Devices'}),
 (sims {name:'SIM Cards'}),
 (active_devices {name:'Active Devices'}),
-(project)-[:active_devices]->(active_devices),
-(devices)-[:device]->(d1:Device {name:'354436058915420'}),
-(devices)-[:device]->(d2:Device {name:'358506046830281'}),
-(devices)-[:device]->(d3:Device {name:'353328059211902'}),
-(sims)-[:sim]->(s1:SIM {name:'240080000000001'}),
-(sims)-[:sim]->(s2:SIM {name:'240080000000002'}),
-(sims)-[:sim]->(s3:SIM {name:'240080000000003'}),
-(sims)-[:sim]->(s4:SIM {name:'240080000000004'}),
-(sims)-[:sim]->(s5:SIM {name:'240080000000005'}),
-(d1)-[:assoc]->(devsim1:DeviceSIM {imei:'354436058915420',imsi:'240080000000001'}),
-(d2)-[:assoc]->(devsim2:DeviceSIM {imei:'358506046830281',imsi:'240080000000002'}),
-(d2)-[:assoc]->(devsim3:DeviceSIM {imei:'358506046830281',imsi:'240080000000003'}),
-(d3)-[:assoc]->(devsim4:DeviceSIM {imei:'353328059211902',imsi:'240080000000004'}),
-(d3)-[:assoc]->(devsim5:DeviceSIM {imei:'353328059211902',imsi:'240080000000005'}),
-(s1)-[:assoc]->(devsim1),
-(s2)-[:assoc]->(devsim2),
-(s3)-[:assoc]->(devsim3),
-(s4)-[:assoc]->(devsim4),
-(s5)-[:assoc]->(devsim5),
-(craig)-[:used_device]->(d1),
-(craig)-[:used_sim]->(s1),
-(active_devices)-[:active]->(devsim1),
-(active_devices)-[:active]->(devsim2),
-(active_devices)-[:active]->(devsim3),
-(active_devices)-[:active]->(devsim4),
-(active_devices)-[:active]->(devsim5),
+(project)-[:ACTIVE_DEVICES]->(active_devices),
+(devices)-[:DEVICE]->(d1:Device {name:'354436058915420'}),
+(devices)-[:DEVICE]->(d2:Device {name:'358506046830281'}),
+(devices)-[:DEVICE]->(d3:Device {name:'353328059211902'}),
+(sims)-[:SIM]->(s1:SIM {name:'240080000000001'}),
+(sims)-[:SIM]->(s2:SIM {name:'240080000000002'}),
+(sims)-[:SIM]->(s3:SIM {name:'240080000000003'}),
+(sims)-[:SIM]->(s4:SIM {name:'240080000000004'}),
+(sims)-[:SIM]->(s5:SIM {name:'240080000000005'}),
+(d1)-[:ASSOC]->(devsim1:DeviceSIM {imei:'354436058915420',imsi:'240080000000001'}),
+(d2)-[:ASSOC]->(devsim2:DeviceSIM {imei:'358506046830281',imsi:'240080000000002'}),
+(d2)-[:ASSOC]->(devsim3:DeviceSIM {imei:'358506046830281',imsi:'240080000000003'}),
+(d3)-[:ASSOC]->(devsim4:DeviceSIM {imei:'353328059211902',imsi:'240080000000004'}),
+(d3)-[:ASSOC]->(devsim5:DeviceSIM {imei:'353328059211902',imsi:'240080000000005'}),
+(s1)-[:ASSOC]->(devsim1),
+(s2)-[:ASSOC]->(devsim2),
+(s3)-[:ASSOC]->(devsim3),
+(s4)-[:ASSOC]->(devsim4),
+(s5)-[:ASSOC]->(devsim5),
+(craig)-[:USED_DEVICE]->(d1),
+(craig)-[:USED_SIM]->(s1),
+(active_devices)-[:ACTIVE]->(devsim1),
+(active_devices)-[:ACTIVE]->(devsim2),
+(active_devices)-[:ACTIVE]->(devsim3),
+(active_devices)-[:ACTIVE]->(devsim4),
+(active_devices)-[:ACTIVE]->(devsim5),
 (devsim1)-[:files]->(files {name:'Files'}),
-(files)-[:date]->(x1:Date {date:'2013-12-30'}),
-(files)-[:date]->(x2:Date {date:'2013-12-31'}),
-(files)-[:date]->(x3:Date {date:'2014-01-01'}),
-(files)-[:date]->(x4:Date {date:'2014-01-02'}),
-(files)-[:date]->(x5:Date {date:'2014-01-03'}),
-(files)-[:date]->(x6:Date {date:'2014-01-04'}),
-(files)-[:date]->(x7:Date {date:'2014-01-05'}),
-(files)-[:date]->(x8:Date {date:'2014-01-06'}),
-(files)-[:date]->(x9:Date {date:'2014-01-07'}),
-(x5)-[:json]->(f1:File {
+(files)-[:DATE]->(x1:Date {date:'2013-12-30'}),
+(files)-[:DATE]->(x2:Date {date:'2013-12-31'}),
+(files)-[:DATE]->(x3:Date {date:'2014-01-01'}),
+(files)-[:DATE]->(x4:Date {date:'2014-01-02'}),
+(files)-[:DATE]->(x5:Date {date:'2014-01-03'}),
+(files)-[:DATE]->(x6:Date {date:'2014-01-04'}),
+(files)-[:DATE]->(x7:Date {date:'2014-01-05'}),
+(files)-[:DATE]->(x8:Date {date:'2014-01-06'}),
+(files)-[:DATE]->(x9:Date {date:'2014-01-07'}),
+(x5)-[:JSON]->(f1:File {
   name:'354436058915420_12345_12345.json',
   start:'2014-01-03 12:12:12 GMT+01',
   first:'2014-01-03 12:12:12.01 GMT+01',
   last:'2014-01-03 12:17:32.57 GMT+01',
   events:321,mcc:'240',mnc:'08',carrier:'Operator X'
 }),
-(x5)-[:json]->(f2:File {
+(x5)-[:JSON]->(f2:File {
   name:'354436058915420_12346_12346.json',
   start:'2014-01-03 12:17:33 GMT+01',
   first:'2014-01-03 12:17:33.01 GMT+01',
   last:'2014-01-03 12:23:21.76 GMT+01',
   events:405,mcc:'240',mnc:'08',carrier:'Operator X'
 }),
-(x5)-[:json]->(f3:File {
+(x5)-[:JSON]->(f3:File {
   name:'354436058915420_12347_12347.json',
   start:'2014-01-03 12:21:22 GMT+01',
   first:'2014-01-03 12:21:22.01 GMT+01',
   last:'2014-01-03 12:27:13.17 GMT+01',
   events:279,mcc:'240',mnc:'08',carrier:'Operator X'
 }),
-(x1)-[:next]->(x2),
-(x2)-[:next]->(x3),
-(x3)-[:next]->(x4),
-(x4)-[:next]->(x5),
-(x5)-[:next]->(x6),
-(x6)-[:next]->(x7),
-(x7)-[:next]->(x8),
-(x8)-[:next]->(x9),
-(f1)-[:next]->(f2),
-(f2)-[:next]->(f3)
+(x1)-[:NEXT]->(x2),
+(x2)-[:NEXT]->(x3),
+(x3)-[:NEXT]->(x4),
+(x4)-[:NEXT]->(x5),
+(x5)-[:NEXT]->(x6),
+(x6)-[:NEXT]->(x7),
+(x7)-[:NEXT]->(x8),
+(x8)-[:NEXT]->(x9),
+(f1)-[:NEXT]->(f2),
+(f2)-[:NEXT]->(f3)
 ----
 
 //graph
@@ -256,7 +256,7 @@ Let's try two queries on this graph:
 //show
 [source,cypher]
 ----
-MATCH (u:User)-[:used_device]->(d)-[:assoc]->(ds)-[:files]->(f)-[:date]->(dd)
+MATCH (u:User)-[:USED_DEVICE]->(d)-[:ASSOC]->(ds)-[:files]->(f)-[:DATE]->(dd)
 WHERE u.name = 'Craig'
 RETURN u.name,ds.imei,ds.imsi,dd.date
 ----
@@ -271,7 +271,7 @@ Rather we can use the count() function like:
 //show
 [source,cypher]
 ----
-MATCH (u:User)-[:used_device]->(d)-[:assoc]->(ds)-[:files]->(f)-[:date]->(dd)
+MATCH (u:User)-[:USED_DEVICE]->(d)-[:ASSOC]->(ds)-[:files]->(f)-[:DATE]->(dd)
 WHERE u.name = 'Craig'
 RETURN count(dd.date)
 ----
@@ -285,7 +285,7 @@ Since we now know how to use functions like count(), let's try another function 
 //show
 [source,cypher]
 ----
-MATCH (u:User)-[:used_device]->(d)-[:assoc]->(ds)-[:files]->(f)-[:date]->(dd)-[:json]->(json)
+MATCH (u:User)-[:USED_DEVICE]->(d)-[:ASSOC]->(ds)-[:files]->(f)-[:DATE]->(dd)-[:JSON]->(json)
 WHERE u.name = 'Craig'
 RETURN count(json.events),sum(json.events),sum(json.events)/count(json.events),min(json.events),max(json.events)
 ----

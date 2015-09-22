@@ -140,10 +140,10 @@ Outputs from these classifiers were combined using weighted linear combinations,
 [source,cypher]
 ----
 //create the user nodes
-CREATE (user_1:user {id:1, name:'Jacob'} ), (user_2:user {id:2, name:'David'} ), (user_3:user {id:3, name:'Sam'} ), (user_4:user {id:4, name:'Mohammed'} ), (user_5:user {id:5, name:'Cristina'} ), (user_6:user {id:6, name:'Josh'} ), (user_7:user {id:7, name:'Andrea'} ), (user_8:user {id:8, name:'Hill'} ), (user_9:user {id:9, name:'Bart'} ), (user_10:user {id:10, name:'Greg'} )
+CREATE (user_1:User {id:1, name:'Jacob'} ), (user_2:User {id:2, name:'David'} ), (user_3:User {id:3, name:'Sam'} ), (user_4:User {id:4, name:'Mohammed'} ), (user_5:User {id:5, name:'Cristina'} ), (user_6:User {id:6, name:'Josh'} ), (user_7:User {id:7, name:'Andrea'} ), (user_8:User {id:8, name:'Hill'} ), (user_9:User {id:9, name:'Bart'} ), (user_10:User {id:10, name:'Greg'} )
 
 //create the topic nodes
-CREATE (topic_1:topic {id:1, name:'aardvark'} ), (topic_2:topic {id:2, name:'dugong'} ), (topic_3:topic {id:3, name:'hyrax'} ), (topic_4:topic {id:4, name:'sengis'} ), (topic_5:topic {id:5, name:'golden-mole'} ), (topic_6:topic {id:6, name:'tenrec'} ), (topic_7:topic {id:7, name:'elephant'} ), (topic_8:topic {id:8, name:'stegedont'} ), (topic_9:topic {id:9, name:'manatee'} ), (topic_10:topic {id:10, name:'mammoth'} )
+CREATE (topic_1:Topic {id:1, name:'aardvark'} ), (topic_2:Topic {id:2, name:'dugong'} ), (topic_3:Topic {id:3, name:'hyrax'} ), (topic_4:Topic {id:4, name:'sengis'} ), (topic_5:Topic {id:5, name:'golden-mole'} ), (topic_6:Topic {id:6, name:'tenrec'} ), (topic_7:Topic {id:7, name:'elephant'} ), (topic_8:Topic {id:8, name:'stegedont'} ), (topic_9:Topic {id:9, name:'manatee'} ), (topic_10:Topic {id:10, name:'mammoth'} )
 
 //create the user-user relationships
 CREATE (user_1)-[:IS_BUDDY]->(user_5), (user_1)-[:IS_BUDDY]->(user_2), (user_1)-[:IS_BUDDY]->(user_8), (user_2)-[:IS_BUDDY]->(user_4), (user_2)-[:IS_BUDDY]->(user_6), (user_2)-[:IS_BUDDY]->(user_8), (user_3)-[:IS_BUDDY]->(user_9), (user_3)-[:IS_BUDDY]->(user_7), (user_3)-[:IS_BUDDY]->(user_3), (user_4)-[:IS_BUDDY]->(user_5), (user_4)-[:IS_BUDDY]->(user_9), (user_4)-[:IS_BUDDY]->(user_2), (user_5)-[:IS_BUDDY]->(user_10), (user_5)-[:IS_BUDDY]->(user_1), (user_5)-[:IS_BUDDY]->(user_4), (user_7)-[:IS_BUDDY]->(user_3), (user_7)-[:IS_BUDDY]->(user_2), (user_7)-[:IS_BUDDY]->(user_5), (user_8)-[:IS_BUDDY]->(user_3), (user_8)-[:IS_BUDDY]->(user_3), (user_8)-[:IS_BUDDY]->(user_1), (user_9)-[:IS_BUDDY]->(user_2), (user_9)-[:IS_BUDDY]->(user_3), (user_9)-[:IS_BUDDY]->(user_5), (user_10)-[:IS_BUDDY]->(user_3), (user_10)-[:IS_BUDDY]->(user_4), (user_10)-[:IS_BUDDY]->(user_8)
@@ -164,7 +164,7 @@ Since this is the first time the network has been used, and this is a simple exa
 
 [source,cypher]
 ----
-MATCH (a:user {name:'Josh'})-[:IS_BUDDY*1..2]-(b:user)-[r:SABE]-(:topic {name:'hyrax'})
+MATCH (a:User {name:'Josh'})-[:IS_BUDDY*1..2]-(b:User)-[r:SABE]-(:Topic {name:'hyrax'})
 RETURN DISTINCT b.name AS Name, (r.right)/toFloat(r.total) AS Score
 ORDER BY Score DESC
 ----
@@ -174,7 +174,7 @@ Since all options are the same, let's pose David a question about hyraxes that h
 
 [source,cypher]
 ----
-MATCH (a:user {name:'Josh'}),(b:user {name:'David'})-[r:SABE]-(t:topic {name:'hyrax'})
+MATCH (a:User {name:'Josh'}),(b:User {name:'David'})-[r:SABE]-(t:Topic {name:'hyrax'})
 MERGE (a)-[:ASKS]->(q1:query {id:1, text:"What is your favourite type of hyrax?"})
 MERGE (q1)-[:RESPONDENT {correct:1}]->(b)
 MERGE (q1)-[:ABOUT]->(t)
@@ -187,7 +187,7 @@ Let's see what happens when another user, let's say, Jacob, looks for a good can
 
 [source,cypher]
 ----
-MATCH (a:user {name:'Jacob'})-[:IS_BUDDY*1..2]-(b:user)-[r:SABE]-(:topic {name:'hyrax'})
+MATCH (a:User {name:'Jacob'})-[:IS_BUDDY*1..2]-(b:User)-[r:SABE]-(:Topic {name:'hyrax'})
 RETURN DISTINCT b.name AS Name, (r.right)/toFloat(r.total) AS Score
 ORDER BY Score DESC
 ----
@@ -200,8 +200,8 @@ Now Mohammed has asked David two questions, one he responds to correctly, and on
 //hide
 [source,cypher]
 ----
-MATCH (a:user {name:'Mohammed'}),(b:user {name:'David'})-[r1:SABE]-(t1:topic {name:'aardvark'}),
-(b)-[r2:SABE]-(t2:topic {name:'stegedont'})
+MATCH (a:User {name:'Mohammed'}),(b:User {name:'David'})-[r1:SABE]-(t1:Topic {name:'aardvark'}),
+(b)-[r2:SABE]-(t2:Topic {name:'stegedont'})
 MERGE (a)-[:ASKS]->(q3:query {id:3, text:"What is your favourite type of aardvark?"})
 MERGE (q3)-[:RESPONDENT {correct:1}]->(b)
 MERGE (q3)-[:ABOUT]->(t1)
@@ -220,8 +220,8 @@ For comparison, Jacob has also asked David two more questions, both of which he 
 //hide
 [source,cypher]
 ----
-MATCH (a:user {name:'Jacob'}),(b:user {name:'David'})-[r1:SABE]-(t1:topic {name:'hyrax'}),
-(b)-[r2:SABE]-(t2:topic {name:'golden-mole'})
+MATCH (a:User {name:'Jacob'}),(b:User {name:'David'})-[r1:SABE]-(t1:Topic {name:'hyrax'}),
+(b)-[r2:SABE]-(t2:Topic {name:'golden-mole'})
 MERGE (a)-[:ASKS]->(q3:query {id:3, text:"What is your favourite type of hyrax?"})
 MERGE (q3)-[:RESPONDENT {correct:1}]->(b)
 MERGE (q3)-[:ABOUT]->(t1)
@@ -240,7 +240,7 @@ Let's take a look at the changes:
 //hide
 [source,cypher]
 ----
-MATCH (a:user)-[:IS_BUDDY]-(b:user {name: 'David'}), (b)-[r:SABE]-(t:topic)
+MATCH (a:User)-[:IS_BUDDY]-(b:User {name: 'David'}), (b)-[r:SABE]-(t:Topic)
 WHERE a.name = 'Mohammed'OR a.name =  'Jacob'
 RETURN DISTINCT  sum(DISTINCT r.right) AS `Correct Responses to Topic`,sum(DISTINCT r.total) AS `Total Queries on Topic`,t.name AS `Topic`
 ----
@@ -255,7 +255,7 @@ Let's see who might be the best responder to any question a particular user migh
 //hide
 [source,cypher]
 ----
-MATCH (a:user)-[:IS_BUDDY]->(b:user), (c:user)-[:IS_BUDDY]-(b), (a)-[r:IS_BUDDY]-(c)
+MATCH (a:User)-[:IS_BUDDY]->(b:User), (c:User)-[:IS_BUDDY]-(b), (a)-[r:IS_BUDDY]-(c)
 WHERE NOT a=c AND NOT a=b
 RETURN  a.name AS `User A`, b.name AS `User B`,count(DISTINCT c) AS `Shared Buddies`
 ORDER BY `Shared Buddies` DESC, `User A` ASC

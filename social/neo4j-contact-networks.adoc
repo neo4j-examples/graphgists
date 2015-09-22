@@ -47,8 +47,8 @@ For instance I have not been able to find any kind of journey.
 
 == My model
 My model solves the problems I encountered with the previous model.
-I use two kind of nodes: ACTOR and CONTACT, where the first describes the interacting subject and the second is exactly the definition of contact given before (actor1, actor2, timestamp).
-Each contact is linked with the actors participating and with the latest previous contacts of its actors.
+I use two kind of nodes: `Actor` and `Contact`, where the first describes the interacting subject and the second is exactly the definition of contact given before (actor1, actor2, timestamp).
+Each `Contact` is linked with the `Actor`s participating and with the latest previous contacts of its `Actor`s.
 With this representation is possible to track the paths through time.
 
 === Initial Data Setup
@@ -57,60 +57,60 @@ With this representation is possible to track the paths through time.
 //hidden
 [source,cypher]
 ----
-create index on :`Contact`(`a1`);
-create index on :`Contact`(`a2`);
-create index on :`Contact`(`t`);
-create constraint on (n:`Actor`) assert n.`id` is unique;
-create (_12:`Actor` {`id`:0, `name`:"actor0"}),
-(_13:`Actor` {`id`:2, `name`:"actor2"}),
-(_14:`Contact` {`a1`:0, `a2`:2, `t`:0}),
-(_15:`Actor` {`id`:4, `name`:"actor4"}),
-(_16:`Contact` {`a1`:0, `a2`:4, `t`:1}),
-(_17:`Actor` {`id`:1, `name`:"actor1"}),
-(_18:`Contact` {`a1`:1, `a2`:2, `t`:1}),
-(_19:`Contact` {`a1`:1, `a2`:4, `t`:2}),
-(_20:`Actor` {`id`:3, `name`:"actor3"}),
-(_21:`Contact` {`a1`:2, `a2`:3, `t`:2}),
-(_22:`Contact` {`a1`:1, `a2`:2, `t`:2}),
-(_23:`Contact` {`a1`:2, `a2`:3, `t`:3}),
-(_24:`Contact` {`a1`:1, `a2`:3, `t`:4}),
-(_25:`Contact` {`a1`:0, `a2`:4, `t`:4}),
-(_26:`Contact` {`a1`:1, `a2`:4, `t`:4}),
-_12-[:`ACTOR`]->_14,
-_12-[:`ACTOR`]->_16,
-_12-[:`ACTOR`]->_25,
-_13-[:`ACTOR`]->_18,
-_13-[:`ACTOR`]->_14,
-_13-[:`ACTOR`]->_21,
-_13-[:`ACTOR`]->_22,
-_13-[:`ACTOR`]->_23,
-_14-[:`NEXT_CONTACT`]->_18,
-_14-[:`NEXT_CONTACT`]->_16,
-_15-[:`ACTOR`]->_26,
-_15-[:`ACTOR`]->_25,
-_15-[:`ACTOR`]->_19,
-_15-[:`ACTOR`]->_16,
-_16-[:`NEXT_CONTACT`]->_25,
-_16-[:`NEXT_CONTACT`]->_19,
-_17-[:`ACTOR`]->_18,
-_17-[:`ACTOR`]->_22,
-_17-[:`ACTOR`]->_19,
-_17-[:`ACTOR`]->_26,
-_17-[:`ACTOR`]->_24,
-_18-[:`NEXT_CONTACT`]->_22,
-_18-[:`NEXT_CONTACT`]->_21,
-_18-[:`NEXT_CONTACT`]->_19,
-_19-[:`NEXT_CONTACT`]->_24,
-_19-[:`NEXT_CONTACT`]->_26,
-_19-[:`NEXT_CONTACT`]->_25,
-_20-[:`ACTOR`]->_24,
-_20-[:`ACTOR`]->_23,
-_20-[:`ACTOR`]->_21,
-_21-[:`NEXT_CONTACT`]->_23,
-_22-[:`NEXT_CONTACT`]->_26,
-_22-[:`NEXT_CONTACT`]->_24,
-_22-[:`NEXT_CONTACT`]->_23,
-_23-[:`NEXT_CONTACT`]->_24
+CREATE INDEX ON :Contact(`a1`);
+CREATE INDEX ON :Contact(`a2`);
+CREATE INDEX ON :Contact(`t`);
+CREATE CONSTRAINT ON (n:Actor) assert n.`id` is unique;
+CREATE (_12:Actor {`id`:0, `name`:"actor0"}),
+(_13:Actor {`id`:2, `name`:"actor2"}),
+(_14:Contact {`a1`:0, `a2`:2, `t`:0}),
+(_15:Actor {`id`:4, `name`:"actor4"}),
+(_16:Contact {`a1`:0, `a2`:4, `t`:1}),
+(_17:Actor {`id`:1, `name`:"actor1"}),
+(_18:Contact {`a1`:1, `a2`:2, `t`:1}),
+(_19:Contact {`a1`:1, `a2`:4, `t`:2}),
+(_20:Actor {`id`:3, `name`:"actor3"}),
+(_21:Contact {`a1`:2, `a2`:3, `t`:2}),
+(_22:Contact {`a1`:1, `a2`:2, `t`:2}),
+(_23:Contact {`a1`:2, `a2`:3, `t`:3}),
+(_24:Contact {`a1`:1, `a2`:3, `t`:4}),
+(_25:Contact {`a1`:0, `a2`:4, `t`:4}),
+(_26:Contact {`a1`:1, `a2`:4, `t`:4}),
+_12-[:ACTOR]->_14,
+_12-[:ACTOR]->_16,
+_12-[:ACTOR]->_25,
+_13-[:ACTOR]->_18,
+_13-[:ACTOR]->_14,
+_13-[:ACTOR]->_21,
+_13-[:ACTOR]->_22,
+_13-[:ACTOR]->_23,
+_14-[:NEXT_CONTACT]->_18,
+_14-[:NEXT_CONTACT]->_16,
+_15-[:ACTOR]->_26,
+_15-[:ACTOR]->_25,
+_15-[:ACTOR]->_19,
+_15-[:ACTOR]->_16,
+_16-[:NEXT_CONTACT]->_25,
+_16-[:NEXT_CONTACT]->_19,
+_17-[:ACTOR]->_18,
+_17-[:ACTOR]->_22,
+_17-[:ACTOR]->_19,
+_17-[:ACTOR]->_26,
+_17-[:ACTOR]->_24,
+_18-[:NEXT_CONTACT]->_22,
+_18-[:NEXT_CONTACT]->_21,
+_18-[:NEXT_CONTACT]->_19,
+_19-[:NEXT_CONTACT]->_24,
+_19-[:NEXT_CONTACT]->_26,
+_19-[:NEXT_CONTACT]->_25,
+_20-[:ACTOR]->_24,
+_20-[:ACTOR]->_23,
+_20-[:ACTOR]->_21,
+_21-[:NEXT_CONTACT]->_23,
+_22-[:NEXT_CONTACT]->_26,
+_22-[:NEXT_CONTACT]->_24,
+_22-[:NEXT_CONTACT]->_23,
+_23-[:NEXT_CONTACT]->_24
 ----
 
 '''
