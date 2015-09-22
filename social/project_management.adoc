@@ -411,3 +411,5 @@ RETURN a.slack AS Slack
 //table
 
 The overall project completion time will increase from 62 to 63 days (62 + (3 - 2)) since the delay of three days exceeds the two-day slack afforded to training the users by one day.
+
+//console

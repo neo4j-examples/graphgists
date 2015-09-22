@@ -185,3 +185,5 @@ In real world application, extending the above model, there is potential for add
 
 This approach is more generic than it may initially seem.
 Many resource problems involve networks of distribution in which many components interact across sparse relationships (electricity generation and distribution, natural gas, sewage, district-piped heating); rapid and efficient querying on these relationships is necessary for efficient resource allocation and better environmental and cost outcomes.
+
+//console

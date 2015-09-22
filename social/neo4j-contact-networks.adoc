@@ -277,3 +277,5 @@ For instance in my case could be nice to aggregate per frame.
 [4]: http://event.cwi.nl/grades2013/11-averbuch.pdf "Time-varying networks in neo4j"
 
 [5]: https://hal.inria.fr/inria-00071996/document "Computing shortest, fastest, and foremost journeys in dynamic networks"
+
+//console

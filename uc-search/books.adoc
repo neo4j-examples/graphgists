@@ -302,3 +302,5 @@ Presented model is extendible: the information about other content can be added,
 This order information is the knowledge base about books that can be used in searching for a particular content or content recommendations.
 Additional layer in form of classical social network can be added to enable the functionality of profiling people according to their reading taste, finding similar people (based on their reading taste), etc.
 The model can be also used to prove that graph modelling of this domain and querying is much easier that in case of relational databases.
+
+//console

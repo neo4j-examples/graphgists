@@ -202,3 +202,5 @@ I believe it would be useless and misleading to try to do a graph of "the most i
 Let the person who knows his own field define those citation patterns that signal relevance in his particular area of research.
 Particularly, I think this could be implemented as a plugin to bibliographic software, such as Thomson Reuters' EndNote, enabling some handy new search functionality.
 If someone's interested in doing that, let me know.
+
+//console
