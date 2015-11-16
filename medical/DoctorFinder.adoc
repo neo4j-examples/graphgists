@@ -1,5 +1,7 @@
 = DoctorFinder!
 :neo4j-version:2.2.0
+:author:The Vidal Team
+:twitter:@fbiville
 
 :toc:
 
