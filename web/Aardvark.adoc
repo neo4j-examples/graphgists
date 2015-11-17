@@ -1,5 +1,5 @@
 = Aardvark: The Anatomy of a Large-Scale Social Search Engine
-:neo4j-version:2.2.0
+:neo4j-version:2.3.0
 :author:Cristina Escalante
 :twitter:
 :tags:social

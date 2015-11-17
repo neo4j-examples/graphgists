@@ -1,5 +1,5 @@
 = Trophic Cascade: A Wolf's Role in the Ecosystem of Yellowstone
-:neo4j-version: 2.2.0
+:neo4j-version:2.3.0
 :author: May Lim
 :twitter: @aprmayyjun
 :tags: domain:life-science, use-case:trophic-cascade

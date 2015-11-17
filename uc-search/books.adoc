@@ -1,6 +1,6 @@
 = Books Management Graph
 :author: Justyna Gromada
-:neo4j-version:2.2.0
+:neo4j-version:2.3.0
 :twitter:@gromajus
 :linkedIn:http://www.linkedin.com/in/jgromada
 :email:jgromada@gmail.com

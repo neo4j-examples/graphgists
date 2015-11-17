@@ -1,5 +1,5 @@
 = (Product) Hierarchy GraphGist
-:Neo4j-version:2.2.0
+:neo4j-version:2.3.0
 :twitter:@rvanbruggen
 :author:Rik Van Bruggen
 

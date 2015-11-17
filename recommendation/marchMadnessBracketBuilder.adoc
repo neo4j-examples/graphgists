@@ -1,6 +1,6 @@
 = A March Madness Recommendation Engine
 Kevin Van Gundy <kevin@neotechnology.com>
-:neo4j-version:2.2.0
+:neo4j-version:2.3.0
 :author:Kevin Van Gundy
 :twitter:@kevinvangundy
 

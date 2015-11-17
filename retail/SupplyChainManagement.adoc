@@ -1,5 +1,5 @@
 = Supply Chain Management
-:neo4j-version:2.2.0
+:neo4j-version:2.3.0
 :author:Marcus Wachsmuth
 
 :toc:
