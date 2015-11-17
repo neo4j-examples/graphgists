@@ -1,5 +1,5 @@
 = Finding Influencers in a Social Network
-:neo4j-version:2.2.0
+:neo4j-version:2.3.0
 :author:James R.
 
 :toc:

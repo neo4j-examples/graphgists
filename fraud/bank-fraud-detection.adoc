@@ -1,5 +1,5 @@
 = Bank Fraud Detection
-:neo4j-version:2.2.0-RC1
+:neo4j-version:2.3.0-RC1
 :author:Kenny Bastani
 :twitter:@kennybastani
 domain:finance

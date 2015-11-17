@@ -1,5 +1,5 @@
 = Neo4j and the Offshore Leaks: the Case of Azerbaijan
-:neo4j-version:2.2.0
+:neo4j-version:2.3.0
 :author:Jean Villedieu
 :twitter:@jvilledieu
 :tags:domain:finance
