@@ -15,43 +15,37 @@ The http://offshoreleaks.icij.org/about/caveats[publicly released dataset] is a 
 Even so, it still contains around 250k nodes, 500k edges and 1.2 million properties.
 This size and relational nature of the complex, international networks between offshore entities make it an excellent match for graph databases such as Neo4j.
 
-For this GraphGist-walkthrough we select a very small subset of this public dataset, and demonstrate how this data can be modeled, queried and displayed.
-
-'''
+This GraphGist explores a very small subset of this public dataset and demonstrate how this data can be modeled, queried, and displayed.
 
 == Simplified Data Model
 
-We restructure the ICIJ-data into a simplified version.
-Our datamodel consists of three node types, `Entity` nodes, `Location` nodes and `Jurisdiction` nodes, related with seven edge types.
-A limited subset of properties is included, e.g. whether the entity is still active or not ("status"), the date of incorporation, etc.
+The simplified ICIJ data model consists of three node types: `Entity` nodes, `Location` nodes and `Jurisdiction` nodes, which are linked by seven relationship types. 
 
 .The Simplified Data Model
 image::http://i.imgur.com/p5icHev.png[]
 
-An `Entity` can be a natural person, organization or juridical entity and is related to other entities, either as a _OFFICER_ of the other entity, a _CLIENT_ of the other entity or as a related entity (e.g. two daughter companies).
+An `Entity` can be a natural person, organization, or juridical entity and is related to other entities, either as a _OFFICER_ of the other entity, a _CLIENT_ of the other entity or as a related entity (e.g. two daughter companies).
 Both the _OFFICER_ and the _CLIENT_ relationships have subtypes indicated with a "type"-property on the edge, e.g. "Shareholder", "Beneficial Owner", etc. and can have a "start" and "end"-property indicating the duration of the relationship.
 
-Entities are related to a geographical `Location` through a `LOCATED`-relationship, based on a non-normalized address string.
-This location can have a bi-directional `COLLOCATED`-relationship with another location, indicating that while the address-string is not the same, the geographical location de facto is.
-For instance two entities sharing an address, but with a different postbox.
-This is frequently the case with offshore companies, as they can be registered with thousands at the same address.
+`Entity`s are related to a geographical `Location` through a `LOCATED`-relationship, based on a non-normalized address string.
+This `Location` can have a bi-directional `COLLOCATED`-relationship with another `Location`, indicating that while the address-string is not the same, the geographical location is.
+For instance: two entities may be in the same building, but use different postal addresses.
 
 Each location is `PARTOF` a `Jurisdiction`, which can be a country, or a somewhat independent subnational territorial unit that is `PARTOF` a larger jurisdiction/country.
 Making this distinction in the datamodel is highly relevant, given the structure of offshore networks.
-The most popular jurisdictions are neither well-established, large jurisdictions such as countries, nor small and possibly unstable independent territories, but those in between. I.e. semi-independent territories that have a certain degree of juridical and fiscal autonomy to facilitate offshore constructions, but are part of a larger territorial entity to insure stability.
-For instance British Crown dependencies such as http://en.wikipedia.org/wiki/Jersey[Jersey] or http://en.wikipedia.org/wiki/Guernsey[Guernsey].
+The most popular jurisdictions are neither well-established, large jurisdictions such as countries, nor small and possibly unstable independent territories, but those in between:  semi-independent territories that have a certain degree of juridical and fiscal autonomy.
+Examples of such territories include British Crown dependencies such as http://en.wikipedia.org/wiki/Jersey[Jersey] or http://en.wikipedia.org/wiki/Guernsey[Guernsey].
 
-Apart from their geographical location, entities are related to a jurisdiction through a _INJURD_-relationship ("in jurisdiction"), indicating that they have a tax obligation to this jurisdiction.
+Apart from their geographical location, `Entity`s are related to a jurisdiction through a _INJURD_-relationship ("in jurisdiction"), indicating that they have a tax obligation to this jurisdiction.
 
-The selected example data contains 13 +Entities+, 4 +Jurisdictions+ and 5 +Locations+, related with 36 relationships.
-
-'''
+The selected example data contains 13 `Entity`s, 4 `Jurisdiction`s and 5 `Location`s, related with 36 relationships.
 
 == Initial Data Setup
 
-We load the example data using a set of Cypher CREATE-statements. Identifier-properties are included on all the nodes, which allows for easy look-up in the online version of the ICIJ-database (just change the trailing number in the http://offshoreleaks.icij.org/nodes/287007[link])
+We load the example data using a set of Cypher `CREATE`-statements.
+Identifier-properties are included on all the nodes, which allows for easy look-up in the online version of the ICIJ-database (just change the trailing number in the http://offshoreleaks.icij.org/nodes/287007[link])
 
-The graph below gives a first overview, with purple nodes indicating the +Entities+, green for the +Locations+ and orange for the +Jurisdictions+.
+The graph below gives a first overview, with nodes indicating the `Entity`s, green for the `Location`s and orange for the `Jurisdiction`.
 
 //setup
 //hide
@@ -149,8 +143,6 @@ CREATE (portcullis_SP)-[:RELATED {type : "Related entity"}]->(portcullis_ML)
 ----
 //graph
 
-'''
-
 == Basic descriptive queries
 
 === Listing node characteristics
@@ -178,15 +170,16 @@ RETURN e2.label AS `Entity 1`, r.type AS `is a ... of`, e1.label AS `Entity 2`, 
 -----
 //table
 
-A second descriptive query shows us the types of _CLIENT_ and _OFFICER_ relationships present in the example dataset. Note the presence of http://en.wikipedia.org/wiki/Cr%C3%A9dit_Agricole[Crédit Agricole], the largest retail banking group in France, which is a client of the Singapore-based Sefren Trust managed by Antwerp-based entrepreneur Luscha Baumwald.
+A second descriptive query shows us the types of _CLIENT_ and _OFFICER_ relationships present in the example dataset.
+Note the presence of http://en.wikipedia.org/wiki/Cr%C3%A9dit_Agricole[Crédit Agricole], the largest retail banking group in France, which is a client of the Singapore-based Sefren Trust managed by Antwerp-based entrepreneur Luscha Baumwald.
 
 == Exploring hidden relationships
 
-The power of graph databases and query languages becomes more readily visible when we are interested in complex relations between entities, which would required demanding `JOINS`, etc. in traditional databases.
+The power of graph databases and query languages becomes more readily visible when we are interested in complex relations between entities, which would required demanding `JOIN`s, in traditional databases.
 
 === Should we check for companies on the 7½th floor?
 
-For instance, when looking for link that are possibly not apparent on first sight, we might look at entities that formally share the same `Location`.
+When looking for link that are possibly not apparent on first sight, we might look at entities that formally share the same `Location`.
 However, this might overlook links, as locations are matched on an non-normalized address-string, e.g. a different postbox would mean there is no formal relation.
 
 An example of a more inclusive query is presented below.
@@ -207,7 +200,7 @@ RETURN l_entity.label AS `Same location`, location.label AS `Gurker Address`, co
 
 === Two Belgians walk into an offshore jurisdiction...
 
-While making the required distinctions in the datamodel between locations, jurisdictions, etc., finding entities in a given jurisdiction is still straightforward. This query will return all entities located in Belgium:
+This query will return all `Entity`s located in Belgium:
 
 [source, cypher]
 -----
@@ -219,8 +212,8 @@ RETURN e.label AS Label, location.label AS Location
 The two returned entities are persons living in Antwerp, Belgium.
 A more interesting follow-up query would be establishing whether there is a relationship between these two persons throughout the graph of offshore entities.
 
-To answer this, we use the build-in +shortestPath+-function.
-We specify the two nodes we are establishing a path between, and specify the types of relationships the shortest path algorithm may follow.
+To answer this, we use the built-in `shortestPath` function.
+We specify the two nodes between which we are establishing a path and specify the types of relationships the shortest path algorithm may follow.
 We are explicitly interested in client/officer links, shared/collocated addresses, related entity-relations, etc.
 By specifying this, we also exclude paths (`PARTOF`) that go over jurisdictions--otherwise the shared jurisdiction of Belgium would of course be the shortest path.
 
@@ -232,11 +225,11 @@ RETURN p AS `Shortest Path Baumwald-Bossaerts`
 //table
 
 The query returs a single result, establishing that there is a link between the two Belgian entities.
-The figure below, generated by running the same query in the Neo4j 2.0 local webinterface, gives a more readily interpretable view.
+The figure below, generated by running the same query in the Neo4j 2.0 local web interface, gives a more readily interpretable view.
 
 The path is completed by the `RELATED`-path between Portcullis TrustNet (Labuan) Limited and Portcullis Trust (Singapore) Limited.
 These are regional branches of http://uk.reuters.com/article/2013/06/03/uk-portcullis-wealth-insight-idUKBRE9510E920130603[Portcullis TrustNet], one of dozens of http://www.icij.org/offshore/trusted-service-provider-blends-invisible-offshore-world[offshore service providers], and the source of a large part of the leaked ICIJ-data.
-The main service companies such as Portcullis TrustNet--one of the largest in the industry--provide is ensuring that names, finances, business interests and political links remain hidden.
+The main service companies such as Portcullis TrustNet--one of the largest in the industry--provide is ensuring that names, finances, business interest,s and political links remain hidden.
 
 .The Results
 image::http://i.imgur.com/iSJFqSJ.png[]
