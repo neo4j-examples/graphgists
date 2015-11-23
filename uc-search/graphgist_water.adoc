@@ -1,16 +1,17 @@
 = Piping Water
-:neo4j-version:2.3.0
-:author:Shaun Daley
-:twitter:@shaundaley1
-:tags:resources
-domain:Shutting Valves and Migrating Infrastructure
+:neo4j-version: 2.3.0
+:author: Shaun Daley
+:twitter: @shaundaley1
+:tags: resources
+:domain: Shutting Valves and Migrating Infrastructure
 
 :toc:
 
 == Inspiration
 
 London's antique water distribution network is infamous: it loses a http://www.theguardian.com/commentisfree/2012/may/08/water-industry-pipes-scandal[quarter of the water] supplied to London (spilt into the ground). Consequence: http://www.bbc.co.uk/news/10213835[desalination], massive additional CO~2~ emissions, road congestion caused by too many emergency excavations and very high water prices for consumers.
-London's case is severe but not atypical: most cities suffer from the same underlying infrastructure problem. Pipes and valves buried below busy urban streets are inherently difficult and expensive to maintain.
+London's case is severe but not atypical: most cities suffer from the same underlying infrastructure problem.
+Pipes and valves buried below busy urban streets are inherently difficult and expensive to maintain.
 Inaccessibility, lack of information, failure to efficiently process data and the high cost of each human intervention in legacy systems all compound to undermine efficient resource distribution.
 
 Modern wireless networking offers the first crucial part in reducing the human time and cost of maintenance, and avoiding environmental damage: modern valves can be remotely (and even autonomously) operated to isolate components and pipe sections; modern flow sensors can transmit cross-section flow rates minute-by-minute.
@@ -42,26 +43,26 @@ What is the minimum set of network controllable (or manhole-accessible) valves t
 ____
 
 
-=== Identify Entities
+=== Identify Nodes
 
-____
-* Component (pipes, sources, outlets, pumps, flow sensors, etc)
+* Component: Pipes, sources, outlets, pumps, flow sensors, et cetera
 * Connection
 * Valve
-____
 
-== Identify Relationships Between Entities
+== Identify Relationships Between Nodes
 
 ----
-(:Component)  <- [:CONNECTS] - (:Connection) - [:CONNECTS] -> (:Component)
-(:Valve)      - [:CLOSES]   -> (:Connection)
+(:Component)<-[:CONNECTS]-(:Connection)-[:CONNECTS]->(:Component)
+(:Valve)-[:CLOSES]->(:Connection)
 ----
+
 Valves are distinct objects with their own relationships e.g. IP address, API key, state information, whether they are manually closed clockwise or anti-clockwise (both valve closing directions exist and are widely prevalent in UK legacy water distribution infrastructure).
 For efficiency of querying, the nature of connections is duplicated in the relationship also:
+
 ----
-(:Valve{access:'API'}) -> [:CLOSES] -> (:Connection) -> [:API_CONNECTS] -> (:Component)
-(:Valve{access:'Manhole'}) -> [:CLOSES] -> (:Connection) -> [:MANHOLE_CONNECTS] -> (:Component)
-(:Valve{access:'Excavation'}) -> [:CLOSES] -> (:Connection) -> [:EXCAV_CONNECTS] -> (:Component)
+(:Valve{access:'API'})->[:CLOSES]->(:Connection)->[:API_CONNECTS]->(:Component)
+(:Valve{access:'Manhole'})->[:CLOSES]->(:Connection)->[:MANHOLE_CONNECTS]->(:Component)
+(:Valve{access:'Excavation'})->[:CLOSES]->(:Connection)->[:EXCAV_CONNECTS]->(:Component)
 ----
 
 == Candidate Data Model
@@ -136,42 +137,35 @@ RETURN *
 ----
 // graph
 
-==== Isolate the Burst Pipe Using Only Remote Calls to API-Accessible Valves
+=== Isolate the Burst Pipe Using Only Remote Calls to API-Accessible Valves
 
 [source,cypher]
 ----
 START burstPipe=node:node_auto_index(name='BurstPipe')
-MATCH (burstPipe)-[:CONNECTS|EXCAV_CONNECTS|MANHOLE_CONNECTS*0..]-()-[:API_CONNECTS]- (h)-[:CLOSES]-(v{access:'API'})
+MATCH (burstPipe)-[:CONNECTS|EXCAV_CONNECTS|MANHOLE_CONNECTS*0..]-()-[:API_CONNECTS]-(h)-[:CLOSES]-(v {access:'API'})
 RETURN v
-
 ----
-
 // table
-// console
 
-==== Isolate the Burst Pipe Using Manhole-Accessible and API-Accessible Valves
+=== Isolate the Burst Pipe Using Manhole-Accessible and API-Accessible Valves
 
 [source,cypher]
 ----
 START burstPipe=node:node_auto_index(name='BurstPipe')
-MATCH (burstPipe)-[:CONNECTS|EXCAV_CONNECTS*0..]-()-[:MANHOLE_CONNECTS|API_CONNECTS]- (h)-[:CLOSES]-(v)
+MATCH (burstPipe)-[:CONNECTS|EXCAV_CONNECTS*0..]-()-[:MANHOLE_CONNECTS|API_CONNECTS]-(h)-[:CLOSES]-(v)
 RETURN v
-
 ----
 // table
-// console
 
-==== Isolate the Burst Pipe Using Any Existing Valves
+=== Isolate the Burst Pipe Using Any Existing Valves
 
 [source,cypher]
 ----
 START burstPipe=node:node_auto_index(name='BurstPipe')
-MATCH (burstPipe)-[:CONNECTS*0..]-()-[:EXCAV_CONNECTS|MANHOLE_CONNECTS|API_CONNECTS]- (h)-[:CLOSES]-(v)
+MATCH (burstPipe)-[:CONNECTS*0..]-()-[:EXCAV_CONNECTS|MANHOLE_CONNECTS|API_CONNECTS]-(h)-[:CLOSES]-(v)
 RETURN v
-
 ----
 // table
-// console
 
 == Extension
 
