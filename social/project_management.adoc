@@ -1,7 +1,7 @@
 = Project Management
-:neo4j-version:2.3.0
-:author:Nicole White
-:twitter:@_nicolemargaret
+:neo4j-version: 2.3.0
+:author: Nicole White
+:twitter: @_nicolemargaret
 
 :toc:
 
