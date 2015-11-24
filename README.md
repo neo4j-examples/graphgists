@@ -3,9 +3,9 @@ Reference Graph Gists
 
 == Basic Guidelines for Graph Gists
 
-* Use neo4j-version: 2.2
-* Use Neo4j 2.2 features, especially **Labels**
-* Adhere to the Cypher style guide (capitalized labels, all-caps rel-types, camel-case properties, if possible consistent keyword casing e.g. all-caps)
+* Use neo4j-version: 2.3
+* Use Neo4j 2.3 features, especially **Labels**
+* Adhere to the Cypher style guide (WIP, but: capitalized labels, all-caps rel-types, camel-case properties, if possible consistent keyword casing e.g. all-caps)
 * Use meaningful relationship types
 * Include a data model between 20 and 150 nodes in size
 * Explain the use case and be good read but not a novel
