@@ -21,8 +21,8 @@ However, increasingly sophisticated fraudsters have developed a variety of ways 
 
 == Explanation of Scenario
 
-While no fraud prevention measures can ever be perfect, significant opportunities for improvement lie in looking beyond the individual data points to the connections that link them.
-Oftentimes these connections go unnoticed until it is too late--something that is unfortunate, as these connections oftentimes hold the best clues to insuring early detection.
+While no fraud prevention measures can ever be perfect, significant opportunity for improvement lies in looking beyond the individual data points, to the connections that link them.
+Oftentimes these connections go unnoticed until it is too late-- something that is unfortunate, as these connections oftentimes hold the best clues.
 
 === Typical Scenario
 
@@ -33,8 +33,8 @@ While the exact details behind each first-party fraud collusion vary from operat
 * Ring members open accounts using these fictional identities
 * New accounts are added to the original ones: unsecured credit lines, credit cards, overdraft protection, personal loans, etc.
 * The accounts are used as normally, with regular purchases and timely payments
-* Banks increase the revolving credit lines over time, due to the observed responsible credit behavior
-* One day the ring "Busts Out", coordinating their activity, maxing out all of their credit lines, and disappearing
+* Banks increase the revolving credit lines over time, due to the observed responsible credit behavior 
+* One day the ring "busts out", coordinating their activity, maxing out all of their credit lines, and disappearing
 * Sometimes fraudsters will go a step further and bring all of their balances to zero using fake checks immediately before the prior step, doubling the damage
 * Collections processes ensue, but agents are never able to reach the fraudster
 * The uncollectible debt is written off
