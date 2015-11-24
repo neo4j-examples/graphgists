@@ -72,6 +72,7 @@ image::https://raw.github.com/neo4j-contrib/gists/master/other/images/BankFraud-
 
 == Sample Data Set
 
+//hide
 //setup
 [source,cypher]
 ----
@@ -179,7 +180,7 @@ RETURN *
 Performing entity link analysis on the above data model is demonstrated below.
 We use brackets in the below table is to isolate individual elements of a http://neo4j.com/docs/stable/syntax-collections.html[collection].
 
-==== Find account holders who share more than one piece of legitimate contact information
+=== Find account holders who share more than one piece of legitimate contact information
 
 [source,cypher]
 ----
@@ -199,7 +200,7 @@ ORDER BY 	RingSize DESC
 //output
 //table
 
-==== Determine the financial risk of a possible fraud ring
+=== Determine the financial risk of a possible fraud ring
 
 [source,cypher]
 ----
