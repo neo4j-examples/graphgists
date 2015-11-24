@@ -1,4 +1,4 @@
-= Contact networks
+= Contact Networks
 :neo4j-version: 2.3.0
 :author: Marcello Dalponte
 :twitter: @m_dalp
@@ -16,7 +16,8 @@ An interesting project that aims to collect this kind of data is Sociopatterns[2
 A contact is the interaction between two actors in a specific time lapse (frame).
 
 == Characteristic measures
-These networks can be measured in many ways. Holme and Saramäki show us some [1], like
+These networks can be measured in many ways.
+Holme and Saramäki show us some [1], like
 
 - connectivity and components,
 - distances,
@@ -25,7 +26,8 @@ These networks can be measured in many ways. Holme and Saramäki show us some [1
 - and others.
 
 But there are specific measures that really characterize the dynamic of this kind of network.
-In the literature Xuan and others present some of them called journeys [5]. Those are paths with innate notion of time,  where every edge connects nodes from adjacent frames.
+In the literature Xuan and others present some of them called journeys [5].
+Those are paths with innate notion of time, where every edge connects nodes from adjacent frames.
 Three kind of journeys are:
 
 - fastest journey: the journey taken over all journeys between two nodes such that the journey time is the minimal,
@@ -35,15 +37,15 @@ Three kind of journeys are:
 
 == Previous model
 In the literature there is a work of Cattuto and others that explains how to model a contact network with Neo4j [4].
-They represent the network with mainly three kind of nodes: ACTOR, INTERACTION, FRAME.
-Each actor represents the owner of an RFID, each interaction represents a link between two actors and each frame is a time interval.
+They represent the network with mainly three kind of nodes: `Actor`, `Interaction`, and `Frame`.
+Each `Actor` represents the owner of an RFID, each `Interaction` represents a link between two `Actor`s and each `Frame` is a time interval.
 Interactions are linked with relative Actor nodes and, together with frame nodes, are the key of the representation of a contact.
-Indeed each contact above defined is a relationship between an interaction and the frame where it was active.
+Each contact above defined is a relationship between an interaction and the frame where it was active.
 They also presented an interesting way to navigate the frames through a tree of human readable temporal units (hours, days, etc.), but here is not the topic.
 
 === Limits
 Such representation is pretty complete and interesting, however I encountered some problems when I wanted to describe characteristic patterns in temporal networks with Cypher queries.
-For instance I have not been able to find any kind of journey.
+For instance, I have not been able to find any kind of journey.
 
 == My model
 My model solves the problems I encountered with the previous model.
@@ -60,7 +62,7 @@ With this representation is possible to track the paths through time.
 CREATE INDEX ON :Contact(`a1`);
 CREATE INDEX ON :Contact(`a2`);
 CREATE INDEX ON :Contact(`t`);
-CREATE CONSTRAINT ON (n:Actor) assert n.`id` is unique;
+CREATE CONSTRAINT ON (n:Actor) ASSERT n.`id` is UNIQUE;
 CREATE (_12:Actor {`id`:0, `name`:"actor0"}),
 (_13:Actor {`id`:2, `name`:"actor2"}),
 (_14:Contact {`a1`:0, `a2`:2, `t`:0}),
@@ -244,7 +246,7 @@ I think that would be interesting to extend my work in many directions.
 === Use of INTERACTION nodes like Cattuto and others [4]
 
 My model is really useful to investigate temporal features of networks but I cannot be able to define queries to study the features of aggregated portions of the graph.
-I think that the only way to do this would be to introduce the use of INTERACTION nodes to represent the relationship between two actors in the whole network.
+I think that the only way to do this would be to introduce the use of `Interaction` nodes to represent the relationship between two actors in the whole network.
 These are linked to all the contacts where the interaction took place.
 
 === Performance analysis
