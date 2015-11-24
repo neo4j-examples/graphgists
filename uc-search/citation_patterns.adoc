@@ -1,10 +1,11 @@
 = Interpreting Citation Patterns in Academic Publications: A Research Aid
-:neo4j-version:2.3.0
+:neo4j-version: 2.3.0
 
 :toc:
 
 == Introduction
-Academic research largely consists in reading and writing texts. These texts can be modelled as a conversation.
+Academic research largely consists in reading and writing texts.
+These texts can be modelled as a conversation.
 To be a researcher, on this model, is to enter into a scientific conversation, to listen (read) and occasionally to speak (write).
 
 .Authors write things
@@ -93,9 +94,7 @@ chp1-[:CITES]->art1,
 chp1-[:CITES]->art2,
 chp1-[:CITES]->art3
 ----
-
 //graph
-
 
 === Definition 1: Reference
 
@@ -110,9 +109,7 @@ RETURN author.name + ": " + issue.year + ", '" + article.title + "', " + journal
 UNION MATCH (author:Author)-[:WRITES]->(chapter:Chapter)-[context:IN]->(book)<-[:EDITS]-(editor:Author), (book)<-[:PUBLISHED_BY]-(pub:Publisher)
 RETURN author.name + ": " + book.year + ", '" + chapter.title + "' in " + editor.name + " (Ed.), " + book.title + ", pp." + context.pp[0] + "-" + context.pp[1] + "." + pub.location + ": " + pub.name + "." AS Reference
 -----
-
 //table
-
 
 === Definition 2: Citation
 
@@ -124,9 +121,7 @@ A citation is when one published item cites another, that is, formally refers to
 MATCH (a)-[:WRITES]->(b)-[:CITES]->(c)<-[:WRITES]-(d)
 RETURN b.title + " (by " + a.name + ")  CITES  " + c.title + " (by " + d.name + ")" as citation
 ----
-
 //table
-
 
 === Relevance-indicating pattern 1: Everything cited by Gorman (2006)
 
@@ -138,9 +133,7 @@ Whatever is cited by something relevant may be relevant–the simplest use case.
 MATCH (a {doi:"10.5840/ipq20064626"})-[:CITES]->(b)<-[:WRITES]-(c)
 RETURN b.title + " (by " + c.name + ")" as citation
 ----
-
 //table
-
 
 === Relevance-indicating pattern 2: Everything that cites Gorman (2006)
 
@@ -153,9 +146,7 @@ Whatever cites something relevant is likely to be relevant.
 MATCH (a {doi:"10.5840/ipq20064626"})<-[:CITES]-(b)<-[:WRITES]-(c)
 RETURN b.title + " (by " + c.name + ")" as citation
 ----
-
 //table
-
 
 === Relevance-indicating pattern 3: Basic debate
 
@@ -172,9 +163,7 @@ MATCH (author)-[:WRITES]->(article {doi:"10.5840/ipq20064626"})<-[:CITES]-(criti
 WHERE NOT author-[:WRITES]->criticism
 RETURN article.title + " (by " + author.name + ")" as statement, criticism.title + " (by " + opponent.name + ")" as criticism, response.title + " (by " + author.name + ")" as response
 ----
-
 //table
-
 
 === Relevance-indicating pattern 4: Complex debate
 
@@ -190,9 +179,7 @@ MATCH (author)-[:WRITES]->(statement {doi:"10.5840/ipq20064626"})<-[:CITES]-(cri
 WHERE NOT author-[:WRITES]->criticism AND (statementOrResponse = statement OR statementOrResponse = response)
 RETURN interjection.title + " (by " + interjector.name + ")" as interjection, count(*) as relevance
 ----
-
 //table
-
 
 == Conclusion
 
