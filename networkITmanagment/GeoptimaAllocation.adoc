@@ -1,10 +1,10 @@
 = Geoptima Mobile Network Eventlog Collection
-:neo4j-version:2.3.0
-:author:Craig Taverner
-:twitter:@craigtaverner
-:tags:networks
-domain:networks
-:use-case:eventlog-collection
+:neo4j-version: 2.3.0
+:author: Craig Taverner
+:twitter: @craigtaverner
+:tags: networks
+:domain: networks
+:use-case: eventlog-collection
 
 :toc:
 

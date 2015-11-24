@@ -1,8 +1,9 @@
 = Aardvark: The Anatomy of a Large-Scale Social Search Engine
-:neo4j-version:2.3.0
-:author:Cristina Escalante
+:neo4j-version: 2.3.0
+:author: Cristina Escalante
 :twitter:
-:tags:social
+:tags: social
+
 :toc:
 
 == Introduction to Aardvark, the Defunct Social Search Engine

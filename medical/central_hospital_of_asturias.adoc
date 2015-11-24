@@ -1,9 +1,9 @@
 = Medicine & drugs classification for the Central Hospital of Asturias
-:neo4j-version:2.3.0
-:author:Alberto Roque Carrizo Fernández
-:twitter:@Roqueeeeee
-:author:Luis Martínez Menéndez
-:twitter:@luigi9215
+:neo4j-version: 2.3.0
+:author: Alberto Roque Carrizo Fernández
+:twitter: @Roqueeeeee
+:author: Luis Martínez Menéndez
+:twitter: @luigi9215
 
 :toc:
 

@@ -1,7 +1,7 @@
 = (Product) Hierarchy GraphGist
-:neo4j-version:2.3.0
-:twitter:@rvanbruggen
-:author:Rik Van Bruggen
+:neo4j-version: 2.3.0
+:twitter: @rvanbruggen
+:author: Rik Van Bruggen
 
 :toc:
 

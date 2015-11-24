@@ -1,7 +1,7 @@
 = Organization Learning
-:neo4j-version:2.3.0
-:author:Luanne
-:twitter:@luannem
+:neo4j-version: 2.3.0
+:author: Luanne
+:twitter: @luannem
 
 :toc:
 

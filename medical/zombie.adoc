@@ -1,7 +1,7 @@
 = Zombie Apocalypse
-:neo4j-version:2.0.0
-:twitter:@darrkj
-:author:Kenny D.
+:neo4j-version: 2.3.0
+:twitter: @darrkj
+:author: Kenny D.
 
 :toc:
 

@@ -1,9 +1,10 @@
 = Credit Card Fraud Detection
-:neo4j-version:2.3.0
+:neo4j-version: 2.3.0
 :author: Jean Villedieu
 :twitter: @jvilledieu
-:tags:domain:finance
-use-case:fraud-detection
+:tags:
+:domain: finance
+:use-case: fraud-detection
 
 This interactive Neo4j graph tutorial covers a common credit card fraud detection scenario.
 

@@ -1,8 +1,8 @@
 = Pharmaceutical Drugs and their Targets
 Josh Kunken <joshkunken@gmail.com>
 v1.0, 14-Dec-2013
-:neo4j-version:2.3.0
-:author:Josh Kunken
+:neo4j-version: 2.3.0
+:author: Josh Kunken
 :twitter:joshkunken
 
 :toc:
