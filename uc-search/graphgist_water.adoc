@@ -1,9 +1,9 @@
 = Piping Water
-:neo4j-version:2.3.0
-:author:Shaun Daley
-:twitter:@shaundaley1
-:tags:resources
-domain:Shutting Valves and Migrating Infrastructure
+:neo4j-version: 2.3.0
+:author: Shaun Daley
+:twitter: @shaundaley1
+:tags: resources
+:domain: Shutting Valves and Migrating Infrastructure
 
 :toc:
 

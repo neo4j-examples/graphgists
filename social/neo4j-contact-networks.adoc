@@ -1,7 +1,7 @@
 = Contact networks
-:neo4j-version:2.3.0
-:author:Marcello Dalponte
-:twitter:@m_dalp
+:neo4j-version: 2.3.0
+:author: Marcello Dalponte
+:twitter: @m_dalp
 
 :toc:
 

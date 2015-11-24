@@ -1,7 +1,7 @@
 = Information Flow Through a Network
-:neo4j-version:2.3.0
-:twitter:@lyonwj
-:author:William L.
+:neo4j-version: 2.3.0
+:twitter: @lyonwj
+:author: William L.
 
 :toc:
 

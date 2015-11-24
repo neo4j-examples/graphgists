@@ -1,5 +1,5 @@
 = Graphing our way through the ICIJ offshore jurisdiction data
-:neo4j-version:2.3.0
+:neo4j-version: 2.3.0
 :author: Maarten Hermans
 :twitter: @hermansm
 
