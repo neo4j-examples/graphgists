@@ -19,11 +19,26 @@ The model for my graph looks like this:
 .How popular is Alice?
 image::http://kiwiwebdeveloper.com/talk-files/social-model.png[]
 
+=== Nodes
+
+`User`: A user of a social network.
+
+`Message`: A message is `SENT` between `User`s and have `FORWARD` and `REPLY_TO` relationships with other `Message`s. 
+
+=== Relationships
+
+`FOLLOWS`: `User`s follow other `User`s.
+
+`SENT`: `User`s send `Message`s to other `User`s
+
+`FORWARD`: A `Mesage` may be a forwarded version of another `Message`
+
+`REPLY_TO`: A `Message` may be a reply to another `Message`
+
 == Setup
 
 //hide
 //setup
-//output
 [source,cypher]
 ----
 CREATE (nAlice:User {id:'Alice', name:'Node Alice'})
@@ -250,13 +265,13 @@ CREATE (msg24)-[:REPLY_TO]->(msg20)
 
 == Use Cases
 
-For our analysis, let's begin simple by listing all of the users and messages:
+For our analysis, let's begin simple by listing all of the `User`s and `Message`s:
 
 [source,cypher]
 ----
-MATCH (p:User)-[s:SENT]->(t:Message) RETURN p,s,t;
+MATCH path=(User)-[:SENT]->(Message)
+RETURN path
 ----
-
 //graph
 
 As you can see, it is hard to spot any patterns from this view.
@@ -267,24 +282,27 @@ Remember our goal here is to find the influencers in the network, we could start
 
 [source,cypher]
 ----
-MATCH (p:User)-[f:FOLLOWS]->(p1:User)<-[f1:FOLLOWS]-(p2:User)
-RETURN p1 as Person, COUNT(distinct f) as Followers, COUNT(distinct f1) as Following
+MATCH (follower:User)-[:FOLLOWS]->(targetUser:User)-[:FOLLOWS]->(following:User)
+RETURN targetUser AS User, COUNT(distinct follower) AS Followers, COUNT(distinct following) AS Following
 ----
 
-For a bit more information we could provide the names of all of the followers;
+For a bit more information we could provide the names of all of the followers:
 
 [source,cypher]
 ----
-MATCH (p:User)-[f:FOLLOWS]->(p1:User) RETURN p.id as Person, COLLECT(p1.id) as Following
+MATCH (p:User)-[f:FOLLOWS]->(p1:User)
+RETURN p.id AS User, COLLECT(p1.id) AS Following
 ----
 
-While this is interesting, it doesn't tell us much about the actions of a user, they may be inactive, or they may send multiple messages a day.
+While this is interesting, it doesn't tell us much about the actions of a user. 
+The user they may be inactive, or they may send multiple messages a day.
 
 We can easily see how active users are with the following query:
 
 [source,cypher]
 ----
-MATCH (p:User)-[s:SENT]->(t:Message) RETURN p,COUNT(t);
+MATCH (p:User)-[:SENT]->(tweet:Message)
+RETURN p.id AS User, COUNT(tweet) AS Tweets
 ----
 
 We can now get an idea of how active a user is, but let us dive deeper and see what sort of activity they have.
@@ -295,57 +313,58 @@ One measure of influence is how often a message from a user gets forwarded throu
 
 [source,cypher]
 ----
-MATCH (rt:Message)-[r:FORWARD]->(t:Message) RETURN t, COUNT(r) ORDER BY COUNT(r) DESC LIMIT 5
+MATCH (retweet:Message)-[r:FORWARD]->(tweet:Message)
+RETURN tweet, COUNT(r)
+ORDER BY COUNT(r) DESC
 ----
 
-we can restrict to a certain day by limiting the messages we look at
-
-[source,cypher]
-----
-MATCH (rt:Message)-[r:FORWARD]->(t:Message {day_sent:'Monday'} ) RETURN t, COUNT(r) ORDER BY COUNT(r) DESC LIMIT 1
-----
-
-Remember that we are trying to find the influencers, so we need to know who sent those messages
+we can restrict to a certain day by limiting the messages we look at:
 
 [source,cypher]
 ----
-MATCH (rt:Message)-[r:FORWARD]->(t:Message)<-[:SENT]-(p:User)
-RETURN p.id as User, COUNT(r) as Retweeted_Messages
+MATCH (retweet:Message)-[r:FORWARD]->(tweet:Message {day_sent:'Monday'})
+RETURN tweet, COUNT(r)
+ORDER BY COUNT(r) DESC
+----
+
+Remember that we are trying to find the influencers, so we need to know who sent those messages:
+
+[source,cypher]
+----
+MATCH (retweet:Message)-[r:FORWARD]->(tweet:Message)<-[:SENT]-(p:User)
+RETURN p.id AS User, COUNT(r) AS `Messages Retweeted`
 ORDER BY COUNT(r)
 DESC LIMIT 5
 ----
-
 //table
 
-From this we can see that Bridget get's lots of her messages forwarded, but Mark's message got more forwards
+From this we can see that Bridget gets lots of her messages forwarded, but Mark's message got more forwards.
 
-
-If you are a user of Twitter or a similar social network, you will be aware that there are lot's of bots on Twitter that simply forward others messages, we want to remove these bots from our analysis.
-
-Find the forward bots:
+If you are a user of Twitter or a similar social network, you will be aware that there are lots of bots on Twitter that simply forward messages. 
+We want to remove these bots from our analysis.
 
 [source,cypher]
 ----
-MATCH (p:User)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message), (p:User)-[s2:SENT]->(t2:Message)
-WITH p, COUNT(distinct t) as forwards, COUNT(distinct t2) as messages
-WHERE (forwards* 1.00)/messages> 0.8
-RETURN p, (forwards* 1.00)/messages * 100 as Percent_RT
-ORDER BY Percent_RT DESC
+MATCH (p:User)-[s:SENT]->(tweet:Message)-[retweet:FORWARD]->(tweet1:Message), (p:User)-[s2:SENT]->(tweet2:Message)
+WITH p, COUNT(DISTINCT tweet) AS forwards, COUNT(DISTINCT tweet2) AS messages
+WHERE (forwards*1.00)/messages > 0.8
+RETURN p.id AS `Potential Bot`, (forwards*1.00)/messages*100 AS `Percent of Messages that are Retweets`
+ORDER BY `Percent Retweeted` DESC
 ----
 
 As you can see, Doug only forwards messages so is probably a bot.
 To get a better idea of influence we need to remove him and any other bots from the analysis:
 
-
 [source,cypher]
 ----
-MATCH (p:User)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message), (p:User)-[s2:SENT]->(t2:Message)
-WITH p, COUNT(distinct t) as forwards, COUNT(distinct t2) as messages
-WHERE (forwards* 1.00)/messages< 0.8
+MATCH (p:User)-[s:SENT]->(tweet:Message)-[retweet:FORWARD]->(tweet1:Message), (p:User)-[s2:SENT]->(tweet2:Message)
+WITH p, COUNT(DISTINCT tweet) AS forwards, COUNT(DISTINCT tweet2) AS messages
+WHERE (forwards*1.00)/messages < 0.8
 WITH p
-MATCH (p)-[s:SENT]->(t:Message)-[rt:FORWARD]->(t1:Message)<-[:SENT]-(p1:User)
-RETURN p1.id as User, COUNT(t) as Retweeted_Messages
-ORDER BY COUNT(t) DESC LIMIT 15
+MATCH (p)-[s:SENT]->(tweet:Message)-[rt:FORWARD]->(tweet1:Message)<-[:SENT]-(p1:User)
+RETURN p1.id as User, COUNT(tweet) as `Retweeted Messages`
+ORDER BY COUNT(tweet)
+DESC LIMIT 15
 ----
 //table
 
@@ -366,17 +385,21 @@ To begin this analysis, let's start by getting a list of conversations, note tha
 
 [source,cypher]
 ----
-MATCH p=(t:Message)-[r:REPLY_TO*1..10]->(c:Message) RETURN p;
+MATCH p=(tweet:Message)-[r:REPLY_TO*1..10]->(conversation:Message)
+RETURN p
 ----
+//graph_result
 
-We can restrict this to a single conversation if we like
+We can restrict this to a single conversation:
 
 [source,cypher]
 ----
-MATCH p=(t:Message {id:'20'})<-[r:REPLY_TO*0..10]-(c:Message) WITH t,c,p RETURN distinct(c) ORDER BY c.date_sent
+MATCH (tweet:Message {id:'20'})<-[r:REPLY_TO*0..10]-(conversation:Message)
+RETURN DISTINCT(conversation) AS Conversation
+ORDER BY conversation.date_sent
 ----
 
-Note the distinct(c), which will ensure we only get one of each message in our response.
+Note the `DISTINCT(conversation)`, which will ensure we only get one of each message in our response.
 
 Now that we have a list of our conversations, let us dive deeper.
 
@@ -384,47 +407,51 @@ Get a list of messages that start a conversation, that is messages that someone 
 
 [source,cypher]
 ----
-MATCH (t:Message)-[r:REPLY_TO]->(c:Message) WHERE NOT (c)-[:REPLY_TO]->() RETURN DISTINCT c;
+MATCH (tweet:Message)-[r:REPLY_TO]->(conversation:Message)
+WHERE NOT (conversation)-[:REPLY_TO]->()
+RETURN DISTINCT conversation
 ----
 
-and find out who sent the messages that started the conversation
+and find out who sent the messages that started the conversation:
 
 [source,cypher]
 ----
-MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User)
-WHERE NOT (c)-[:REPLY_TO]->()
-RETURN DISTINCT c,p;
+MATCH (tweet:Message)-[r:REPLY_TO]->(conversation:Message)<-[s:SENT]-(p:User)
+WHERE NOT (conversation)-[:REPLY_TO]->()
+RETURN DISTINCT conversation, p.id AS `Conversation Starter`
 ----
 
 Build on this to get a list of the users that a user will engage with and respond to as this shows that there is more than a shallow 'Follow' relationship.
 
 [source,cypher]
 ----
-MATCH (b:User)-[:SENT]->(t:Message)-[:REPLY_TO]->(t1:Message)<-[:SENT]-(a:User)-[:SENT]->(t2:Message)-[:REPLY_TO]->(t) RETURN b,a, COUNT(t)
+MATCH conv=(b:User)-[:SENT]->(tweet:Message)-[:REPLY_TO]->(tweet1:Message)<-[:SENT]-(a:User)-[:SENT]->(tweet2:Message)-[:REPLY_TO]->(tweet)
+RETURN a.id AS `Conversationalist 1`, b.id AS `Conversationalist 2`, COUNT(DISTINCT conv) AS Conversations
+ORDER BY a.id ASC
 ----
 
 We also want to get an idea of how large the conversations are and how many people are involved in them, a long conversation involving lots of people shows more signs of influence than a short conversation with a couple of people.
 
 [source,cypher]
 ----
-MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User)
-WHERE NOT (c)-[:REPLY_TO]->()
-WITH DISTINCT c,p
-MATCH conv=(participant:User)-[:SENT]->(t:Message)-[r:REPLY_TO*0..10]->(c)
-RETURN c, p, COUNT(DISTINCT t), COUNT(DISTINCT participant);
+MATCH (tweet:Message)-[r:REPLY_TO]->(conversation:Message)<-[s:SENT]-(p:User)
+WHERE NOT (conversation)-[:REPLY_TO]->()
+WITH DISTINCT conversation,p
+MATCH conv=(participant:User)-[:SENT]->(tweet:Message)-[r:REPLY_TO*0..10]->(conversation)
+RETURN conversation, p, AS `Distinct Tweets`, COUNT(DISTINCT participant) AS `Distinct Participants`
 ----
 
 Finally modify the query again to add the number of conversations started by the user.
 
 [source,cypher]
 ----
-MATCH (t:Message)-[r:REPLY_TO]->(c:Message)<-[s:SENT]-(p:User)
-WHERE NOT (c)-[:REPLY_TO]->()
-WITH DISTINCT c,p
-MATCH conv=(participant:User)-[:SENT]->(t:Message)-[r:REPLY_TO*0..10]->(c)
-WITH c, p, COUNT(DISTINCT t) as messageCount, COUNT(DISTINCT participant) as participantCount
+MATCH (tweet:Message)-[r:REPLY_TO]->(conversation:Message)<-[s:SENT]-(p:User)
+WHERE NOT (conversation)-[:REPLY_TO]->()
+WITH DISTINCT conversation,p
+MATCH conv=(participant:User)-[:SENT]->(tweet:Message)-[r:REPLY_TO*0..10]->(conversation)
+WITH conversation, p, COUNT(DISTINCT tweet) AS messageCount, COUNT(DISTINCT participant) AS participantCount
 WHERE participantCount > 2
-RETURN p.id, COUNT(p) as Number_Conversations, AVG(messageCount) as Average_Length, AVG(participantCount) as Average_Participants;
+RETURN p.id, COUNT(p) AS `Conversations`, AVG(messageCount) AS `Average Length`, AVG(participantCount) AS `Average Participants`
 ----
 //table
 
