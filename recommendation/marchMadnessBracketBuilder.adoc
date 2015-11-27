@@ -13,9 +13,8 @@ a|image::http://i.imgur.com/5nlEMrk.jpg?1[align="center"]
 
 == (March Madness)<-[:MADE_SANE_WITH]-(Neo4j {version:2.2})
 
-Download the full dataset and all snippets of the code found in this blog post at: https://github.com/kvangundy/graph-graph-baby/blob/master/marchMadnessReco
-
-March madness is one of the rare moments that it pays off in a social context to be a data geek. It’s a rare concord of well documented data and pop culture.
+March madness is one of the rare moments that it pays off in a social context to be a data geek.
+It’s a rare concord of well documented data and pop culture.
 http://www.ibtimes.com/billion-dollar-bracket-challenge-2015-why-warren-buffett-yahoo-wont-do-college-1846246[Warren Buffet’s billion dollar bet] grabbed the interest of everyone from Wall St. quants to Silicon Valley engineers to arm chair http://www.imdb.com/title/tt1210166/[MoneyBallers] everywhere.
 
 == It’s All Relative
@@ -105,7 +104,7 @@ a|image::http://i.imgur.com/lTG2TKf.png[align="center"]
 
 === STEP 3: my.csv —> Graph.db
 
-Neo4j ships with a very powerful ETL tool called http://neo4j.com/docs/stable/query-load-csv.html[“+LOAD CSV+.”]
+Neo4j ships with a very powerful ETL tool called http://neo4j.com/docs/stable/query-load-csv.html[`LOAD CSV`].
 We’re going to use that.
 I downloaded a mess of NCAA scores, then surreptitiously converted the data I downloaded from Excel spreadsheets into CSV format.
 I’ve hosted them in a public dropbox with links found in the GitHub repo linked above.
@@ -127,12 +126,12 @@ WITH line, game, team
 MERGE(opp:Team {name:line.Opponent})
 WITH line, game, team, opp
 WITH line, toINT(line.opponentScore) as oppScore, toINT(line.teamScore) as teamScore, team, opp, game, toFLOAT(line.teamDiff) as teamDiff, toFLOAT(line.oppDiff) as oppDiff
-CREATE (team)-[:PLAYED_IN {scored:teamScore, differential:teamDiff, location:line.teamLocation}]->(game)<-[:PLAYED_IN {scored:oppScore, differential:oppDiff, location:line.oppLocation}]-(opp);
+CREATE (team)-[:PLAYED_IN {scored:teamScore, differential:teamDiff, location:line.teamLocation}]->(game)<-[:PLAYED_IN {scored:oppScore, differential:oppDiff, location:line.oppLocation}]-(opp)
 ----
 
 === Step 4: History, Victory, and a little Math
 
-I’ve decided to create a relationship between each team called ``:WINPOWER` based on a concept from baseball called http://en.wikipedia.org/wiki/Pythagorean_expectation[Pythagorean Expectation].
+I’ve decided to create a relationship between each team called `:WINPOWER` based on a concept from baseball called http://en.wikipedia.org/wiki/Pythagorean_expectation[Pythagorean Expectation].
 It essentially assigns a win probability based on points scored vs points allowed.
 I added in a decay factor to weigh more recent games more heavily than those played long ago.
 
@@ -180,9 +179,9 @@ a|image::http://i.imgur.com/UBcDDF6.gif[align="center"]
 
 ----
 MATCH (a)-[w:WINPOWER]->(b)
-RETURN a.name as Team_1, w.winPower as WINPOWER_Against, b.name as Team_2
+RETURN a.name as `Team 1`, w.winPower as `Winpower Against`, b.name as `Team 2`
 ORDER BY w.winPower DESC
-LIMIT 10;
+LIMIT 10
 ----
 
 // table
@@ -209,7 +208,7 @@ THEN a.name
 ELSE b.name
 END AS winName
 SET g.winner=winName
-RETURN a.name as Team_1, x.winPower as Team1_WP, b.name as Team_2, y.winPower as Team2_WP,  g.winner as Winner_of_MatchUp;
+RETURN a.name AS `Team 1`, x.winPower AS `Team 1 WP`, b.name AS `Team 2`, y.winPower AS `Team 2 WP`,  g.winner AS `Winner of Matchup`
 ----
 
 //table
@@ -220,7 +219,6 @@ MATCH (a)-[:SIMULATED]->(g)<-[:SIMULATED]-(b)
 WHERE a.name = 'Navy' AND b.name = 'Michigan St'
 RETURN a, b, g;
 ----
-
 //graph_result
 
 
@@ -236,16 +234,15 @@ MATCH (a)-[:PLAYED_IN]->(g:Game)<-[:PLAYED_IN]-(b)
 WHERE a.name = 'Kentucky' AND b.name = 'UT Arlington'
 RETURN a, g, b
 ----
-
 //table
 
-darn...no results, this means during our regular season Kentucky and UT Arlington haven't played each other (nor have they played each other in the past 4 years of NCAA Championships)
+Darn...no results.
+This means during our regular season Kentucky and UT Arlington haven't played each other (nor have they played each other in the past 4 years of NCAA Championships)
 
-Well, why don't we just compare the teams they've both played previously and take either an average or a sum of their "win power scores."
+Well, why don't we just compare the teams they've both played previously and take either an average or a sum of their "win power scores?"
 For example, we can infer that if Kentucky always beats Michigan State and Michigan State always beats Hampton then most likely Kentucky is going to beat Hampton.
-We can easily compare all mutual teams and how they fare against them and create a good guess as to who should win.*
-
-*With the full dataset we can do this for the entirety of the Round of 64, however with the truncated "Graph Gist" dataset, I cherry picked an example to illustrate.
+We can easily compare all mutual teams and how they fare against them and create a good guess as to who should win.
+With the full dataset we can do this for the entirety of the Round of 64, however with the truncated "Graph Gist" dataset, I cherry picked an example to illustrate.
 
 [source, cypher]
 ----
@@ -264,9 +261,8 @@ SET g.winner=winName
 WITH*
 MERGE (a)-[:SIMULATED]->(g)<-[:SIMULATED]-(b)
 WITH*
-RETURN a.name as Team_1, sum(aa.winPower) as Team1_WP, b.name as Team_2, sum(bb.winPower) as Team2_WP, g.winner as Winner_of_MatchUp;
+RETURN a.name AS `Team 1`, sum(aa.winPower) AS `Team 1 WP`, b.name AS `Team 2`, sum(bb.winPower) AS `Team 2 WP`, g.winner AS `Winner of Matchup`
 ----
-
 //table
 
 == The End
@@ -278,5 +274,7 @@ a|image::http://cdn0.sbnation.com/imported_assets/1545119/Z2t3Hee_medium.gif[ali
 [source, cypher]
 
 == References
+
+Download the original dataset and all snippets of the code found in this blog post at: https://github.com/kvangundy/graph-graph-baby/blob/master/marchMadnessReco
 
 //console
