@@ -12,37 +12,34 @@ This graph list dishes from four menus from that collection.
 
 image::http://nerdycreativity.com/images/graphgist/menu.png[]
 
-=== (Menu)
+=== Nodes
 
-* name: name of the restaurant
-* event
-* physical_description: description of the menu
-* notes
-* call_number: call number for the New York Public Library
-* date: date of the menu
-* status:
-* page_count: number of pages in the menu
+* (Menu)
+** name: name of the restaurant
+** event
+** physical_description: description of the menu
+** notes
+** call_number: call number for the New York Public Library
+** date: date of the menu
+** status:
+** page_count: number of pages in the menu
+* (Dish)
+** name: name of dish
+* (Location)
+** address
+** city
+** state
 
-=== (Dish)
+==== Relationships
 
-* name: name of dish
-
-(Location)
-
-* address
-* city
-* state
-
-=== [:SERVES]
-
-* price: price of dish
-
+* [:SERVES]
+** price: price of dish
+* [:LOCATED_AT]
 
 == Create nodes and relationships
 
 //hide
 //setup
-//output
 [source,cypher]
 ----
 CREATE
@@ -177,149 +174,144 @@ CREATE
 (menu_12473:Menu {name: "Hotel Marlborough", event: "CAFE LUNCHEON", dish_count: 19, physical_description: "CARD, ILLUS, COL, 4.25X5.5", notes: "HOTEL CREST IN BLUE", call_number: "1900-2843", date: "1900-04-17", status: "complete", page_count: 2}),
 
 // location
-(location_1: Location {address: "", city: "San Francisco", state: "CA"}),
-(location_2: Location {address: "", city: "Milwaukee", state: "WI"}),
-(location_4: Location {address: "", city: "New York", state: "NY"}),
+(location_1:Location {address: "", city: "San Francisco", state: "CA"}),
+(location_2:Location {address: "", city: "Milwaukee", state: "WI"}),
+(location_4:Location {address: "", city: "New York", state: "NY"}),
 
 // menu location
-(menu_22712) - [:LOCATED_AT] -> (location_1),
-(menu_12464) - [:LOCATED_AT] -> (location_2),
-(menu_12473) - [:LOCATED_AT] -> (location_4),
-(menu_23234) - [:LOCATED_AT] -> (location_4),
-
+(menu_22712)-[:LOCATED_AT]->(location_1),
+(menu_12464)-[:LOCATED_AT]->(location_2),
+(menu_12473)-[:LOCATED_AT]->(location_4),
+(menu_23234)-[:LOCATED_AT]->(location_4),
 
 // menu dishes
 
-
-
-(menu_12464) - [:SERVES] -> (dish_43),
-(menu_12464) - [:SERVES] -> (dish_177),
-(menu_12464) - [:SERVES] -> (dish_1289),
-(menu_12464) - [:SERVES] -> (dish_44),
-(menu_12464) - [:SERVES] -> (dish_408),
-(menu_12464) - [:SERVES] -> (dish_1291),
-(menu_12464) - [:SERVES] -> (dish_36635),
-(menu_12464) - [:SERVES] -> (dish_83),
-(menu_12464) - [:SERVES] -> (dish_40533),
-(menu_12464) - [:SERVES] -> (dish_46),
-(menu_12464) - [:SERVES] -> (dish_458),
-(menu_12464) - [:SERVES] -> (dish_1281),
-(menu_12464) - [:SERVES] -> (dish_47),
-(menu_12464) - [:SERVES] -> (dish_797),
-(menu_12464) - [:SERVES] -> (dish_48),
-(menu_12464) - [:SERVES] -> (dish_798),
-(menu_12464) - [:SERVES] -> (dish_49),
-(menu_12464) - [:SERVES] -> (dish_800),
-(menu_12464) - [:SERVES] -> (dish_52),
-(menu_12464) - [:SERVES] -> (dish_1253),
-(menu_12464) - [:SERVES] -> (dish_55),
-(menu_12464) - [:SERVES] -> (dish_1258),
-(menu_12464) - [:SERVES] -> (dish_117),
-(menu_12464) - [:SERVES] -> (dish_1264),
-(menu_12464) - [:SERVES] -> (dish_58),
-(menu_12464) - [:SERVES] -> (dish_1267),
-(menu_12464) - [:SERVES] -> (dish_61),
-(menu_12464) - [:SERVES] -> (dish_96),
-(menu_12464) - [:SERVES] -> (dish_1283),
-(menu_12464) - [:SERVES] -> (dish_112),
-(menu_12464) - [:SERVES] -> (dish_132),
-(menu_12464) - [:SERVES] -> (dish_1286),
-(menu_12464) - [:SERVES] -> (dish_158),
-(menu_12464) - [:SERVES] -> (dish_1287),
-(menu_12473) - [:SERVES] -> (dish_84),
-(menu_12473) - [:SERVES] -> (dish_86),
-(menu_12473) - [:SERVES] -> (dish_85605),
-(menu_12473) - [:SERVES] -> (dish_47349),
-(menu_12473) - [:SERVES] -> (dish_88),
-(menu_12473) - [:SERVES] -> (dish_117),
-(menu_12473) - [:SERVES] -> (dish_89),
-(menu_12473) - [:SERVES] -> (dish_91),
-(menu_12473) - [:SERVES] -> (dish_92),
-(menu_12473) - [:SERVES] -> (dish_93),
-(menu_12473) - [:SERVES] -> (dish_94),
-(menu_12473) - [:SERVES] -> (dish_95),
-(menu_12473) - [:SERVES] -> (dish_96),
-(menu_12473) - [:SERVES] -> (dish_80),
-(menu_12473) - [:SERVES] -> (dish_97),
-(menu_12473) - [:SERVES] -> (dish_81),
-(menu_12473) - [:SERVES] -> (dish_98),
-(menu_12473) - [:SERVES] -> (dish_82),
-(menu_12473) - [:SERVES] -> (dish_83),
-(menu_22712) - [:SERVES {price: 0.25}] -> (dish_70895),
-(menu_22712) - [:SERVES {price: 0.15}] -> (dish_216),
-(menu_22712) - [:SERVES {price: 0.15}] -> (dish_25132),
-(menu_22712) - [:SERVES {price: 0.35}] -> (dish_11207),
-(menu_22712) - [:SERVES {price: 0.1}] -> (dish_11606),
-(menu_22712) - [:SERVES {price: 0.35}] -> (dish_124555),
-(menu_22712) - [:SERVES {price: 0.15}] -> (dish_55569),
-(menu_22712) - [:SERVES {price: 0.25}] -> (dish_124556),
-(menu_22712) - [:SERVES {price: 0.1}] -> (dish_124560),
-(menu_22712) - [:SERVES {price: 0.25}] -> (dish_15959),
-(menu_22712) - [:SERVES {price: 0.1}] -> (dish_124561),
-(menu_22712) - [:SERVES {price: 0.25}] -> (dish_148),
-(menu_22712) - [:SERVES {price: 0.25}] -> (dish_35749),
-(menu_22712) - [:SERVES {price: 0.3}] -> (dish_232),
-(menu_22712) - [:SERVES {price: 0.15}] -> (dish_1308),
-(menu_22712) - [:SERVES {price: 0.3}] -> (dish_6858),
-(menu_22712) - [:SERVES {price: 0.1}] -> (dish_1312),
-(menu_22712) - [:SERVES {price: 0.3}] -> (dish_222),
-(menu_22712) - [:SERVES {price: 0.1}] -> (dish_97),
-(menu_22712) - [:SERVES] -> (dish_595),
-(menu_22712) - [:SERVES {price: 0.25}] -> (dish_1099),
-(menu_22712) - [:SERVES {price: 0.15}] -> (dish_231),
-(menu_22712) - [:SERVES {price: 0.3}] -> (dish_124559),
-(menu_22712) - [:SERVES {price: 0.1}] -> (dish_96),
-(menu_22712) - [:SERVES {price: 0.3}] -> (dish_2978),
-(menu_22712) - [:SERVES {price: 0.2}] -> (dish_124562),
-(menu_22712) - [:SERVES {price: 0.3}] -> (dish_5165),
-(menu_22712) - [:SERVES {price: 0.1}] -> (dish_98),
-(menu_22712) - [:SERVES {price: 0.15}] -> (dish_572),
-(menu_22712) - [:SERVES] -> (dish_363691),
-(menu_23234) - [:SERVES {price: 0.2}] -> (dish_7307),
-(menu_23234) - [:SERVES {price: 0.2}] -> (dish_148),
-(menu_23234) - [:SERVES] -> (dish_3903),
-(menu_23234) - [:SERVES] -> (dish_795),
-(menu_23234) - [:SERVES {price: 0.3}] -> (dish_8303),
-(menu_23234) - [:SERVES] -> (dish_5569),
-(menu_23234) - [:SERVES {price: 0.35}] -> (dish_46674),
-(menu_23234) - [:SERVES] -> (dish_112),
-(menu_23234) - [:SERVES {price: 0.35}] -> (dish_222968),
-(menu_23234) - [:SERVES] -> (dish_4246),
-(menu_23234) - [:SERVES {price: 0.2}] -> (dish_74406),
-(menu_23234) - [:SERVES {price: 0.25}] -> (dish_70904),
-(menu_23234) - [:SERVES] -> (dish_74395),
-(menu_23234) - [:SERVES] -> (dish_83475),
-(menu_23234) - [:SERVES {price: 0.3}] -> (dish_204096),
-(menu_23234) - [:SERVES] -> (dish_22605),
-(menu_23234) - [:SERVES] -> (dish_83476),
-(menu_23234) - [:SERVES {price: 0.4}] -> (dish_59320),
-(menu_23234) - [:SERVES] -> (dish_3021),
-(menu_23234) - [:SERVES] -> (dish_14249),
-(menu_23234) - [:SERVES {price: 0.1}] -> (dish_5054),
-(menu_23234) - [:SERVES] -> (dish_4707),
-(menu_23234) - [:SERVES] -> (dish_83477),
-(menu_23234) - [:SERVES {price: 0.1}] -> (dish_283),
-(menu_23234) - [:SERVES] -> (dish_1514),
-(menu_23234) - [:SERVES {price: 0.05}] -> (dish_74427),
-(menu_23234) - [:SERVES {price: 0.05}] -> (dish_98),
-(menu_23234) - [:SERVES] -> (dish_1515),
-(menu_23234) - [:SERVES {price: 0.1}] -> (dish_83478),
-(menu_23234) - [:SERVES {price: 0.5}] -> (dish_222974),
-(menu_23234) - [:SERVES {price: 0.1}] -> (dish_7430),
-(menu_23234) - [:SERVES] -> (dish_222976),
-(menu_23234) - [:SERVES {price: 0.15}] -> (dish_7428),
-(menu_23234) - [:SERVES] -> (dish_222978),
-(menu_23234) - [:SERVES {price: 0.1}] -> (dish_19258),
-(menu_23234) - [:SERVES] -> (dish_10303),
-(menu_23234) - [:SERVES {price: 0.1}] -> (dish_34032),
-(menu_23234) - [:SERVES] -> (dish_737),
-(menu_23234) - [:SERVES {price: 0.15}] -> (dish_34035),
-(menu_23234) - [:SERVES] -> (dish_222982);
-
+(menu_12464)-[:SERVES]->(dish_43),
+(menu_12464)-[:SERVES]->(dish_177),
+(menu_12464)-[:SERVES]->(dish_1289),
+(menu_12464)-[:SERVES]->(dish_44),
+(menu_12464)-[:SERVES]->(dish_408),
+(menu_12464)-[:SERVES]->(dish_1291),
+(menu_12464)-[:SERVES]->(dish_36635),
+(menu_12464)-[:SERVES]->(dish_83),
+(menu_12464)-[:SERVES]->(dish_40533),
+(menu_12464)-[:SERVES]->(dish_46),
+(menu_12464)-[:SERVES]->(dish_458),
+(menu_12464)-[:SERVES]->(dish_1281),
+(menu_12464)-[:SERVES]->(dish_47),
+(menu_12464)-[:SERVES]->(dish_797),
+(menu_12464)-[:SERVES]->(dish_48),
+(menu_12464)-[:SERVES]->(dish_798),
+(menu_12464)-[:SERVES]->(dish_49),
+(menu_12464)-[:SERVES]->(dish_800),
+(menu_12464)-[:SERVES]->(dish_52),
+(menu_12464)-[:SERVES]->(dish_1253),
+(menu_12464)-[:SERVES]->(dish_55),
+(menu_12464)-[:SERVES]->(dish_1258),
+(menu_12464)-[:SERVES]->(dish_117),
+(menu_12464)-[:SERVES]->(dish_1264),
+(menu_12464)-[:SERVES]->(dish_58),
+(menu_12464)-[:SERVES]->(dish_1267),
+(menu_12464)-[:SERVES]->(dish_61),
+(menu_12464)-[:SERVES]->(dish_96),
+(menu_12464)-[:SERVES]->(dish_1283),
+(menu_12464)-[:SERVES]->(dish_112),
+(menu_12464)-[:SERVES]->(dish_132),
+(menu_12464)-[:SERVES]->(dish_1286),
+(menu_12464)-[:SERVES]->(dish_158),
+(menu_12464)-[:SERVES]->(dish_1287),
+(menu_12473)-[:SERVES]->(dish_84),
+(menu_12473)-[:SERVES]->(dish_86),
+(menu_12473)-[:SERVES]->(dish_85605),
+(menu_12473)-[:SERVES]->(dish_47349),
+(menu_12473)-[:SERVES]->(dish_88),
+(menu_12473)-[:SERVES]->(dish_117),
+(menu_12473)-[:SERVES]->(dish_89),
+(menu_12473)-[:SERVES]->(dish_91),
+(menu_12473)-[:SERVES]->(dish_92),
+(menu_12473)-[:SERVES]->(dish_93),
+(menu_12473)-[:SERVES]->(dish_94),
+(menu_12473)-[:SERVES]->(dish_95),
+(menu_12473)-[:SERVES]->(dish_96),
+(menu_12473)-[:SERVES]->(dish_80),
+(menu_12473)-[:SERVES]->(dish_97),
+(menu_12473)-[:SERVES]->(dish_81),
+(menu_12473)-[:SERVES]->(dish_98),
+(menu_12473)-[:SERVES]->(dish_82),
+(menu_12473)-[:SERVES]->(dish_83),
+(menu_22712)-[:SERVES {price: 0.25}]->(dish_70895),
+(menu_22712)-[:SERVES {price: 0.15}]->(dish_216),
+(menu_22712)-[:SERVES {price: 0.15}]->(dish_25132),
+(menu_22712)-[:SERVES {price: 0.35}]->(dish_11207),
+(menu_22712)-[:SERVES {price: 0.1}]->(dish_11606),
+(menu_22712)-[:SERVES {price: 0.35}]->(dish_124555),
+(menu_22712)-[:SERVES {price: 0.15}]->(dish_55569),
+(menu_22712)-[:SERVES {price: 0.25}]->(dish_124556),
+(menu_22712)-[:SERVES {price: 0.1}]->(dish_124560),
+(menu_22712)-[:SERVES {price: 0.25}]->(dish_15959),
+(menu_22712)-[:SERVES {price: 0.1}]->(dish_124561),
+(menu_22712)-[:SERVES {price: 0.25}]->(dish_148),
+(menu_22712)-[:SERVES {price: 0.25}]->(dish_35749),
+(menu_22712)-[:SERVES {price: 0.3}]->(dish_232),
+(menu_22712)-[:SERVES {price: 0.15}]->(dish_1308),
+(menu_22712)-[:SERVES {price: 0.3}]->(dish_6858),
+(menu_22712)-[:SERVES {price: 0.1}]->(dish_1312),
+(menu_22712)-[:SERVES {price: 0.3}]->(dish_222),
+(menu_22712)-[:SERVES {price: 0.1}]->(dish_97),
+(menu_22712)-[:SERVES]->(dish_595),
+(menu_22712)-[:SERVES {price: 0.25}]->(dish_1099),
+(menu_22712)-[:SERVES {price: 0.15}]->(dish_231),
+(menu_22712)-[:SERVES {price: 0.3}]->(dish_124559),
+(menu_22712)-[:SERVES {price: 0.1}]->(dish_96),
+(menu_22712)-[:SERVES {price: 0.3}]->(dish_2978),
+(menu_22712)-[:SERVES {price: 0.2}]->(dish_124562),
+(menu_22712)-[:SERVES {price: 0.3}]->(dish_5165),
+(menu_22712)-[:SERVES {price: 0.1}]->(dish_98),
+(menu_22712)-[:SERVES {price: 0.15}]->(dish_572),
+(menu_22712)-[:SERVES]->(dish_363691),
+(menu_23234)-[:SERVES {price: 0.2}]->(dish_7307),
+(menu_23234)-[:SERVES {price: 0.2}]->(dish_148),
+(menu_23234)-[:SERVES]->(dish_3903),
+(menu_23234)-[:SERVES]->(dish_795),
+(menu_23234)-[:SERVES {price: 0.3}]->(dish_8303),
+(menu_23234)-[:SERVES]->(dish_5569),
+(menu_23234)-[:SERVES {price: 0.35}]->(dish_46674),
+(menu_23234)-[:SERVES]->(dish_112),
+(menu_23234)-[:SERVES {price: 0.35}]->(dish_222968),
+(menu_23234)-[:SERVES]->(dish_4246),
+(menu_23234)-[:SERVES {price: 0.2}]->(dish_74406),
+(menu_23234)-[:SERVES {price: 0.25}]->(dish_70904),
+(menu_23234)-[:SERVES]->(dish_74395),
+(menu_23234)-[:SERVES]->(dish_83475),
+(menu_23234)-[:SERVES {price: 0.3}]->(dish_204096),
+(menu_23234)-[:SERVES]->(dish_22605),
+(menu_23234)-[:SERVES]->(dish_83476),
+(menu_23234)-[:SERVES {price: 0.4}]->(dish_59320),
+(menu_23234)-[:SERVES]->(dish_3021),
+(menu_23234)-[:SERVES]->(dish_14249),
+(menu_23234)-[:SERVES {price: 0.1}]->(dish_5054),
+(menu_23234)-[:SERVES]->(dish_4707),
+(menu_23234)-[:SERVES]->(dish_83477),
+(menu_23234)-[:SERVES {price: 0.1}]->(dish_283),
+(menu_23234)-[:SERVES]->(dish_1514),
+(menu_23234)-[:SERVES {price: 0.05}]->(dish_74427),
+(menu_23234)-[:SERVES {price: 0.05}]->(dish_98),
+(menu_23234)-[:SERVES]->(dish_1515),
+(menu_23234)-[:SERVES {price: 0.1}]->(dish_83478),
+(menu_23234)-[:SERVES {price: 0.5}]->(dish_222974),
+(menu_23234)-[:SERVES {price: 0.1}]->(dish_7430),
+(menu_23234)-[:SERVES]->(dish_222976),
+(menu_23234)-[:SERVES {price: 0.15}]->(dish_7428),
+(menu_23234)-[:SERVES]->(dish_222978),
+(menu_23234)-[:SERVES {price: 0.1}]->(dish_19258),
+(menu_23234)-[:SERVES]->(dish_10303),
+(menu_23234)-[:SERVES {price: 0.1}]->(dish_34032),
+(menu_23234)-[:SERVES]->(dish_737),
+(menu_23234)-[:SERVES {price: 0.15}]->(dish_34035),
+(menu_23234)-[:SERVES]->(dish_222982);
 ----
 
 == Queries
-
 
 === List all the menus
 
@@ -329,8 +321,8 @@ image::http://nerdycreativity.com/images/graphgist/all_menus_rev.jpg[]
 [source,cypher]
 ----
 MATCH (menu: Menu)
-RETURN menu.name as restaurant, menu.dish_count as dishes, menu.call_number as call_number, menu.date as date
-order by restaurant
+RETURN menu.name AS Restaurant, menu.dish_count AS `Dish Count`, menu.call_number AS `Call Number`, menu.date AS Date
+ORDER By menu.name
 ----
 //table
 
@@ -340,9 +332,9 @@ All restaurants in New York City
 
 [source,cypher]
 ----
-MATCH (location: Location {city : "New York"}) <- [:LOCATED_AT] - (menu: Menu)
-RETURN menu.name as restaurant,  location.city as city, location.state as state, menu.date as date
-order by restaurant
+MATCH (location: Location {city:"New York"})<-[:LOCATED_AT]-(menu: Menu)
+RETURN menu.name AS Restaurant, location.city AS City, location.state AS State, menu.date AS Date
+ORDER BY menu.name
 ----
 //table
 
@@ -350,30 +342,30 @@ order by restaurant
 image::http://nerdycreativity.com/images/graphgist/menus_per_city_rev.png[]
 
 
-=== Find restaurants that  serve a particular dish.
+=== Find restaurants that serve a particular dish.
 
 All restaurants that serve coffee.
 
 [source,cypher]
 ----
-MATCH (location: Location) <- [:LOCATED_AT] -  (menu: Menu) - [r:SERVES] -> (dish: Dish {name: 'Coffee'})
-RETURN menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
-order by restaurant
+MATCH (location: Location)<-[:LOCATED_AT]-(menu: Menu)-[r:SERVES]->(dish: Dish {name: 'Coffee'})
+RETURN menu.name AS Restaurant, r.price as price, location.city AS City, location.state AS State, menu.date AS Date
+ORDER BY menu.name
 ----
 //table
 
 .Restaurants that serve coffee
 image::http://nerdycreativity.com/images/graphgist/menus_per_dish_rev.png[]
 
-=== Find restaurants in a city that  serve a particular dish.
+=== Find restaurants in a city that serve a particular dish.
 
 All restaurants in New York City that serve milk.
 
 [source,cypher]
 ----
-MATCH (location: Location {city : "New York"}) <- [:LOCATED_AT] - (menu: Menu) - [r:SERVES] -> (dish: Dish {name: 'Milk'})
-RETURN menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
-order by restaurant
+MATCH (location: Location {city:"New York"})<-[:LOCATED_AT]-(menu: Menu)-[r:SERVES]->(dish: Dish {name: 'Milk'})
+RETURN menu.name AS Restaurant, r.price as price, location.city AS City, location.state AS State, menu.date AS Date
+ORDER BY menu.name
 ----
 //table
 
@@ -385,23 +377,23 @@ http://nerdycreativity.com/images/graphgist/Virginia_Hotel.jpeg[full size image]
 
 [source,cypher]
 ----
-MATCH (menu: Menu {name: 'Virginia Hotel'}) - [r:SERVES] -> (dish: Dish)
-RETURN dish.name as dish, r.price as price, menu.date as date
-order by dish
+MATCH (menu: Menu {name: 'Virginia Hotel'})-[r:SERVES]->(dish: Dish)
+RETURN dish.name AS Dish, r.price as price, menu.date AS Date
+ORDER BY dish.name
 ----
 image::http://nerdycreativity.com/images/graphgist/dishes_per_menu_rev.png[]
 //table
 
 
-=== Find the  most common dishes
+=== Find the most common dishes
 
 [source,cypher]
 ----
-MATCH (menu: Menu) - [re:SERVES] -> (dish: Dish)
-with dish, count(menu) as rels , collect(menu.name) as menus
-RETURN  dish.name as dish, rels as count, menus as restaurants
-order by count desc
-limit 5
+MATCH (menu: Menu)-[re:SERVES]->(dish: Dish)
+WITH dish, count(menu) AS rels, collect(menu.name) as menus
+RETURN dish.name AS Dish, rels AS Count, menus AS Restaurants
+ORDER BY rels DESC
+LIMIT 5
 ----
 //table
 
@@ -411,11 +403,11 @@ Dishes that Republican House and Hotel Marlborough serve.
 
 [source,cypher]
 ----
-MATCH   (menu: Menu {name: 'Republican House'}) - [r:SERVES] -> (dish: Dish)
-RETURN  dish, menu
-Union
-MATCH   (menu: Menu {name: 'Hotel Marlborough'}) - [r:SERVES] -> (dish: Dish)
-RETURN  dish, menu
+MATCH (menu: Menu {name: 'Republican House'})-[r:SERVES]->(dish: Dish)
+RETURN dish, menu
+UNION
+MATCH (menu: Menu {name: 'Hotel Marlborough'})-[r:SERVES]->(dish: Dish)
+RETURN dish, menu
 ----
 image::http://nerdycreativity.com/images/graphgist/menus_shared_dishes.png[]
 
@@ -426,11 +418,11 @@ Most expensive dishes
 
 [source,cypher]
 ----
-MATCH (location: Location) <- [:LOCATED_AT] - (menu: Menu) - [r:SERVES] -> (dish: Dish)
+MATCH (location: Location)<-[:LOCATED_AT]-(menu: Menu)-[r:SERVES]->(dish: Dish)
 WHERE r.price > 0
-RETURN  dish.name, menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
-order by price desc
-limit 5
+RETURN dish.name, menu.name AS Restaurant, r.price as price, location.city AS City, location.state AS State, menu.date AS Date
+ORDER BY price DESC
+LIMIT 5
 ----
 //table
 
@@ -438,15 +430,17 @@ Least expensive dishes
 
 [source,cypher]
 ----
-MATCH (location: Location) <- [:LOCATED_AT] - (menu: Menu) - [r:SERVES] -> (dish: Dish)
+MATCH (location: Location)<-[:LOCATED_AT]-(menu: Menu)-[r:SERVES]->(dish: Dish)
 WHERE r.price > 0
-RETURN  dish.name, menu.name as restaurant,  r.price as price, location.city as city, location.state as state, menu.date as date
-order by price asc
-limit 5
+RETURN dish.name, menu.name AS Restaurant, r.price AS Price, location.city AS City, location.state AS State, menu.date AS Date
+ORDER BY r.price ASC
+LIMIT 5
 ----
 // table
 
 == References
+
+http://menus.nypl.org/about[The _What's on the menu?_ collection]
 
 //hide
 //console

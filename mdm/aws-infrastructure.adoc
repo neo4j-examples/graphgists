@@ -493,7 +493,7 @@ ORDER BY hourly_cost LIMIT 1;
 [source,cypher]
 ----
 MATCH (region)-[:HAS_ISOLATED]->(AvailabilityZone)
-RETURN region.name as aws_region , count(AvailabilityZone) as count_availibility_zones
+RETURN region.name AS `AWS Region`, count(AvailabilityZone) AS `Count of Availability Zones`
 ORDER BY count_availibility_zones DESC LIMIT 1
 ----
 
