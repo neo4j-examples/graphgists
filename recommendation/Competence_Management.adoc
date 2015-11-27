@@ -70,7 +70,7 @@ See link:https://twitter.com/apcj[Alistair Jones]'s link:http://www.apcjones.com
 Starting from a focus on the single "ego-network" footnote:[Intended as the network including all and only the 1^st^ degree connections of that node.] of each `Employee` in _Figure 1_, this network visualization shows  several interesting data relationships.
 Related to the company internal data, note that:
 
-- +WORKS_AS+, points to the current `Role` of the `Employee`.
+- `WORKS_AS`, points to the current `Role` of the `Employee`.
 This relationship has two properties: `duration` (number of years the `Employee` has spent in that role) and `location` ( the employee’s geographic place of work).
 The first property could be used to infer the level of expertise acquired by the employee in a certain area, while the second may be used to understand if the resource shall be relocated, in order to work in a new `Role`.
 The `Role` node itself is linked to a collection of `Activity` nodes, and represents a certain position inside the organization.
@@ -106,12 +106,13 @@ Each `Role` node is characterized by a few properties:
 
 - `open_status` is a binary value which flags: "1" if the position is open, and "0" if filled).
 
-`Activity` nodes are assigned a `complexity` (with _1<`complexity`<5_), an index which measures how difficult a certain `Activity` is, taking into account both the technical expertise required, as well as the level of social-interaction with other colleagues, advisors, customers...
+`Activity` nodes are assigned a `complexity` (with _1<`complexity`<5_), an index which measures how difficult a certain `Activity` is, taking into account both the technical expertise required, as well as the level of social-interaction with other colleagues, advisors, customers, and more.
 
 `Role` nodes can be linked to one or more `Activity` nodes via a `RELATED_ACTIVITY` link. This connection is enriched by the property level_weight (also in a discrete scale _1->4_), indicating that the `Role` requires a certain level of command of the corresponding `RELATED_ACTIVITY`, in order to be performed in a satisfactory way by the employee.
 Manager `Role`s may also be connected via an `SUPERVISES_ACTIVITY` link: in this case, the employee may be expected to have a good capability in directing the activity, but not necessarily in performing it directly.
 
-Finally, each `Activity` can be connected to only one `Competence Area` node, via the `IN_AREA` link (i.e. in this model no overlap among different competence areas is allowed, but this assumption may be obviously relaxed). `Competency Areas` shall be understood as high-level classifications of the different `Activitie`s performed by the organization.
+Finally, each `Activity` can be connected to only one `Competence Area` node, via the `IN_AREA` link (i.e. in this model no overlap among different competence areas is allowed, but this assumption may be obviously relaxed).
+`Competency Areas` shall be understood as high-level classifications of the different `Activitie`s performed by the organization.
 
 [[setup]]
 === Setting Up the graph <<TOC, ^TOC^>>
@@ -237,7 +238,7 @@ The whole graph looks like:
 //hide
 [source, cypher]
 ----
-MATCH (n) RETURN n;
+MATCH (n) RETURN n
 ----
 //graph
 
@@ -262,7 +263,7 @@ WITH n AS person
 MATCH (person)-[r:WORKS_AS]-()
 WHERE r.duration>1
 SET person.exclude=0
-RETURN person.name AS matching_candidate;
+RETURN person.name AS `Matching Candidate`
 ----
 
 The resulting table is populated to only include candidates that satisfy the preliminary condition of working for the organization for over one year.
@@ -275,7 +276,7 @@ Therefore, to exclude those who do not hold such a degree, query:
 ----
 MATCH (n:Employee {exclude:0})
 WHERE NOT (n)-[:HAS_DEGREE]-(:Degree {area:"area 1"})
-SET n.exclude=1;
+SET n.exclude=1
 ----
 
 These filters could be easily implemented with another database management system.
@@ -310,7 +311,7 @@ If the pre-filtered network is queried for candidates connected to a +Competence
 MATCH (n:Employee {exclude:0})
 WHERE (n)-[:HAS_SKILL]-(:Personal_Skill)<-[:REQUIRES]-(:Activity)-[:IN_AREA]->(:Competence_area {name:'Competence Area 2'})
 SET n.exclude=1
-RETURN distinct count(n);
+RETURN DISTINCT count(n) AS Candidates
 ----
 
 The organization (and especially their HR department) will need to be able to share their candidate profiling with colleagues.
@@ -324,9 +325,8 @@ WHERE (n)-[:HAS_SKILL]-(:Personal_Skill)<-[:REQUIRES]-(:Activity)-[:IN_AREA]->(:
 WITH n AS person
 MATCH (person)-[r:WORKS_AS]-()
 WHERE r.duration>1
-RETURN person.name AS matching_candidate;
+RETURN person.name AS `Matching Candidate`
 ----
-//table
 
 This query results in an empty table, which immediately highlights the necessity to exclude some of our pattern matching requirements.
 Written as a Cypher query, this may look trivial: people with very little coding knowledge could be easily trained to update such a query, in order to try different requirements'combinations.
@@ -347,7 +347,7 @@ To demonstrate the advantage of collaborative ranking, assume the the team offer
 [source, cypher]
 ----
 MATCH (n:Employee)-[:IN_TEAM]-(m:Team {name:'Team 3'})
-RETURN n.name as Team_Member;
+RETURN n.name AS `Team Member`
 ----
 
 This illustrates the bias problem outlined in the introduction <<intro, ^(go to)^>>: when choosing the ideal candidate, we must integrate the knowledge of the employee already working in the team with the open position (+Employee 5+).
@@ -355,7 +355,7 @@ In this case, an intuitive and effective solution is to rely on data relationshi
 
 +(Employee A)-[:Endorses {level:x}]-(Personal_Skill a)-[:HAS]-(Employee B)+
 
-where the property +level x+ is a rating of the `Personal Skill` of Employee B evaluated by +Employee A+.
+where the property +level x+ is a rating of the `Personal Skill` of Employee B evaluated by Employee A.
 This kind of Cypher queries provide an understanding of the candidates' skills as perceived by their colleagues.
 
 To make this analysis quantitative, a metric of difference or similarity among the employees will be introduced to understand which employees have similar opinions regarding their colleagues.
@@ -367,19 +367,19 @@ The committee is thus expanded to employees who are not team members, but nevert
 
 Cosine-similarity ranking can also be the basis for the recommendation analysis.
 However, it is important to remember that employees endorse +Personal Skills+ and not other employees in our data model.
-Therefore, an additional directed relation among Employees A and B (+[:RATES {rating: ...}]+) must be included, with:
+Therefore, an additional directed relation among Employees A and B (`[:RATES {rating: ...}]`) must be included, with:
 
 [subs = none]
 \( rating_{ A \to B }= \frac{ \sum_{ i=1 }^{ N } \textrm{ level }(\textrm{ Personal Skill }(i))} {N} \)
 
-where latexmath:[N:= \textrm{# endorsed Personal_Skills of B, by A }], and the property +rating+ is the average of the endorsements' +levels+ made by A about single +Personal Skills+ of B.
+where latexmath:[N:= \textrm{# endorsed Personal_Skills of B, by A }], and the property `rating` is the average of the endorsements' +levels+ made by A about single +Personal Skills+ of B.
 
 [source, cypher]
 ----
 MATCH (u1:Employee)-[x:ENDORSES]->(:Personal_Skill)<-[:HAS_SKILL]-(u2:Employee)
 WITH  AVG(x.level) AS rating_score,
       u1, u2
-CREATE UNIQUE (u1)-[:RATES {rating:rating_score}]->(u2);
+CREATE UNIQUE (u1)-[:RATES {rating:rating_score}]->(u2)
 ----
 
 These preliminary calculations provide the ability to calculate the cosine similarities for +Employee 5+.
@@ -395,17 +395,18 @@ WHERE (u1)-[:IN_TEAM]-(:Team {name:'Team 3'}) AND NOT (u2)-[:IN_TEAM]-(:Team {na
 WITH  AVG(x.rating) AS team_score,
       u2
 MATCH (t:Team {name:'Team 3'})
-CREATE UNIQUE (t)-[:RATES {team_rating:team_score}]->(u2);
+CREATE UNIQUE (t)-[:RATES {team_rating:team_score}]->(u2)
 ----
 
-The portion of the graph with the +[:ENDORSES]+ and +[:RATES]+ data relationships can be visualized with:
+The portion of the graph with the `[:ENDORSES]` and `[:RATES]` data relationships can be visualized with:
 
 [source, cypher]
 ----
 MATCH (t:Team)--(u:Employee)
 OPTIONAL MATCH (u)-[:ENDORSES]-(p:Personal_Skill)
-RETURN t,u,p;
+RETURN t,u,p
 ----
+//graph
 
 After calculating a group rating, it is now possible to introduce the similarity of +Team 3+ as a whole with other employees who are _not_ members of +Team 3+.
 The similarity works in the same manner as if it were calculated for a single employee.
@@ -450,7 +451,7 @@ However, this may be easily calculated from the graph DB as well.], _k=5_, *incl
 [source, cypher]
 ----
 MATCH (n:Employee)--(m:Team)
-with m.name as Team, count(n) as size
+with m.name AS Team, count(n) AS size
 return avg(size);
 ----
 ////
@@ -469,6 +470,7 @@ ORDER BY reco DESC
 RETURN   candidate AS Candidate, toFloat(reco) AS Recommendation
 ----
 //table
+
 This query results in the first recommendations for assigning the open position to existing employees.
 Notice how the recommendation obtained for +Employee 1+ is even higher than the one obtained for +Employee 3+, even if no one in +Team 3+ knows +Employee 1+ directly.
 The only person directly known to +Team 3+ is +Employee 3+, making this pick the only possible one, without any recommendation system.
@@ -495,12 +497,12 @@ Considering that for the open position of +Role 6+ we know that: +(Role 6)-[:REL
 [source, cypher]
 ----
 MATCH (b:Employee)-[r:RATES]->(m:Employee), (b)-[s:SIMILARITY]-(t:Team {name:'Team 3'}), p=shortestPath ( (n1:Competence_area {name:"Competence Area 2"})-[*..5]-(b) )
-WITH m.name as candidate, s.similarity AS similarity, r.rating as rating, p
+WITH m.name AS candidate, s.similarity AS similarity, r.rating AS rating, p
 ORDER BY candidate, similarity DESC
 WITH candidate, COLLECT(rating*1.0/(length(p)-1))[0..5] AS ratings
 WITH candidate, REDUCE(s = 0.0, i IN ratings | s + i)*1.0 / LENGTH(ratings) AS reco
 ORDER BY reco DESC
-RETURN candidate as Candidate, toFloat(reco) as Recommendation
+RETURN candidate AS Candidate, toFloat(reco) AS Recommendation
 ----
 //table
 
@@ -546,8 +548,8 @@ To refine the results, adopt the same criterion as above for this preliminary se
 [source, cypher]
 ----
 MATCH (b)-[s:SIMILARITY]-(t:Team {name:'Team 3'})
-WITH DISTINCT b, s.similarity as similarity
-ORDER BY similarity DESC limit 5
+WITH DISTINCT b, s.similarity AS similarity
+ORDER BY similarity DESC LIMIT 5
 SET b.pool=1
 ----
 
@@ -573,7 +575,7 @@ This can be done by querying for nodes within the set _T_:
 [source, cypher]
 ----
 MATCH (feats {t_feature:1})
-WITH count(distinct feats) as T_size
+WITH count(distinct feats) AS T_size
 MATCH (u2 {pool:1})
 WITH u2, T_size
 OPTIONAL MATCH (u2)-[:HAS_SKILL]-(:Personal_Skill)-[:REQUIRES]-(:Activity)-[:IN_AREA]-(c3:Competence_area {t_feature:1})
@@ -582,10 +584,10 @@ OPTIONAL MATCH (u2)-[:HAS_DEGREE]->(d2:Degree)
    WHERE d2.area="area 1" OR d2.area="area 2"
 OPTIONAL MATCH (u2)-[:CAN_PERFORM]-(a3:Activity {t_feature:1})
 OPTIONAL MATCH (u2)--(:Role)--(a4:Activity {t_feature:1})
-WITH u2, count(distinct d2) AS counter, [a3,a4] as activity, [c3,c4] as competence, T_size
+WITH u2, count(distinct d2) AS counter, [a3,a4] AS activity, [c3,c4] AS competence, T_size
 UNWIND activity AS activities
-UNWIND competence as competences
-WITH u2, (counter+count(distinct activities)+count(distinct competences))*1.0/T_size as jaccard
+UNWIND competence AS competences
+WITH u2, (counter+count(distinct activities)+count(distinct competences))*1.0/T_size AS jaccard
 SET u2.jaccard=toFloat(jaccard)
 ----
 
@@ -596,12 +598,12 @@ Here, an additional +WHERE+ clause filters evaluations by employees for whom no 
 ----
 MATCH (b:Employee)-[r:RATES]->(m:Employee), (b)-[s:SIMILARITY]-(t:Team {name:'Team 3'})
 WHERE b.jaccard>0
-WITH m.name as candidate, s.similarity AS similarity, b.jaccard as jaccard, r.rating as rating
+WITH m.name AS candidate, s.similarity AS similarity, b.jaccard AS jaccard, r.rating AS rating
 ORDER BY candidate, similarity DESC
 WITH candidate, COLLECT(rating*jaccard*1.0)[0..5] AS ratings
 WITH candidate, REDUCE(s = 0.0, i IN ratings | s + i)*1.0 / LENGTH(ratings) AS reco
 ORDER BY reco DESC
-RETURN candidate as Candidate, toFloat(reco) as Recommendation
+RETURN candidate AS Candidate, toFloat(reco) AS Recommendation
 ----
 //table
 
@@ -648,11 +650,11 @@ Taking as an example +Employee 1+ and +Activity 1+, this Cypher query looks like
 [source, cypher]
 ----
 MATCH (a:Activity {name:"Activity 1"})-[:REQUIRES]->(s:Skill)
-WITH a, count(s) as skill_req
+WITH a, count(s) AS skill_req
 MATCH (a)-[:REQUIRES]-(r:Skill)-[:IN_SKILLSET]-(p:Personal_Skill)-[:HAS_SKILL]-(u:Employee {name:"Employee 1"})
 OPTIONAL MATCH (:Employee)-[x:ENDORSES]->(p)<-[:HAS_SKILL]-(u)
-WITH a, u, p.name as personal_skill, toFloat(AVG(x.level)*1.0) AS rating, skill_req
-WITH a, u, REDUCE(a=0.0, b IN COLLECT(rating)|a+b)*1.0/skill_req as comp_level
+WITH a, u, p.name AS personal_skill, toFloat(AVG(x.level)*1.0) AS rating, skill_req
+WITH a, u, REDUCE(a=0.0, b IN COLLECT(rating)|a+b)*1.0/skill_req AS comp_level
 MERGE (u)-[r:CAN_PERFORM]-(a)
   ON CREATE SET
     r.comp_level=comp_level,
@@ -693,11 +695,11 @@ WITH u.name AS Employee, a, sup_param,
     ELSE x.comp_level*a.complexity*1.0
   END AS role_param
 WITH Employee, REDUCE(a=0.0, b IN COLLECT(role_param)|a+b)*1.0 AS role_index, reduce(a=0.0, b IN COLLECT(sup_param)|a+b)*1.0 AS sup_index
-RETURN Employee, toFloat(role_index/sup_index) AS Competence_Ratio
+RETURN Employee, toFloat(role_index/sup_index) AS `Competency Ratio`
 ----
 //table
 
-Given that the competency Ratio is bound to the threshold of the Supervisor Role expertise, it varies in the range _[0,1]_.
+Given that the Competency Ratio is bound to the threshold of the Supervisor Role expertise, it varies in the range _[0,1]_.
 Values close to _0_ mean the Employee should not be considered for that Role, while values close to _1_ suggest the possibility for the Employee to be promoted to a Supervisor Role for those activities.
 By removing the specification of an individual employee in line 3 of the query above, the same query can be used to directly search for the employees footnote:[A full formal implementation of the algebraic competency model outlined so far requires tools aiming properly at data analytics.
 Indeed, the interested reader may be willing to explore the link:http://neo4j.com/contrib/rneo4j[RNeo4j] plugin.
@@ -710,7 +712,7 @@ Finally, one can write a very simple query that also highlights the managers who
 MATCH (u:Employee)-[:WORKS_AS]->(:Role)-[s:SUPERVISES_ACTIVITY]-(a)
 OPTIONAL MATCH (u)-[t:CAN_PERFORM]-(a)
 WHERE toFloat(t.comp_level)<s.level_weight
-RETURN u.name AS Flagged_Manager
+RETURN u.name AS `Flagged Manager`
 ----
 
 Managers highlighted by the query, according to our graph data model, may need further training, or have their colleagues endorse their competencies footnote:[Indeed, the query will return both employees who have no :CAN_PERFORM link to the corresponding `Activity`, and people who have had no :ENDORSES to their +Personal_Skills+ so far].
