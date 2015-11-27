@@ -18,7 +18,7 @@ As you might expect, this problem involves flow through a network, and is theref
 == Data Model
 
 Our data model consists of a set of cities, each with a latitude and longitude, which we will use to compute distances (we could have entered the distances as data, but it was more fun to use Neo4j for this task, and in a more generalized case you might want the nodes to be able to move).
-Each city is linked to one or more other cities by ``:BACKBONE_TO` relationships.
+Each city is linked to one or more other cities by `:BACKBONE_TO` relationships.
 This indicates that the two cities involved in the relationship have an Internet backbone running between them.
 For this example, we mostly made up the backbones, although the backbones running to Tokyo are accurate given actual undersea cable topology.
 
@@ -33,8 +33,7 @@ CREATE (chc:City { name: "Chicago", lat: 41.833, lon: -87.617 }), (sea:City { na
 (sfo:City { name: "San Francisco", lat: 37.783, lon: -122.433 }), (tok:City { name: "Tokyo", lat: 35.667, lon: 139.75 }),
 (chc)-[:BACKBONE_TO]->(sea), (sea)-[:BACKBONE_TO]->(sfo), (sea)-[:BACKBONE_TO]->(tok), (sfo)-[:BACKBONE_TO]->(tok)
 ----
-
-//console
+//graph
 
 == Distance Computation
 
@@ -45,17 +44,15 @@ We assume that the cables connecting cities lie on https://en.wikipedia.org/wiki
 ----
 // Find the great circle distance from Tokyo to Seattle
 MATCH (c1:City { name: "Tokyo" }), (c2:City { name: "Seattle" })
-RETURN 2 * 6371 * asin(sqrt(haversin(radians(c1.lat - c2.lat)) + cos(radians(c1.lat)) * cos(radians(c2.lat)) * haversin(radians(c1.lon - c2.lon)))) AS dist
+RETURN 2 * 6371 * asin(sqrt(haversin(radians(c1.lat - c2.lat)) + cos(radians(c1.lat)) * cos(radians(c2.lat)) * haversin(radians(c1.lon - c2.lon)))) AS Distance
 ----
-
 //table
 
 In our case we would like to record the distances between cities that are connected with an Internet backbone.
-We can store this data on the ``:BACKBONE_TO` edges.
+We can store this data on the `:BACKBONE_TO` edges.
 Note that we don't have to worry about double-computing because we have specified a relationship direction, so each distance will only be computed once.
 If we left out the direction, each distance would be computed twice, although the end result would be exactly the same.
 
-//output
 [source,cypher]
 ----
 // Add distance to backbone edges
@@ -64,7 +61,6 @@ WITH 2 * 6371 * asin(sqrt(haversin(radians(c1.lat - c2.lat))+ cos(radians(c1.lat
 SET r.dist = dist
 RETURN c1.name, c2.name, r.dist
 ----
-
 //graph
 
 == Mapping Information Flow
@@ -78,10 +74,9 @@ Here is example for Tokyo and Chicago:
 ----
 // Find all unique, simple paths from one city to another
 MATCH p=(:City { name: "Tokyo" })-[:BACKBONE_TO*]-(:City { name: "Chicago" })
-WHERE all(c in nodes(p) where 1=length(filter(m in nodes(p) where m=c)))
-RETURN distinct extract(n in nodes(p) | n.name), length(p)
+WHERE all(c IN nodes(p) WHERE 1=length(filter(m IN nodes(p) WHERE m=c)))
+RETURN DISTINCT extract(n IN nodes(p) | n.name) AS Path, length(p) AS Length
 ----
-
 //table
 
 Next, we would like to find the shortest path, in terms of distance:
@@ -90,12 +85,11 @@ Next, we would like to find the shortest path, in terms of distance:
 ----
 // Find the shortest distance path from one city to another
 MATCH p=(:City { name: "Tokyo" })-[:BACKBONE_TO*]-(:City { name: "Chicago" })
-WHERE all(c in nodes(p) where 1=length(filter(m in nodes(p) where m=c)))
-WITH reduce(s = 0, hop in rels(p) | s + hop.dist) as distance, p
+WHERE all(c IN nodes(p) WHERE 1=length(filter(m IN nodes(p) WHERE m=c)))
+WITH reduce(s = 0, hop IN rels(p) | s + hop.dist) AS distance, p
 ORDER BY distance LIMIT 1
-RETURN distinct extract(n in nodes(p) | n.name), length(p), distance
+RETURN DISTINCT extract(n IN nodes(p) | n.name) AS Path, length(p) AS Length, distance AS Distance
 ----
-
 //table
 
 The next step is to change distance into an amount of time.
@@ -114,12 +108,11 @@ Note that we simply divide the distance by 300 to get milliseconds, since light 
 ----
 // Compute minimum milliseconds for information travel from one city to another
 MATCH p=(:City { name: "Tokyo" })-[:BACKBONE_TO*]-(:City { name: "Chicago" })
-WHERE all(c in nodes(p) where 1=length(filter(m in nodes(p) where m=c)))
-WITH reduce(s = 0, hop in rels(p) | s + hop.dist) as distance, p
+WHERE all(c IN nodes(p) WHERE 1=length(filter(m IN nodes(p) WHERE m=c)))
+WITH reduce(s = 0, hop IN rels(p) | s + hop.dist) AS distance, p
 ORDER BY distance LIMIT 1
-RETURN distinct extract(n in nodes(p) | n.name) as path, length(p) as pathlength, distance / 300 as ms
+RETURN DISTINCT extract(n IN nodes(p) | n.name) AS Path, length(p) AS Length, distance / 300 AS ms
 ----
-
 //table
 
 We can then generalize this query to compute the time it would take information to travel between any pair of cities.
@@ -128,13 +121,12 @@ We can then generalize this query to compute the time it would take information 
 ----
 // Compute the minimum travel time between all pairs of cities
 MATCH p=(c1:City)-[:BACKBONE_TO*]-(c2:City)
-WHERE c1.name <> c2.name and all(c in nodes(p) where 1=length(filter(m in nodes(p) where m=c)))
-WITH reduce(s = 0, hop in rels(p) | s + hop.dist) as distance, p, c1, c2
+WHERE c1.name <> c2.name and all(c IN nodes(p) WHERE 1=length(filter(m IN nodes(p) WHERE m=c)))
+WITH reduce(s = 0, hop IN rels(p) | s + hop.dist) AS distance, p, c1, c2
 ORDER BY distance
-RETURN c1.name as startcity, c2.name as endcity, collect(distance / 300)[0] as ms
+RETURN c1.name AS `Start City`, c2.name AS `End City`, collect(distance / 300)[0] AS ms
 ORDER BY c2.name
 ----
-
 //table
 
 == About
