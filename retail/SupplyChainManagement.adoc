@@ -110,9 +110,9 @@ Thanks to Cypher, this can be done very easily.
 [source,cypher]
 ----
 MATCH    (p:Product)-[r1]->(w)-[r2]->(re:Retailer)
-WITH     distinct(substring(w.name, 10)) as Num,
-         avg(r1.km + r2.km) as Average_Distance,
-         sum(r1.km + r2.km) as Total_Distance
+WITH     distinct(substring(w.name, 10)) AS Num,
+         avg(r1.km + r2.km) AS Average_Distance,
+         sum(r1.km + r2.km) AS Total_Distance
 RETURN   "Wholesaler" + Num AS Wholesaler, Total_Distance, round(Average_Distance)
 ORDER BY Total_Distance
 ----
@@ -125,7 +125,7 @@ Let's assume we want to guarantee that all fresh ingredients in our drink are no
 [source,cypher]
 ----
 MATCH chain=(rs:RawSupplierA)-[r*]->(re:Retailer)
-WITH reduce(wait = 0, s IN nodes(chain)| wait + s.time) as waitTime, chain
+WITH reduce(wait = 0, s IN nodes(chain)| wait + s.time) AS waitTime, chain
 WHERE waitTime < 8
 WITH extract(n IN nodes(chain)| n.name) AS SupplyChain, waitTime
 ORDER BY SupplyChain[1]
