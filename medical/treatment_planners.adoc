@@ -7,9 +7,10 @@ v1.0, 22-2-2015
 
 :toc:
 
-== Domain
+== Using the Wiley Treatment Plan
 
-A key aspect of treatment in the field of behavioral health involves creating a four-part treatment plan, consisting of a Problem, Goal, Objective, and Intervention.
+I am using the "Wiley treatment plan" data set as the basis of our domain model since it is one standard that is used in behavioral health.
+A key aspect of treatment in the field of behavioral health involves creating a four-part treatment plan, packaged as libraries, consisting of a Problem, Goal, Objective, and Intervention.
 
 === The Problem
 
@@ -30,45 +31,44 @@ Objectives are milestones along the way from the Problem to the Goal: ways in wh
 Interventions are tasks or activities performed as part of the plan. 
 These may be actions taken by the patient and others involved in the treatment plan.
 
-== The Model
+=== Additional Complications
 
-I am using the "Wiley treatment plan" data set as the model since it is one standard that is used in BH.
+In practice, there are several snarls in the model described above that make the implementation of the Wiley plan difficult for relational databases. 
 
-.The Domain Model
+The first is the existence of links from problem to goal to intervention restricting interventions to those related only to a specfic problem and/or goal. 
+Setting this up in an SQL database required a separate table to maintain "linkages" for each plan.
+Generating an appropriate plan requires traversing the linkage table a number of times, resulting in queries that can run from two to ten seconds depending on how many libraries are loaded.
+
+The second change is that not everyone uses the plan in the defined order of problem -> goal  -> objective  -> intervention.
+Any practical implementation of the treatment plan system has to let the user start from any point in the plan and work from there.
+For example, the user can start with goal then jump to intervention and then on to problem.
+
+Thirdly, the information (goals, objectives, interventions) is reused.
+For example, GoalA may be used for ProblemA in LibraryA but it maybe used again with other problems within the same library or span libraries.
+
+.The Wiley Treatment Plan Domain Model
 [Domain Model]
 image::https://gricker.files.wordpress.com/2015/02/wiley.png[]
 
-Plans come packaged as libraries.
-Problems have goals, objectives and interventions.
-I have left diagnosis and descriptions out since they are informational.
-In using the data set one first selects a library and then a problem.
-The options for goals, objectives or interventions are based on the library and problem selected.
-There are several deviations from this that make implementation difficult.
+== Implementing The Wiley Plan using Neo4j
 
-The first is a special linkage from problem to goal to intervention.
-This says only allow interventions related to a specific problem and goal.
-
-The second change is that not everyone uses the plan in this defined order(problem-> [goal,objective,intervention]).
-A system has to let the user start from any point and work from there.
-The user can start with goal then jump to intervention and then on to problem.
-I don't claim to understand why they want to do this, its a requirement.
-
-Thirdly, the information(goals, objectives, interventions) is reused.
-GoalA maybe used for ProblemA in LibraryA but it maybe used again with other problems within the same library or span libraries.
-
-Setting this up in an SQL database required a separate table to maintain "linkages" for each plan.
-Searching requires traversing the linkage table a number of times.
-The result are queries that can run from two to ten seconds depending on how many libraries are loaded.
-
-Implementing this in Neo4 resulted in 300 nodes and 120k relationships.
+Implementing the model in Neo4j resulted in 300 nodes and 120k relationships.
 A typical query runs in about 500 ms and `RETURN`s 500-700 values.
-Adding custom plans that deviate from the Wiley plan is easy and doesn't affect the performance.
+In addition, adding custom plans that deviate from the Wiley plan was easy and didn't affect performance.
 
-.Domain model
+.Modified Wiley Treatment Plan Domain Model
 [Domain Model]
 image::https://gricker.files.wordpress.com/2015/02/treatment-model.png[]
 
-== Identify Relationships Between Entities
+== Nodes
+
+----
+(:Library)
+(:Problem)
+(:Goal)
+----
+
+== Relationships
 
 ----
 (:Library)-[:HAS_PROBLEM]->(:Problem)-[:HAS_GOAL]->(:Goal)
@@ -76,7 +76,7 @@ image::https://gricker.files.wordpress.com/2015/02/treatment-model.png[]
 (:Problem)-[:HAS_INTERVENTION]->(:Intervenion)
 ----
 
-=== Data Model
+=== Sample Dataset
 
 The sample data set uses a one library, one problem, and four objectives, goals, and interventions.
 
@@ -115,49 +115,44 @@ CREATE (prob1)-[:HAS_INTERVENTION]->(intervention4)
 ----
 // graph
 
-
 == Use Cases
 
-== All Objectives
+== Display All Objectives
 
 [source,cypher]
 ----
 MATCH (c:Objective)
 RETURN c.Description AS Objective
 ----
-
 //table
 
- == All Problems
+== Display All Problems
 [source,cypher]
 ----
 MATCH (c:Problem)
 RETURN c.Description AS Problem
 ----
-
 //table
 
-== All Goals
+== Display All Goals
 
 [source,cypher]
 ----
 MATCH (c:Goal)
 RETURN c.Description AS Goal
 ----
-
 //table
 
-== Find interventions for all libraries and problem number 17
+== Find nterventions for all libraries and problem number 17
 
 [source,cypher]
 ----
-MATCH ( lib:Library)-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention)
+MATCH (lib:Library)-[:HAS_PROBLEM]->(st:Problem{name:'17'})-[:HAS_INTERVENTION]-(i:Intervention)
 RETURN lib.Description AS Library, st.Description AS Problem, i.Description AS Intervention;
 ----
-
 //table
 
-== All Problems,interventions and Objectives for one library
+== Display All Problems, Interventions, and Objectives for one library
 
 [source,cypher]
 ----
