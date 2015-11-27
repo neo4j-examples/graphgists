@@ -11,7 +11,7 @@ Kevin Van Gundy <kevin@neotechnology.com>
 a|image::http://i.imgur.com/5nlEMrk.jpg?1[align="center"]
 |===
 
-== (March Madness) <- [:MADE_SANE_WITH]- (Neo4j {version:2.2})
+== (March Madness)<-[:MADE_SANE_WITH]-(Neo4j {version:2.2})
 
 Download the full dataset and all snippets of the code found in this blog post at: https://github.com/kvangundy/graph-graph-baby/blob/master/marchMadnessReco
 

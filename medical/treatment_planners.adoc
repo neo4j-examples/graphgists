@@ -61,9 +61,9 @@ image::https://gricker.files.wordpress.com/2015/02/treatment-model.png[]
 ==  Identify Relationships Between Entities
 
 ----
-(:Library)  - [:HAS_PROBLEM] -> (:Problem) - [:HAS_GOAL] -> (:Goal)
-(:Problem)  - [:HAS_OBJECTIVE]   -> (:Objective)
-(:Problem)  - [:HAS_INTERVENTION] -> (:Intervenion)
+(:Library)-[:HAS_PROBLEM]->(:Problem)-[:HAS_GOAL]->(:Goal)
+(:Problem)-[:HAS_OBJECTIVE]->(:Objective)
+(:Problem)-[:HAS_INTERVENTION]->(:Intervenion)
 ----
 
 
