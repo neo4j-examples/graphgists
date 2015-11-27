@@ -38,7 +38,7 @@ We'll build the model in stages.
 Starting with the simplest part, the users and projects.
 This sub-graph can be built using the Cypher query below.
 
-//show
+//hide
 //setup
 [source,cypher]
 ----
