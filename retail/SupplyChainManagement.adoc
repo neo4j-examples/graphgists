@@ -6,10 +6,11 @@
 
 == Introduction
 
-Globalization and outsourcing were the main drivers for increasing the complexity of supply chains. At the same time, natural catastrophes as well as economic, social and ethical aspects drove the importance of having a good overview and understanding of the entire https://en.wikipedia.org/wiki/Supply_chain_management[supply chain] rather than just focusing on your direct suppliers and distributors.
+Globalization and outsourcing were the main drivers for increasing the complexity of supply chains.
+At the same time, natural catastrophes as well as economic, social and ethical aspects drove the importance of having a good overview and understanding of the entire https://en.wikipedia.org/wiki/Supply_chain_management[supply chain] rather than just focusing on your direct suppliers and distributors.
 
 In order to model and understand supply chains better, more and more sources refer to modern supply chains as supply networks.
-Therefore, it looks like a perfect environment to figure out how Neo4j can help us mastering the supply chain "network" challenge.
+Therefore, it looks like a perfect environment to figure out how Neo4j can help us mastering the supply chain network challenge.
 
 == Initial Data Model
 
@@ -28,9 +29,10 @@ image::http://yuml.me/c4f6cf8a[]
 Supply chains are inherently complex and can be modeled and clustered in several different ways.
 For the sake of understandability, we will keep it simple and neglect a lot of things, which would be essential in a real world application.
 
-= Apply it to a real world example
+=== A real-world example
 
-This supply chain could be a good example for soft drink supply chain. Every participant in the chain is a sample commodity or entity.
+This supply chain could be a good example for soft drink supply chain.
+Every participant in the chain is a sample commodity or entity.
 
 .A real world example
 image::http://yuml.me/5dd14968[]
@@ -83,11 +85,11 @@ MATCH (a)-[r]-()
 RETURN a, r
 ----
 
-= The Finished Network
+=== The Finished Network
 
 //graph
 
-== Let's add the distance between every Supplier
+=== Let's add the distance between every Supplier
 
 Adding the distance between connected nodes is based on the longitude and latitude.
 
@@ -100,11 +102,10 @@ WITH r, a, b, 2 * 6371 * asin(sqrt(haversin(radians(toInt(a.lat) - toInt(b.lat))
 SET r.km = round(dist)
 ----
 
-== Case 1: Find best Wholesaler
+==== Case: Find best Wholesaler
 
 Let's start off with a good old transportation problem: Find the Wholesaler with the least accumulated distance to every retailer.
 Thanks to Cypher, this can be done very easily.
-
 
 [source,cypher]
 ----
@@ -115,11 +116,9 @@ WITH     distinct(substring(w.name, 10)) as Num,
 RETURN   "Wholesaler" + Num AS Wholesaler, Total_Distance, round(Average_Distance)
 ORDER BY Total_Distance
 ----
-
 //table
 
-
-== Case 2.1: We want it fresh
+==== Case: We want it fresh
 
 Let's assume we want to guarantee that all fresh ingredients in our drink are not older than seven days.
 
@@ -137,7 +136,7 @@ HINT: Almost all values are based on random value generation. In case the table 
 
 //table
 
-== Case 2.2: It's time to put it togehter
+==== Case: It's time to put it togehter
 
 Let's assume: we don't only want a fresh product.
 Additionally, we want it locally.
@@ -157,10 +156,9 @@ RETURN   collect(distinct(SupplyChain[1])) AS Supplier, collect(distinct(SupplyC
 Here we want to know which RawSupplier and Supplier can guarantee this promise.
 Of course, we would have to specify the exact path through the network, in order to fulfill the promise of being local.
 
-
 // table
 
-==  Case 3: Find the Top "Sample" Supply Chain within the Supply Chain Network
+====  Case: Find the Top "Sample" Supply Chain within the Supply Chain Network
 
 We define 'sample' supply chain as having one participant for every processing step in the supply chain.
 The 'top' simply means to find the chain with best rating.
@@ -201,14 +199,13 @@ WITH     SupplyChain1, totalScore, extract(n IN nodes(chain)| n.name) AS SupplyC
 RETURN   SupplyChain2 + SupplyChain1, totalScore
 LIMIT 	1
 ----
-
 //table
 
-=== Conclusion
+== Conclusion
 
 - Due to the nature of supply chains, which is inherently a graph or network structure, graph databases are more suitable to monitor, maintain and model supply chain problems e.g. Risk Management, Bullwhip-Effect, Transport Optimization, quality assurance. . .
 - In combination with RFID chips and could computing, graph database technology offers a broad variety of applications for real-time monitoring and process improvement
 
-For ideas, critique or question feel free to contact me: www.linkedin.com/in/marcuswachsmuth
+For ideas, critique or question feel free to https://www.linkedin.com/in/marcuswachsmuth[contact me].
 
 //console
