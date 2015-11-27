@@ -11,8 +11,8 @@
 == Summary
 
 Geoptima is an application for collecting passive and active events on mobile devices running on cellular networks.
-The event logs can be used to analyze the subscribers experience of the mobile network, and help track performance problems.
-For example, does iPhone 4 perform better or worse than iPhone 5 when accessing Facebook in a specific region of the network.
+The event logs can be used to analyze the subscribers experience of the mobile network and help track performance problems.
+For example, does iPhone 4 perform better or worse than iPhone 5 when accessing Facebook in a specific region of the network?
 For more information on the product that creates this data, refer to the description of http://www.amanzitel.com/pages/show/customeriq/deviceagents/geoptima[Geoptima].
 Alternatively watch my original videos on vimeo at https://vimeo.com/17321571.
 
@@ -81,12 +81,12 @@ Only the first query above is possible on the simple graph so far, so let's try 
 === The Project
 
 Let's do a basic query. Who has access to 'Operator X' data?
-//show
+
 [source,cypher]
 ----
 MATCH (u)-[:su]->(p)
 WHERE p.name = 'Operator X'
-RETURN u.name
+RETURN u.name AS `Users with access to Operator X data`
 ----
 //table
 
@@ -99,7 +99,6 @@ We need to define rules for which data to collect.
 Let's start by adding two sets of rules, one for devices by their internal device identity number, and another based on the mobile network the device is actually running on.
 In a real network both types of rules are commonly used.
 
-//show
 [source,cypher]
 ----
 MATCH (project:Project)
@@ -120,7 +119,6 @@ CREATE
 (filter_plmn)-[:filter]->(f3),
 (filter_devices)-[:filter]->(fd)
 ----
-
 //graph
 
 Now we can ask the questions:
@@ -131,25 +129,23 @@ Now we can ask the questions:
 ==== Operators Selected
 
 How many operators will be selected during allocation of data to 'Operator X'?
-//show
+
 [source,cypher]
 ----
 MATCH (p:Project)-[:filter*]->(f:FilterPLMN)
 WHERE p.name = 'Operator X'
-RETURN f.name, f.mcc, f.mnc
+RETURN f.name AS Name, f.mcc AS mcc, f.mnc AS mnc
 ----
-
 //table
 
 If a device collects data while served by any one of the above three network operators, their data will be assocated with the project 'Operator X'.
 
 ==== Test Devices Selected
 
-//show
 [source,cypher]
 ----
 MATCH (p:Project)-[:filter*]->(f:FilterDevices)
-RETURN f.name, f.devices
+RETURN f.name AS Name, f.devices AS Devices
 ----
 
 //table
@@ -239,7 +235,6 @@ CREATE
 (f1)-[:NEXT]->(f2),
 (f2)-[:NEXT]->(f3)
 ----
-
 //graph
 
 Now the graph starts to look quite complex.
@@ -253,14 +248,12 @@ Let's try two queries on this graph:
 * How many events has Craig collected?
 * For how many days has Craig been collecting data?
 
-//show
 [source,cypher]
 ----
 MATCH (u:User)-[:USED_DEVICE]->(d)-[:ASSOC]->(ds)-[:files]->(f)-[:DATE]->(dd)
 WHERE u.name = 'Craig'
-RETURN u.name,ds.imei,ds.imsi,dd.date
+RETURN u.name AS Name ,ds.imei AS imei,ds.imsi AS imsi,dd.date AS Date
 ----
-
 //table
 
 The above query answers the second question.
@@ -273,23 +266,20 @@ Rather we can use the count() function like:
 ----
 MATCH (u:User)-[:USED_DEVICE]->(d)-[:ASSOC]->(ds)-[:files]->(f)-[:DATE]->(dd)
 WHERE u.name = 'Craig'
-RETURN count(dd.date)
+RETURN count(dd.date) AS `# Days`
 ----
-
 //table
 
 Now we can see that we have 9 days of data collected.
 
 Since we now know how to use functions like count(), let's try another function sum() for adding the event properties of all event files together:
 
-//show
 [source,cypher]
 ----
 MATCH (u:User)-[:USED_DEVICE]->(d)-[:ASSOC]->(ds)-[:files]->(f)-[:DATE]->(dd)-[:JSON]->(json)
 WHERE u.name = 'Craig'
-RETURN count(json.events),sum(json.events),sum(json.events)/count(json.events),min(json.events),max(json.events)
+RETURN count(json.events) AS `# Events`,sum(json.events) AS `Total Events`,sum(json.events)/count(json.events) AS `Avg Events/File`,min(json.events) AS `Min Events/File`,max(json.events) AS `Maximum Events/File`
 ----
-
 //table
 
 So we can clearly see that we collected 1005 events in three files with an average of 335 events per file.
@@ -299,7 +289,5 @@ So we can clearly see that we collected 1005 events in three files with an avera
 The above example was produced as part of some internal documentation while brainstorming on possible data models for an upgrade of one of the data collection components of the Geoptima data collection system by http://www.amanzitel.com[AmanziTel].
 This is not an exact model of the actual data collection system in use, but does represent some of the decision logic being done by the real system.
 The use of Neo4j as a database for this has facilitated both the data modeling aspect of product management, as well as the ease of development of the actual products.
-
-=== Resources
 
 //console
