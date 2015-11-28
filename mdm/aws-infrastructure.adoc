@@ -5,18 +5,22 @@
 
 :toc:
 
+== Introduction
+
 Amazon Web Services global infrastructure is steadily expanding and now serves thousands of customers in over 190 countries.
 Certain services are only available in some regions and compute prices vary across the globe.
 Wouldn't it be nice if you could slice and dice through the entire AWS domain of services, data centres and prices all in one spot to optimise your AWS bill?
 Enter the *AWS Global Infrastructure Graph*!
 
-At the time of writing the AWS global infrastructure graph consists of  5 continents, with 10 regions, and 21 availability zones, offering 32 services. The data shown here is current as of 21 January 2014.
+At the time of writing (January 2014) the AWS global infrastructure graph consists of 5 continents, with 10 regions, and 21 availability zones, offering 32 services.
 
-**disclaimer
+=== Disclaimer
+
 AWS consumers beware!
-The prices and services listed in the graph are correct as of January 21st 2014, please refer to the AWS price calculator for the latest prices and service offering's per region -  http://calculator.s3.amazonaws.com/calc5.html **
+The prices and services listed in the graph are correct as of January 21st 2014. 
+Please refer to the http://calculator.s3.amazonaws.com/calc5.html[AWS price calculator] for the latest prices and service offerings per region.
 
-feedback to aidancasey@gmail.com  | @AIDANJCASEY  |  http://acaseyblog.wordpress.com
+feedback to aidancasey@gmail.com | https://twitter.com/@AIDANJCASEY[@AIDANJCASEY] | http://acaseyblog.wordpress.com
 
 == Setup
 
@@ -31,16 +35,16 @@ CREATE (continent4:Continent{name:'Europe'})
 CREATE (continent5:Continent{name:'Australia'})
 
 
-CREATE (region1:Region{name:'N. Virginia',  launched:2006})
-CREATE (region2:Region{name:'Oregon',  launched:2011})
-CREATE (region3:Region{name:'N. California',  launched:2009})
-CREATE (region4:Region{name:'Ireland',  launched:2007})
-CREATE (region5:Region{name:'Singapore',  launched:2010})
-CREATE (region6:Region{name:'Tokyo',  launched:2011})
-CREATE (region7:Region{name:'Sydney',  launched:2012})
-CREATE (region8:Region{name:'Sao Paulo',  launched:2011})
-CREATE (region9:Region{name:'GovCloud',  launched:2011})
-CREATE (region10:Region{name:'Beijing',  launched:2014})
+CREATE (region1:Region{name:'N. Virginia', launched:2006})
+CREATE (region2:Region{name:'Oregon', launched:2011})
+CREATE (region3:Region{name:'N. California', launched:2009})
+CREATE (region4:Region{name:'Ireland', launched:2007})
+CREATE (region5:Region{name:'Singapore', launched:2010})
+CREATE (region6:Region{name:'Tokyo', launched:2011})
+CREATE (region7:Region{name:'Sydney', launched:2012})
+CREATE (region8:Region{name:'Sao Paulo', launched:2011})
+CREATE (region9:Region{name:'GovCloud', launched:2011})
+CREATE (region10:Region{name:'Beijing', launched:2014})
 
 CREATE (availabilityzone1:AvailabilityZone{name:'eu-west-1a'})
 CREATE (availabilityzone2:AvailabilityZone{name:'eu-west-1b'})
@@ -385,11 +389,11 @@ CREATE (region10)-[:OFFERS_SERVICE]->(service19)
 CREATE (region10)-[:OFFERS_SERVICE]->(service21)
 CREATE (region10)-[:OFFERS_SERVICE]->(service26)
 
-CREATE (instance1:EC2InstanceType{name:'m1.small', family:'general purpose',  memory:1.7 })-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance1:EC2InstanceType{name:'m1.small', family:'general purpose', memory:1.7 })-[:IS_EC2_INSTANCE_TYPE]->(service1)
 CREATE (instance2:EC2InstanceType{name:'m1.medium', family:'general purpose', memory:3.75})-[:IS_EC2_INSTANCE_TYPE]->(service1)
 CREATE (instance3:EC2InstanceType{name:'m1.large', family:'general purpose', memory:7.5})-[:IS_EC2_INSTANCE_TYPE]->(service1)
 CREATE (instance4:EC2InstanceType{name:'m1.xlarge', family:'general purpose', memory:15})-[:IS_EC2_INSTANCE_TYPE]->(service1)
-CREATE (instance5:EC2InstanceType{name:'m3.xlarge', family:'general purpose',  memory:15 })-[:IS_EC2_INSTANCE_TYPE]->(service1)
+CREATE (instance5:EC2InstanceType{name:'m3.xlarge', family:'general purpose', memory:15 })-[:IS_EC2_INSTANCE_TYPE]->(service1)
 CREATE (instance6:EC2InstanceType{name:'m3.2xlarge', family:'general purpose', memory:30})-[:IS_EC2_INSTANCE_TYPE]->(service1)
 CREATE (instance7:EC2InstanceType{name:'c1.medium', family:'Compute optimized', memory:1.7})-[:IS_EC2_INSTANCE_TYPE]->(service1)
 CREATE (instance8:EC2InstanceType{name:'c1.xlarge', family:'Compute optimized', memory:7})-[:IS_EC2_INSTANCE_TYPE]->(service1)
@@ -417,7 +421,7 @@ CREATE (instance27:EC2InstanceType{name:'g2.2xlarge', family:'GPU instances', me
 //instance 9
 CREATE (price1:Price{name:'PriceBook', desc:'region 1 price book', cost_per_hour:0.150})
 CREATE (price2:Price{name:'PriceBook', desc:'region 2 pricebook', cost_per_hour:0.150})
-CREATE (price3:Price{name:'PriceBook', desc:'region 3 pricebook',  cost_per_hour:0.171})
+CREATE (price3:Price{name:'PriceBook', desc:'region 3 pricebook', cost_per_hour:0.171})
 
 CREATE (region1)-[:CHARGES]->(price1)-[:FOR_INSTANCE]->instance9
 CREATE (region2)-[:CHARGES]->(price2)-[:FOR_INSTANCE]->instance9
@@ -431,7 +435,7 @@ CREATE (region1)-[:CHARGES]->(price4)-[:FOR_INSTANCE]->instance1
 //instance 10
 CREATE (price5:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.300})
 CREATE (price6:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.300})
-CREATE (price7:Price{name:'PriceBook', desc:'foo',  cost_per_hour:0.342})
+CREATE (price7:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.342})
 
 CREATE (region1)-[:CHARGES]->(price5)-[:FOR_INSTANCE]->instance10
 CREATE (region2)-[:CHARGES]->(price6)-[:FOR_INSTANCE]->instance10
@@ -441,7 +445,7 @@ CREATE (region3)-[:CHARGES]->(price7)-[:FOR_INSTANCE]->instance10
 //instance 11
 CREATE (price8:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.600})
 CREATE (price9:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.600})
-CREATE (price10:Price{name:'PriceBook', desc:'foo',  cost_per_hour:0.683})
+CREATE (price10:Price{name:'PriceBook', desc:'foo', cost_per_hour:0.683})
 
 CREATE (region9)-[:CHARGES]->(price8)-[:FOR_INSTANCE]->instance11
 CREATE (region2)-[:CHARGES]->(price9)-[:FOR_INSTANCE]->instance11
@@ -450,7 +454,7 @@ CREATE (region3)-[:CHARGES]->(price10)-[:FOR_INSTANCE]->instance11
 //instance 12
 CREATE (price11:Price{name:'PriceBook', desc:'foo', cost_per_hour:1.200})
 CREATE (price12:Price{name:'PriceBook', desc:'foo', cost_per_hour:1.200})
-CREATE (price13:Price{name:'PriceBook', desc:'foo',  cost_per_hour:1.366})
+CREATE (price13:Price{name:'PriceBook', desc:'foo', cost_per_hour:1.366})
 
 CREATE (region1)-[:CHARGES]->(price11)-[:FOR_INSTANCE]->instance12
 CREATE (region2)-[:CHARGES]->(price12)-[:FOR_INSTANCE]->instance12
@@ -459,34 +463,34 @@ CREATE (region3)-[:CHARGES]->(price13)-[:FOR_INSTANCE]->instance12
 //instance 13
 CREATE (price14:Price{name:'PriceBook', desc:'foo', cost_per_hour:2.400})
 CREATE (price15:Price{name:'PriceBook', desc:'foo', cost_per_hour:2.400})
-CREATE (price16:Price{name:'PriceBook', desc:'foo',  cost_per_hour:2.732})
+CREATE (price16:Price{name:'PriceBook', desc:'foo', cost_per_hour:2.732})
 
 CREATE (region1)-[:CHARGES]->(price14)-[:FOR_INSTANCE]->instance13
 CREATE (region2)-[:CHARGES]->(price15)-[:FOR_INSTANCE]->instance13
 CREATE (region3)-[:CHARGES]->(price16)-[:FOR_INSTANCE]->instance13
 ----
 
-==  The Graph
-//graph1
+== The Graph
+//graph
 
-== The Domain ==
+== The Domain
 
 .The Domain Model
 image::https://github.com/aidancasey/AWSGraphComp/blob/master/aws.jpg?raw=true[Domain Model]
 
-== Some Use Cases
+== Use Cases
 
-=== What is the cheapest compute optomised EC2 instance anywhere in North America? ==
+=== What is the cheapest compute optomised EC2 instance anywhere in North America?
 
 [source,cypher]
 ----
 MATCH (region)-[:IS_LOCATED_IN]->(Continent{name:'North America'})
-with region as usa_regions
+WITH region AS usa_regions
 MATCH usa_regions-[:CHARGES]->(price)-[:FOR_INSTANCE]->(EC2InstanceType{family:'Compute optimized'})
-RETURN usa_regions.name as aws_region, min(price.cost_per_hour) as hourly_cost, EC2InstanceType.name as instance_type
-ORDER BY hourly_cost LIMIT 1;
+RETURN usa_regions.name AS `AWS Region`, min(price.cost_per_hour) AS `Hourly Cost`, EC2InstanceType.name AS `Instance Type`
+ORDER BY min(price.cost_per_hour) LIMIT 1;
 ----
-//table1
+//table
 
 == Which AWS region has the most availability zones?
 
@@ -494,20 +498,18 @@ ORDER BY hourly_cost LIMIT 1;
 ----
 MATCH (region)-[:HAS_ISOLATED]->(AvailabilityZone)
 RETURN region.name AS `AWS Region`, count(AvailabilityZone) AS `Count of Availability Zones`
-ORDER BY count_availibility_zones DESC LIMIT 1
+ORDER BY count(AvailabilityZone) DESC LIMIT 1
 ----
-
-//table2
+//table
 
 == What are the AWS regions that offer the service AWS CloudTrail?
 
 [source,cypher]
 ----
 MATCH (region)-[:OFFERS_SERVICE]->(Service{name:'AWS CloudTrail'})
-RETURN region.name as aws_region
+RETURN region.name AS `AWS Region`
 ----
-
-//table3
+//table
 
 == Which EC2 instance type has the most available memory?
 
@@ -515,12 +517,13 @@ RETURN region.name as aws_region
 ----
 MATCH (ec2:EC2InstanceType)
 WHERE HAS(ec2.memory)
-RETURN ec2.memory as memory_GiB, ec2.name ORDER BY ec2.memory DESC LIMIT 1
+RETURN ec2.memory AS `Memory GiB`, ec2.name AS `EC2`
+ORDER BY ec2.memory DESC 
+LIMIT 1
 ----
-
-//table3
+//table
 
 Created by Aidan Casey
-twitter: @AIDANJCASEY
+twitter: https://twitter.com/@AIDANJCASEY[@AIDANJCASEY]
 
 //console
