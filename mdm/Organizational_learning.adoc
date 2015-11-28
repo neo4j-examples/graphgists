@@ -165,7 +165,7 @@ CREATE (person1)-[:COMPLETED {acquiredOn: "2013-11-15"}]->(we1)
 == The graph
 [source,cypher]
 ----
-match n return n
+MATCH n RETURN n
 ----
 //graph
 
@@ -176,7 +176,7 @@ match n return n
 [source,cypher]
 ----
 MATCH (c:Certification {name:"Cert3"})<-[:IS_PREREQUISITE]-(prereq)
-RETURN prereq.name
+RETURN prereq.name AS `Prerequisite`
 ----
 //table
 
@@ -187,8 +187,9 @@ RETURN prereq.name
 MATCH p=(c:Certification {name:"Cert1"})-[lp:NEXT_LEARNING*]->(li)-[:FULFILLED_BY]->(f)
 WITH head(lp).path as startPath,lp,p,f
 WHERE ALL (x in lp where x.path=startPath)
-RETURN p
+RETURN p AS `Learning Path`
 ----
+//graph
 //table
 
 .Learning paths for Cert1
@@ -203,9 +204,11 @@ WITH (last(nodes(p))) as lastItem,li,p,lp
 WHERE ((li)-[:FULFILLED_BY]->(:Web)) and (not(lastItem)-[:NEXT_LEARNING]->())
 WITH head(lp).path as startPath,lp,p
 WHERE ALL (x in lp where x.path=startPath)
-RETURN p
+RETURN p AS `Learning Path`
 ----
+//graph
 //table
+
 
 .Attain Cert1 with only web-based courses
 image::https://dl.dropboxusercontent.com/u/15330610/paths2.png[]
@@ -219,7 +222,7 @@ WITH cert
 MATCH (person:Person {name:"Person1"})
 WITH cert,person
 WHERE NOT(person-[:HAS_CERTIFICATION]->(cert))
-RETURN cert.name as missingCert
+RETURN cert.name AS `Missing Certification`
 ----
 //table
 
@@ -229,7 +232,7 @@ RETURN cert.name as missingCert
 ----
 MATCH (person:Person)-[:HOLDS_POSITION]->(position:Position)-[:REQUIRES]->(cert)
 WHERE NOT((person)-[:HAS_CERTIFICATION]->(cert))
-RETURN person.name, COLLECT(cert.name) as missingCerts
+RETURN person.name AS `Person`, COLLECT(cert.name) AS `Missing Certifications`
 ----
 //table
 
@@ -238,12 +241,12 @@ RETURN person.name, COLLECT(cert.name) as missingCerts
 [source,cypher]
 ----
 MATCH (person:Person)-[:HAS_CERTIFICATION]->(cert)
-WITH COLLECT(cert) as heldCerts,person
+WITH COLLECT(cert) AS heldCerts,person
 MATCH (position:Position)-[:REQUIRES]->(requiredCert)
 WHERE NOT((person)-[:HOLDS_POSITION]->(position))
-WITH COLLECT(requiredCert) as requiredCerts,heldCerts,position
-WHERE ALL(rc in requiredCerts where rc in heldCerts)
-RETURN position.name
+WITH COLLECT(requiredCert) AS requiredCerts,heldCerts,position
+WHERE ALL(rc IN requiredCerts WHERE rc IN heldCerts)
+RETURN position.name AS `Position`
 ----
 //table
 
