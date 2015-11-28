@@ -15,21 +15,27 @@ A key aspect of treatment in the field of behavioral health involves creating a 
 === The Problem
 
 The Problem states, in general terms, what the patient is suffering with.
-For example, this might be Depression, Low self-Esteem, Substance Abuse, or something else.
+For example, the patient may complain of becoming depressed every Autumn, an drinking problem, or excessive hand washing. 
+
+=== The Diagnosis 
+
+As as result of an evaluation a patient may have already received a Diagnosis, such as generalized anxiety, substance abuse, borderline personality, or other disorders.
+However, for purposes of illustraing how GraphGist can work without a node, we're omitting the Diagnoses from our dataset. 
 
 === The Goal
 
-The Goal is the end result.
-For example, a patient might have the goal of "Demonstrate respect and regard for self and others".
+The Goal is an observable, achievable, and measureable end result.
+For example, an obsessive-complusive patient might have goals of "Reducing anxiety and eliminating uneccessary rituals".
 
 === The Objectives
 
-Objectives are milestones along the way from the Problem to the Goal: ways in which the patient is going to improve.
+Objectives are milestones along the way from the Problem to the Goal: ways in which the patient is going to improve, such as ""Identify negative patters of thought, evaluate the validity of these thoughts and develop adaptive reponses to change said patterns."
 
 === The Intervention
 
 Interventions are tasks or activities performed as part of the plan. 
-These may be actions taken by the patient and others involved in the treatment plan.
+In the case of our obsessive-compulsive patient, desensitization therapy in conjunction with a medication regimen might be pursued.
+These may be actions taken by the patient and others involved in the treatment plan. 
 
 === Additional Complications
 
@@ -143,7 +149,7 @@ RETURN c.Description AS Goal
 ----
 //table
 
-== Find nterventions for all libraries and problem number 17
+== Find Interventions for all libraries and problem number 17
 
 [source,cypher]
 ----
