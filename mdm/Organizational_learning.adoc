@@ -76,10 +76,7 @@ This makes it easier to query for an entire path starting at the certification.
 
 This evolved from a model where a the following is true:
 
-[source,cypher]
-----
-(certification)-[:HAS_LEARNING_PATH]->(learningItem)-[:NEXT]->(learningItem)-[:NEXT]->(learningItem)
-----
+ (certification)-[:HAS_LEARNING_PATH]->(learningItem)-[:NEXT]->(learningItem)-[:NEXT]->(learningItem)
 
 Two relations added no immediate value and more complexity to the kinds of queries targeted, so it was remodeled as a single relation.
 
@@ -191,6 +188,7 @@ RETURN p AS `Learning Path`
 ----
 //graph
 //table
+//graph
 
 .Learning paths for Cert1
 image::https://dl.dropboxusercontent.com/u/15330610/paths1.png[]
