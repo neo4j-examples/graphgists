@@ -12,7 +12,7 @@ Certain services are only available in some regions and compute prices vary acro
 Wouldn't it be nice if you could slice and dice through the entire AWS domain of services, data centres and prices all in one spot to optimise your AWS bill?
 Enter the *AWS Global Infrastructure Graph*!
 
-At the time of writing (January 2014) the AWS global infrastructure graph consists of 5 continents, with 10 regions, and 21 availability zones, offering 32 services.
+At the time of writing (January 2014) the AWS global infrastructure graph consists of 5 continents with 10 regions, and 21 availability zones offering 32 services.
 
 === Disclaimer
 
