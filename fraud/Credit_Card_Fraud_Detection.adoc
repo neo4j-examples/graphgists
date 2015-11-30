@@ -41,11 +41,13 @@ By representing transactions as a graph, we can look for the common denominator 
 
 == Credit Card Fraud Graph Data Model
 
-A series of credit card transactions can be represented as a graph. Each transaction involves two nodes: a person (the customer) and a merchant.
+A series of credit card transactions can be represented as a graph.
+Each transaction involves two nodes: a person (the customer) and a merchant.
 The nodes are linked by the transaction itself.
 A transaction has a date and a status.
 
-Legitimate transactions have the status "Undisputed". Fraudulent transactions are "Disputed".
+Legitimate transactions have the status "Undisputed".
+Fraudulent transactions are "Disputed".
 
 The graph data model below represents how the data looks as a graph.
 
@@ -158,7 +160,6 @@ CREATE (Madison)-[:HAS_BOUGHT_AT {amount:'1816', time:'12/20/2014', status:'Disp
 
 RETURN *
 ----
-
 //graph
 
 You can download the complete dataset here: https://www.dropbox.com/s/4uij4gs2iyva5bd/credit%20card%20fraud.zip
@@ -171,10 +172,9 @@ We collect all the fraudulent transactions.
 ----
 MATCH (victim:Person)-[r:HAS_BOUGHT_AT]->(merchant)
 WHERE r.status = "Disputed"
-RETURN victim.name as customer_name, merchant.name as store_name, r.amount as amount, r.time as transaction_time
-ORDER BY transaction_time DESC
+RETURN victim.name AS `Customer Name`, merchant.name AS `Store Name`, r.amount AS Amount, r.time AS `Transaction Time`
+ORDER BY `Transaction Time` DESC
 ----
-
 //output
 //table
 
@@ -195,10 +195,9 @@ WHERE r.status = "Disputed"
 MATCH victim-[t:HAS_BOUGHT_AT]->(othermerchants)
 WHERE t.status = "Undisputed" AND t.time < r.time
 WITH victim, othermerchants, t ORDER BY t.time DESC
-RETURN victim.name as customer_name, othermerchants.name as store_name, t.amount as amount, t.time as transaction_time
-ORDER BY transaction_time DESC
+RETURN victim.name AS `Customer Name`, othermerchants.name AS `Store Name`, t.amount AS Amount, t.time AS `Transaction Time`
+ORDER BY `Transaction Time` DESC
 ----
-
 //output
 //table
 
@@ -215,10 +214,9 @@ WHERE r.status = "Disputed"
 MATCH victim-[t:HAS_BOUGHT_AT]->(othermerchants)
 WHERE t.status = "Undisputed" AND t.time < r.time
 WITH victim, othermerchants, t ORDER BY t.time DESC
-RETURN DISTINCT othermerchants.name as suspicious_store, count(DISTINCT t) as count, collect(DISTINCT victim.name) as victims
-ORDER BY count DESC
+RETURN DISTINCT othermerchants.name AS `Suspicious Store`, count(DISTINCT t) AS Count, collect(DISTINCT victim.name) AS Victims
+ORDER BY Count DESC
 ----
-
 //output
 //table
 
