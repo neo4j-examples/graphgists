@@ -6,9 +6,8 @@
 :toc:
 
 == Introduction
-.brains!
+.Brains!
 image::http://media.giphy.com/media/ColbXXtLhOz0k/giphy.gif[]
-
 
 How does a zombie apocalypse spread?
 If you have ever seen any zombie movies you know the are many causes but the spread is always the same.
@@ -21,7 +20,8 @@ The outcome is pretty impressive looking.
 image::http://3.bp.blogspot.com/-pmVdg3O5nEc/Ty1iRyVSaPI/AAAAAAAABfg/2P623DjBR94/s1600/Sim_30_608_393_smoothed.gif[]
 
 There are some quasi-legitimate http://www.hhs.gov/idealab/projects-item/preparing-for-the-zombie-apocalypse/[resources] for how to protect yourself produced by the HHS.
-This means that the spread is not guaranteed to infect everything. Some places can be saved.
+This means that the spread is not guaranteed to infect everything.
+Some places can be saved.
 How would this progression play out.
 
 If a given state were to come down with a zombie infection how would that impact the bordering states.
@@ -315,7 +315,8 @@ These are the borders were a the zombie infection can spread from one state to t
 
 The logic works like this. States border other states.
 To start a set of states are randomly chosen to become infected.
-Once a state becomes infected bordering states will feel the impact. Each state bordering an infected state has an even chance of becoming infected or immune.
+Once a state becomes infected bordering states will feel the impact.
+Each state bordering an infected state has an even chance of becoming infected or immune.
 This happens for every border as state has with and infected state.
 Once all of the borders have been accounted for the day is over.
 After a bunch of random runs it appears that the outcome is fairly apparent after about five days.
@@ -323,15 +324,15 @@ After a bunch of random runs it appears that the outcome is fairly apparent afte
 .Zombie Schema
 image::http://darrkj.github.io/images/zombie_schema.png[]
 
-
-== Start the Zombie Apocalypse
+== Day One: Start the Zombie Apocalypse
 
 [source,cypher]
 ----
 MATCH p = n foreach(i IN nodes(p) | SET n.infect = rand() > .94);
 
 MATCH n WHERE n.infect = FALSE REMOVE n.infect;
-MATCH n WHERE n.infect = TRUE REMOVE n:State SET n:Infected return collect(n.name) as Infected_States;
+MATCH n WHERE n.infect = TRUE REMOVE n:State SET n:Infected
+RETURN collect(n.name) AS `Infected States`, COUNT(n) AS `Total Infected`;
 ----
 
 .Breaking News
@@ -343,7 +344,7 @@ We will keep you up to date on breaking news in what is now being dubbed 'The Zo
 //table
 //graph
 
-== Day two the Zombie Apocalypse
+== Day Two: The Zombie Apocalypse
 
 How has the zombie infection spread?
 You can see the following states have become infected while others have been able to fend it off.
@@ -351,49 +352,80 @@ You can see the following states have become infected while others have been abl
 [source,cypher]
 ----
 MATCH p = (n:Infected)-[r]->(m:State)
-foreach(i IN nodes(p) | set m.infect = rand() > .5);
+FOREACH(i IN nodes(p) | SET m.infect = rand() > .5);
 
-MATCH n WHERE n.infect = FALSE REMOVE n:State SET n:Immune;
-MATCH n WHERE n.infect = TRUE REMOVE n:State SET n:Infected return collect(n.name) as Infected_States;
+MATCH (n {infect:FALSE}) 
+WHERE n.infect = FALSE
+REMOVE n:State
+SET n:Immune;
+
+MATCH (n)
+WHERE n.infect = TRUE
+REMOVE n:State
+SET n:Infected
+RETURN COLLECT(n.name) AS `Infected States`, COUNT(n) AS `Total Infected`;
 ----
 //table
 //graph
 
-== Day three the Zombie Apocalypse
+== Day Three: The Zombie Apocalypse
 
 [source,cypher]
 ----
 MATCH p = (n:Infected)-[r]->(m:State)
-foreach(i IN nodes(p) | set m.infect = rand() > .5);
+FOREACH(i IN nodes(p) | SET m.infect = rand() > .5);
 
-MATCH n WHERE n.infect = FALSE REMOVE n:State SET n:Immune;
-MATCH n WHERE n.infect = TRUE REMOVE n:State SET n:Infected return collect(n.name) as Infected_States;
+MATCH (n)
+WHERE n.infect = FALSE
+REMOVE n:State SET n:Immune;
+
+MATCH (n) 
+WHERE n.infect = TRUE
+REMOVE n:State
+SET n:Infected
+RETURN COLLECT(n.name) AS `Infected States`, COUNT(n) AS `Total Infected`;
 ----
 //table
 //graph
 
-== Day four the Zombie Apocalypse
+== Day Four: The Zombie Apocalypse
 
 [source,cypher]
 ----
 MATCH p = (n:Infected)-[r]->(m:State)
-foreach(i IN nodes(p) | set m.infect = rand() > .5);
+FOREACH(i IN nodes(p) | set m.infect = rand() > .5);
 
-MATCH n WHERE n.infect = FALSE REMOVE n:State SET n:Immune;
-MATCH n WHERE n.infect = TRUE REMOVE n:State SET n:Infected return collect(n.name) as Infected_States;
+MATCH (n)
+WHERE n.infect = FALSE
+REMOVE n:State
+SET n:Immune;
+
+MATCH (n)
+WHERE n.infect = TRUE
+REMOVE n:State
+SET n:Infected
+RETURN COLLECT(n.name) AS `Infected States`, COUNT(n) AS `Total Infected`;
 ----
 //table
 //graph
 
-== Day five the Zombie Apocalypse
+== Day Five: The Zombie Apocalypse
 
 [source,cypher]
 ----
 MATCH p = (n:Infected)-[r]->(m:State)
-foreach(i IN nodes(p) | set m.infect = rand() > .5);
+FOREACH(i IN nodes(p) | set m.infect = rand() > .5);
 
-MATCH n WHERE n.infect = FALSE REMOVE n:State SET n:Immune;
-MATCH n WHERE n.infect = TRUE REMOVE n:State SET n:Infected return collect(n.name) as Infected_States;
+MATCH (n)
+WHERE n.infect = FALSE
+REMOVE n:State
+SET n:Immune;
+
+MATCH (n)
+WHERE n.infect = TRUE
+REMOVE n:State
+SET n:Infected
+RETURN COLLECT(n.name) AS `Infected States`, COUNT(n) AS `Total Infected`;
 ----
 //table
 //graph
