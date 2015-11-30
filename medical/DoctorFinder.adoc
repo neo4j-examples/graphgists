@@ -18,30 +18,30 @@ image::http://img15.hostingpics.net/pics/800451GraphGist.png[DoctorFinder! model
 [source,cypher]
 -------
 CREATE
-(_6:DrugClass  {name:"Bronchodilators"}),
-(_7:DrugClass  {name:"Corticosteroids"}),
-(_8:DrugClass  {name:"Xanthine"}),
-(_9:Drug  {name:"Salbutamol"}),
-(_10:Drug  {name:"Terbutaline"}),
-(_11:Drug  {name:"Bambuterol"}),
-(_12:Drug  {name:"Formoterol"}),
-(_13:Drug  {name:"Salmeterol"}),
-(_14:Drug  {name:"Beclometasone"}),
-(_15:Drug  {name:"Budesonide"}),
-(_16:Drug  {name:"Ciclesonide"}),
-(_17:Drug  {name:"Fluticasone"}),
-(_18:Drug  {name:"Mometasone"}),
-(_19:Drug  {name:"Betametasone"}),
-(_20:Drug  {name:"Prednisolone"}),
-(_21:Drug  {name:"Dilatrane"}),
-(_22:Allergy  {name:"Hypersensitivity to Betametasone"}),
-(_23:Pathology  {name:"Asthma"}),
-(_24:Symptom  {name:"Wheezing"}),
-(_25:Symptom  {name:"Chest tightness"}),
-(_26:Symptom  {name:"Cough"}),
-(_27:Doctor  {latitude:48.8573,longitude:2.35685,name:"Irving Matrix"}),
-(_28:Doctor  {latitude:46.83144,longitude:-71.28454,name:"Jack McKee"}),
-(_29:Doctor  {latitude:48.86982,longitude:2.32503,name:"Michaela Quinn"}),
+(_6:DrugClass {name:"Bronchodilators"}),
+(_7:DrugClass {name:"Corticosteroids"}),
+(_8:DrugClass {name:"Xanthine"}),
+(_9:Drug {name:"Salbutamol"}),
+(_10:Drug {name:"Terbutaline"}),
+(_11:Drug {name:"Bambuterol"}),
+(_12:Drug {name:"Formoterol"}),
+(_13:Drug {name:"Salmeterol"}),
+(_14:Drug {name:"Beclometasone"}),
+(_15:Drug {name:"Budesonide"}),
+(_16:Drug {name:"Ciclesonide"}),
+(_17:Drug {name:"Fluticasone"}),
+(_18:Drug {name:"Mometasone"}),
+(_19:Drug {name:"Betametasone"}),
+(_20:Drug {name:"Prednisolone"}),
+(_21:Drug {name:"Dilatrane"}),
+(_22:Allergy {name:"Hypersensitivity to Betametasone"}),
+(_23:Pathology {name:"Asthma"}),
+(_24:Symptom {name:"Wheezing"}),
+(_25:Symptom {name:"Chest tightness"}),
+(_26:Symptom {name:"Cough"}),
+(_27:Doctor {latitude:48.8573,longitude:2.35685,name:"Irving Matrix"}),
+(_28:Doctor {latitude:46.83144,longitude:-71.28454,name:"Jack McKee"}),
+(_29:Doctor {latitude:48.86982,longitude:2.32503,name:"Michaela Quinn"}),
 (_30:DoctorSpecialization {name:"Physician"}),
 (_31:DoctorSpecialization {name:"Angiologist"}),
 (_6)-[: {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
@@ -82,7 +82,6 @@ From VIDAL with ♥ (`Suzanne`, `Nicolas`, `Édouard`, `Marouane`, `Sébastian`,
 
 > **As** an application user, +
 > **When** I start typing my symptoms
->
 > **Then** matching symptoms are returned in alphabetical order.
 
 ==== Example
@@ -109,10 +108,6 @@ Subsequent queries will assume symptom names were resolved by this first sub-que
 >
 > **Then** adequate drugs are returned, grouped by their therapeutic class.
 
-> An adequate drug cures illnesses that can appear with my symptoms, +
-> Whose dose does not provoke an allergy I suffer from +
-> And which is indicated for my age.
-
 ==== Example
 
 Current user is a 35-year old man, manifesting **wheezing** and **chest tightness**, suffering from **hypersensitivity to Betametasone** allergy.
@@ -121,7 +116,7 @@ We expect all drugs of class `Bronchodilators` (`Betametasone` drug excluded, be
 
 [source,cypher]
 ----
-MATCH 		(patho:Pathology)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:Symptom)
+MATCH (patho:Pathology)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:Symptom)
 WHERE symptoms.name IN ['Chest tightness', 'Wheezing']
 WITH patho
 
@@ -143,15 +138,12 @@ RETURN DrugClass.name AS `Therapeutic class`, COLLECT(DISTINCT drug.name) AS `Dr
 >
 > **Then** the doctors who (ahah!) can prescribe adequate drugs are returned with these drugs, ordered by proximity.
 
-> See definition above for what 'adequate drugs' mean.
-
-> If drugs can be purchased without prescription, the mention 'No doctor required' for these drugs should be returned, with a distance to user home of **0**.
+See definition above for what 'adequate drugs' mean.
+If drugs can be purchased without prescription, the mention 'No doctor required' for these drugs should be returned, with a distance to user home of **0**.
 
 ==== Example
 
-Current user is a 19-year old woman, manifesting **cough**,
-suffering from hypersensitivity to Betametasone allergy
-and living at '14, rue de Bruxelles 75009 PARIS, FRANCE' (latitude:48.88344, longitude:2.33180).
+Current user is a 19-year old woman, manifesting **cough**, suffering from hypersensitivity to Betametasone allergy and living at '14, rue de Bruxelles 75009 PARIS, FRANCE' (latitude:48.88344, longitude:2.33180).
 
 We expect all angiologists to be returned as the drugs they can prescribe can cure illnesses related to the user symptom.
 
@@ -159,7 +151,7 @@ Moreover, drugs of class `Xanthine` do not require a prescription and they can c
 
 [source,cypher]
 ----
-MATCH 		(patho:Pathology)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:Symptom)
+MATCH (patho:Pathology)-[:MAY_MANIFEST_SYMPTOMS]->(symptoms:Symptom)
 WHERE symptoms.name IN ['Cough']
 WITH patho
 
@@ -176,7 +168,6 @@ OPTIONAL MATCH	(doctor:Doctor)-->(spe:DoctorSpecialization)-[:CAN_PRESCRIBE]->(D
 RETURN COALESCE(doctor.name + ' (' + spe.name + ')', 'No doctor required') AS `Doctor`, COLLECT(DISTINCT drug.name) AS `Drugs for your symptoms`, 2 * 6371 * asin(sqrt(haversin(radians(48.88344 - COALESCE(doctor.latitude,48.88344))) + cos(radians(48.88344)) * cos(radians(COALESCE(doctor.latitude,90)))* haversin(radians(2.33180 - COALESCE(doctor.longitude,2.33180))))) AS `Distance to home (km)`
 ORDER BY `Distance to home (km)` ASC;
 ----
-
 //table
 
 As obfuscated as it looks, the distance computation is just a null-safe variant of the haversin formula explained in Cypher manual (indeed, there are drugs that do not require a doctor prescription).
