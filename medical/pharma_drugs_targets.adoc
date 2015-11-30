@@ -30,7 +30,6 @@ The sample data set uses a pharmaceutical portfolio.
 
 //hide
 //setup
-//output
 [source,cypher]
 ----
 CREATE (drugPortfolio:Portfolio{ name:'Pharmaceutical Portfolio' })
@@ -138,9 +137,9 @@ CREATE regadenoson-[:TARGETS]->HUMAN_AA2AR
 
 [source,cypher]
 ----
-MATCH (c:Portfolio) RETURN c.name AS Portfolios
+MATCH (c:Portfolio)
+RETURN c.name AS Portfolios
 ----
-
 //table
 
 == All categories by Depth
@@ -148,54 +147,46 @@ MATCH (c:Portfolio) RETURN c.name AS Portfolios
 [source,cypher]
 ----
 MATCH p=(cats:Category)-[:PARENT|PARENT*]->(cat:Portfolio)
-WHERE cat.name='Pharmaceutical Portfolio'
 RETURN LENGTH(p) AS Depth, COLLECT(cats.name) AS Categories
 ORDER BY Depth ASC
 ----
-
 //table
 
-== All categories of a given level
+== All categories of a given depth
 
 [source,cypher]
 ----
 MATCH p=(cats:Category)-[:PARENT*]->(cat:Portfolio)
 WHERE cat.name='Pharmaceutical Portfolio' AND length(p)=1
-RETURN cats.name AS CategoriesOfGivenLevel
-ORDER BY CategoriesOfGivenLevel
+RETURN cats.name AS `Categories of Given Level`
+ORDER BY cats.name
 ----
-
 //table
 
 == All sub-categories of a given category
 
 [source,cypher]
 ----
-MATCH p=(cats:Category)-[:PARENT]->(parentCat:Category), (parentCat)-[:PARENT*]->(c:Portfolio)
-WHERE parentCat.name='Drugs' AND c.name='Pharmaceutical Portfolio'
-RETURN collect(cats.name) AS SubCategories
+MATCH (cats:Category)-[:PARENT]->(parentCat:Category), (parentCat)-[:PARENT*]->(c:Portfolio)
+RETURN parentCat.name AS Parent, COLLECT(cats.name) AS SubCategories
 ----
-
 //table
 
-== All Parent and their child categories
+== All parents and their child categories
 
 [source,cypher]
 ----
-MATCH p=(child:Category)-[:PARENT*]->(parent)
-RETURN parent.name, collect(child.name)
+MATCH (child:Category)-[:PARENT*]->(parent)
+RETURN parent.name AS Parent, COLLECT(child.name) AS Children
 ----
-
 //table
 
 == All parent and their IMMEDIATE children
 
 [source,cypher]
 ----
-MATCH p=(child:Category)-[:PARENT]->(parent)
-RETURN labels(parent), parent.name, collect(child.name)
+MATCH (child:Category)-[:PARENT]->(parent)
+RETURN labels(parent), parent.name AS Parent, COLLECT(child.name) AS Children
 ----
-
 //table
-
 //console
