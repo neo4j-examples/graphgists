@@ -25,8 +25,6 @@ CREATE (me:Person {name: "My Name"}) return me;
 
 You will see the new node returned and also as part of the visualization. You can also easily check for its existence with the following query.
 
-
-[source,cypher]
 ----
 MATCH (me:Person)
 WHERE me.name="My Name"
@@ -35,7 +33,6 @@ RETURN me.name;
 
 or
 
-[source,cypher]
 ----
 MATCH (me:Person {name:"My Name"})
 RETURN me.name;
@@ -43,7 +40,7 @@ RETURN me.name;
 
 === Try it yourself
 
-
+//graph
 //console
 
 
@@ -51,7 +48,6 @@ RETURN me.name;
 
 If we wanted to return *all nodes* in the graph, we can use the following query: 
 
-[source,cypher]
 ----
 MATCH (n)
 RETURN n; //note the semicolon
@@ -98,14 +94,12 @@ Because Neo4j is schema-free, you can add any property you want to any node or r
 What if you want to update a property? *Mystic River* was actually released in *2003*, not *1993*.
 We can fix that with the following query:
 
-[source,cypher]
 ----
 MATCH (m:Movie)
 WHERE m.title = "Mystic River"
 SET m.released = 2003
 RETURN m;
 ----
-//graph
 
 So you can see that the syntax is the same for updating or adding a property. 
 You `SET` a property.
