@@ -1,0 +1,150 @@
+= Nodes and Properties
+:neo4j-version: 2.3.0
+:author: Neo Technology
+:twitter: @neo4j
+
+:toc:
+
+== Creating Nodes
+
+Let's start by adding a node to the graph.
+
+// VIDEO HERE. Example: video::rPQoq7ThGAU[youtube]
+
+Let's follow along with the video.
+Run the following query, replacing *My Name* with your name in quotes (if you happen to have the same name as a famous actor you might want to change what name you put in):
+
+// Graph setup stuff here
+
+[source,cypher]
+----
+CREATE (me:Person {name: "My Name"}) return me;
+----
+//graph
+//console
+
+You will see the new node returned and also as part of the visualization. You can also easily check for its existence with the following query.
+
+
+[source,cypher]
+----
+MATCH (me:Person)
+WHERE me.name="My Name"
+RETURN me.name;
+----
+
+or
+
+[source,cypher]
+----
+MATCH (me:Person {name:"My Name"})
+RETURN me.name;
+----
+
+=== Try it yourself
+
+
+//console
+
+
+== The All Nodes Query
+
+If we wanted to return *all nodes* in the graph, we can use the following query: 
+
+[source,cypher]
+----
+MATCH (n)
+RETURN n; //note the semicolon
+----
+
+The query is doing a full graph search.
+It visits every single node to see whether it matches the pattern of `(n)`.
+In this concrete case, the pattern is simply a node that may or may not have relationships, so it will match every single node in the graph.
+The `RETURN` clause then returns all of the information about each of those nodes - including all of their properties. 
+
+**NOTE: In a larger graph this will return A LOT of data, run it only when you know what you're doing.**
+
+Note the semicolon after the `RETURN` clause.
+It is used to tell the **Neo4j-Shell** that you're finished writing your query. 
+In the command line Neo4j-Shell - if you don't use a semicolon, Neo4j will assume you still have more to write and will sit patiently waiting for the rest of your input.
+In both the **Cypher gadget** in this course and the **Neo4j Browser** it is not needed and silently ignored.
+
+== Adding Properties
+
+To begin, let's add the movie *Mystic River* to the dataset.
+
+[source,cypher]
+----
+CREATE (movie:Movie {title: "Mystic River", released:1993}) 
+RETURN movie;
+----
+//graph
+
+Let's say we wanted to add a `tagline` to the `Mystic River` `:Movie` node that  we added. 
+First we have to locate the single movie again by its `title`, then `SET` the property. 
+Here is the query:
+
+[source,cypher]
+----
+MATCH (m:Movie)
+WHERE m.title = "Mystic River"
+SET m.tagline = "We bury our sins here, Dave. We wash them clean."
+RETURN m;
+----
+//graph
+
+Because Neo4j is schema-free, you can add any property you want to any node or relationship.
+
+What if you want to update a property? *Mystic River* was actually released in *2003*, not *1993*.
+We can fix that with the following query:
+
+[source,cypher]
+----
+MATCH (m:Movie)
+WHERE m.title = "Mystic River"
+SET m.released = 2003
+RETURN m;
+----
+//graph
+
+So you can see that the syntax is the same for updating or adding a property. 
+You `SET` a property.
+If it exists, it'll update it.
+If not, it'll add it.
+
+=== Try it yourself
+
+//graph
+//console
+
+== Updating a relationship property
+
+Let's try to change the role of *Kevin Bacon* in *Mystic River* from `["Sean"]` to `["Sean Devine"]`.
+
+We should find the `ACTED_IN` relationship between the two first using `MATCH` and then use `SET` to update the property as we learned when creating the `:Movie` node.
+
+//graph
+//console
+
+=== Solution
+
+// todo: custom styles
+
+[source,cypher]
+----
+MATCH (kevin)-[r:ACTED_IN]->(mystic)
+WHERE kevin.name="Kevin Bacon"
+AND mystic.title="Mystic River"
+SET r.roles = ["Sean Devine"]
+RETURN r;
+----
+
+_The query is hidden, you can still mark, copy & paste it._
+
+== Resources
+
+http://neo4j.com/docs/stable/query-create.html[Create]
+
+http://neo4j.com/docs/stable/cypher-parameters.html#_setting_all_properties_on_node[Parameters]
+
+//console
