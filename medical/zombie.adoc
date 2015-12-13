@@ -5,8 +5,6 @@
 
 :toc:
 
-Test
-
 == Introduction
 .Brains!
 image::http://media.giphy.com/media/ColbXXtLhOz0k/giphy.gif[]
