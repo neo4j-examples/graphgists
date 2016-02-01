@@ -263,12 +263,12 @@ ORDER BY `Shared Buddies` DESC, `User A` ASC
 ----
 //table
 
-== Conclusions
+== Conclusion
 
 Although defunct, Aardvark did a decent job at finding to responses to subjective questions.
 It was an excellent demonstration of how classification and filtering, in combination with social networking, can be leveraged in future search engines.
 
-== References
+== Reference
 
 The paper: http://www.cse.fau.edu/~xqzhu/courses/cap6777/social.search.engine.pdf
 
