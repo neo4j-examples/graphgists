@@ -8,7 +8,7 @@
 
 == Introduction to Aardvark, the Defunct Social Search Engine
 
-=== The Gist of It
+=== The Gist of It...
 
 Aardvark (2008 - 2011) was a social search service that connected users live with friends or friends-of-friends who were able to answer their questions.
 Users submitted questions via the Aardvark website, email or instant messenger.
