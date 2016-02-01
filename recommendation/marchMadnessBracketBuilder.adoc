@@ -1,4 +1,4 @@
-= A March Madness Recommendation Engine!
+= A March Madness Recommendation Engine
 Kevin Van Gundy <kevin@neotechnology.com>
 :neo4j-version: 2.3.0
 :author: Kevin Van Gundy
@@ -13,7 +13,7 @@ a|image::http://i.imgur.com/5nlEMrk.jpg?1[align="center"]
 
 == (March Madness)<-[:MADE_SANE_WITH]-(Neo4j {version:2.2})
 
-March madness! is one of the rare moments that it pays off in a social context to be a data geek.
+March madness is one of the rare moments that it pays off in a social context to be a data geek.
 It’s a rare concord of well documented data and pop culture.
 http://www.ibtimes.com/billion-dollar-bracket-challenge-2015-why-warren-buffett-yahoo-wont-do-college-1846246[Warren Buffet’s billion dollar bet] grabbed the interest of everyone from Wall St. quants to Silicon Valley engineers to arm chair http://www.imdb.com/title/tt1210166/[MoneyBallers] everywhere.
 
