@@ -189,7 +189,7 @@ Let's see what happens when another user, let's say, Jacob, looks for a good can
 [source,cypher]
 ----
 MATCH (a:User {name:'Jacob'})-[:IS_BUDDY*1..2]-(buddy:User)-[r:KNOWS_ABOUT]->(:Topic {name:'hyrax'})
-RETURN DISTINCT b.name AS Name, (r.right)/toFloat(r.total) AS Score
+RETURN DISTINCT buddy.name AS Name, (r.right)/toFloat(r.total) AS Score
 ORDER BY Score DESC
 ----
 //table
