@@ -44,7 +44,7 @@ CREATE
 (_29:Doctor {latitude:48.86982,longitude:2.32503,name:"Michaela Quinn"}),
 (_30:DoctorSpecialization {name:"Physician"}),
 (_31:DoctorSpecialization {name:"Angiologist"}),
-(_6)-[: {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
+(_6)-[:CURES {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
 (_7)-[:CURES {age_max:18,age_min:5,indication:"Child asthma"}]->_23,
 (_8)-[:CURES {age_max:60,age_min:18,indication:"Adult asthma"}]->_23,
 (_9)-[:BELONGS_TO_CLASS]->(_6),
