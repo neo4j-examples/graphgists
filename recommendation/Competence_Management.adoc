@@ -40,6 +40,9 @@ The structure of the discussion is summarized in the following ToC.
 :toclevels: 2
 toc::[]
 ////
+
+ifndef::env-guide[]
+
 == Table of Contents
 * *<<inidata, Initial Data Model>>*
 First, a data model is introduced, that accounts for the main features of the "internal job recommendation" problem.
@@ -55,8 +58,10 @@ In the two subsections, an improvement of collaborative results is presented, vi
 This section outlines how the same model, used in previous sections for internal job recommendations, may also prove useful for human resource management. The use case will be how to better identify experts for a certain activity, employees in need of training, or teams which lack enough resources to perform a certain activity.
 * *<<conclusions, Conclusions>>*
 
+endif::env-guide[]
+
 [[inidata]]
-=== Initial Data Model
+== Initial Data Model
 
 This GraphGist example is built with certain features in mind, making it capable to reproduce and improve features of existing competency management tools for  large organizations footnote:[In this GraphGist, we are mainly referring to the Algebraic Method outlined in "Optimizing a Competence Management System: An Algebraic Approach", Fortunato et al., presented at the International Symposium on Collaborative Enterprises: CENT 2011.
 This method, and the graph which can be built upon its assumptions, is adopted by the aeronautics manufacturing company link:http://www.aleniaaermacchi.it/home[Alenia Aermacchi spa]].
@@ -115,7 +120,7 @@ Finally, each `Activity` can be connected to only one `Competence Area` node, vi
 `Competency Areas` shall be understood as high-level classifications of the different `Activitie`s performed by the organization.
 
 [[setup]]
-=== Setting Up the graph <<TOC, ^TOC^>>
+== Setting Up the graph
 
 Here is the set of commands to generate the model with Cypher.
 
@@ -233,17 +238,10 @@ CREATE
 //set-up of the dataset
 
 '''
-
-The whole graph looks like:
-//hide
-[source, cypher]
-----
-MATCH (n) RETURN n
-----
 //graph
 
 [[warmup]]
-== Filtering out Unqualified Candidates <<TOC, ^TOC^>>
+== Filtering out Unqualified Candidates
 
 Excluding some employees from the search is the first task to complete.
 This requirement may derive from common-sense reasoning, internal regulations, or requests made by the Human Resources department.
@@ -333,13 +331,13 @@ Written as a Cypher query, this may look trivial: people with very little coding
 The very same query, instead, would be *inadvisable to be implemented for a RDBMS-backed online system, due to the long query time*.
 
 [[ranking]]
-== Ranking candidates: a "social" approach <<TOC, ^TOC^>>
+== Ranking candidates: a "social" approach
 
 In the previous paragraph, there is a list of queries that easily exclude candidates, and it has been demonstrated how some combinations of requests may be too restrictive. Considering again our example, it is now interesting to see a few options to rank the candidates available, according to some different approaches.
 It is now pertinent to rank the availble candidates, and in order to do so, it is necessary to relax the final condition about Personal Skills footnote:[e.g. this could be plausible whenever the employee in the new role may learn progressively the new Skills from other colleagues, or some other interpersonal qualities may play a more important role, etc.].
 The two options to accomplish this are collaborative ranking and content-based filtering.
 
-=== Collaborative ranking for competency management
+== Collaborative ranking for competency management
 
 In order to rank the best possible candidates, the first approach will be to compile a hiring committee of employees that may work or will work with the candidate within a team.
 To demonstrate the advantage of collaborative ranking, assume the the team offering the open position (+Team 3+) currently consists of only one employee.
@@ -481,7 +479,7 @@ This approach does not take into account (yet) the competency area where the ope
 The advantage of using a graph data model is that even in cases where almost nothing is known about the single employee’s activities and areas of expertise, the method is able to rank according to mutual rating connections.
 
 [[path]]
-=== Improving the ranking: path-based weighting <<TOC, ^TOC^>>
+== Improving the ranking: path-based weighting
 
 However, the graph data model in this example can provide even more insight.
 One can use additional criterions in order to improve the candidate ranking.
@@ -517,7 +515,7 @@ Ratings from those employees who minimize this thematic distance are left unaffe
 Specifically in this example, the purely collaborative ranking above was further confirmed, even assigning priority to evaluations made by employees more familiar with the competency Area involved in the open positions. +Employee 1+ is still calculated as the optimal choice, even if now his advantage over other colleagues is smaller.
 
 [[jaccard]]
-=== Improving the ranking: Jaccard similarity <<TOC, ^TOC^>>
+== Improving the ranking: Jaccard similarity
 
 Another possible refinement strategy relies on the so called "link:http://en.wikipedia.org/wiki/Jaccard_index[Jaccard similarity coefficient]".
 The _cosine similarity_ used in the first paragraph is indeed derived from this index, which is widely used in Social and Economic Sciences to evaluate the diversity or similarity of two samples.
@@ -617,7 +615,7 @@ This may prevent a successful adoption of the similarity as outlined above.
 If the organization keeps an updated and detailed record of its employees’ profiles, though, feature-based similarities could be used for the ranking of the (few) evaluations, and help to solve the problem.
 
 [[competences]]
-== Beyond job recommendation: a competency management tool <<TOC, ^TOC^>>
+== Beyond job recommendation: a competency management tool
 
 Previously in this GraphgGist, the main goal was to handle the situation of promoting an internal hire, by ranking current employees based on their compatibility with the new `Role`, and the related +Team+.
 However, the organization may also need to perform other tasks related to competency management.

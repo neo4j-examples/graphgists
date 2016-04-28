@@ -238,6 +238,7 @@ CREATE	 harry1-[:PUBLISHED_BY]->bloomsbury,
 //graph
 
 == Applications
+
 The data model and queries below enable retrieving information about books according to many criteria.
 
 === Find books of genre 'novel'

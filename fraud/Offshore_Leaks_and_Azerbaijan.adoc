@@ -43,15 +43,13 @@ Why the presidential family established these companies is unclear.
 What is clear is that the family took steps that obscured its involvement in the companies, using various agents to register the companies and direct them, at least on paper.
 __________________________
 
-== The Graph
-
-=== Nodes
+== The Graph: Nodes
 
 - `Person`: Persons are individuals building and using the asset network. Although some people are are quite visible, others are working behind the scenes.
 - `Company`: Companies include offshore entities, banking services providers, and businesses
 - `Address`: Addresses are the locations registered to people and companies. As they have legal implications (a company registered in a financial haven pays lower or no taxes), addresses can provide interesting insights.
 
-=== Relationships
+== The Graph: Relationships
 
 - `(Person)-[:USES_ADDRESS]->(Address)` and `(Company)-[:USES_ADDRESS]->Address)`: People and companies are connected to addresses.
 - `(Person)-[:FAMILY]->(Person)`: People can be connected via family ties. In this model, family relationships are very simple-either two people are family or they are not.
@@ -59,7 +57,7 @@ __________________________
 - `(Company)-[:IS_LINKED_TO {role:'', date:''}]->(Company)`: The `:IS_LINKED_TO` relationship between Companies and Companies similarly has the properites "role" (for example, `Master Client` or `Records and Registers`) and "date", which mark how the first company is related to the second company, and the date of the connection.
 - `(Company)-[:IS_OFFSHORE_PROVIDER_OF]->(Company)`: Offshore providers are usually selling their know-how, contacts, and favorable tax situations to the people who want to take advantage of the offshore system.
 
-=== Example Schema
+== Example Schema
 
 .A graph data model of the ICIJ Offshore Leaks dataset
 image::https://linkurio.us/wp-content/uploads/2014/05/Azerbaijan-600x337.png[A graph data model of the ICIJ Offshore Leaks dataset]
@@ -168,8 +166,6 @@ CREATE (DBS_Trustee_Limited)-[:IS_LINKED_TO {role:'Master Client', date:''}]->(R
 CREATE (Portcullis_Trustnet)-[:IS_LINKED_TO {role:'Records And Registers', date:''}]->(Rosamund_International_Ltd)
 CREATE (Ilham_Aliyev)-[:IS_LINKED_TO {role:'Director', date:'37635'}]->(Rosamund_International_Ltd)
 CREATE (Ilham_Aliyev)-[:IS_LINKED_TO {role:'Shareholder', date:'37635'}]->(Rosamund_International_Ltd)
-
-RETURN *
 ----
 
 //graph
@@ -179,7 +175,11 @@ _https://www.dropbox.com/s/d9ceb427xzrcpza/Azerbaijan%20Offshore%20Leaks.zip[Dow
 
 == What Assets Belong to What Person
 
-=== President Ilham Aliyev's Direct Assets
+People who are trying to hide money tend to use proxies they can hide behind.
+That means that we must enlarge our search and look for direct and also indirect connections.
+
+
+== President Ilham Aliyev's Direct Assets
 
 We look for the _direct_ links between the President and offshore accounts
 
@@ -198,10 +198,8 @@ The second line returns basic information about the company and the characterist
 In this particular case, we see that `Ilham` served as `Director` and `Shareholder` of `Rosamund International Ltd`, a `Standard International Company` incorporated in 2002.
 
 
-=== President Ilham Aliyev's Indirect Assets
+== President Ilham Aliyev's Indirect Assets
 
-People who are trying to hide money tend to use proxies they can hide behind.
-That means that we must enlarge our search and look for indirect connections.
 
 With a Neo4j database for example, finding all the foreign assets Ilham Aliyev controls directly or indirectly is as simple as adding a `*` to our first query.
 The search will return all the paths in the data between Ilham Aliyev and offshore accounts.
@@ -235,9 +233,7 @@ ORDER BY mentions DESC
 
 '''
 
-== Learn More
-
-=== Graph Gists
+== Learn More: Graph Gists
 
 For more graph-related usecases, make sure to check out http://linkurio.us/blog[the Linkurious blog].
 
