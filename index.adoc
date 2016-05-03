@@ -1,0 +1,16 @@
+== Neo4j Use-Case Examples as Guides and GraphGists
+:graphgist: http://neo4j.com/graphgist
+:guides: http://guides.neo4j.com/graphgists
+
+Let's look at some interesting use case examples in detail
+
+. pass:a[<a play-topic='{guides}/fraud'>Bank Fraud Detection</a>] {graphgist}/9d627127-003b-411a-b3ce-f8d3970c2afa[(GraphGist)]
+. pass:a[<a play-topic='{guides}/books'>Books Management Graph</a>] {graphgist}/56c4ceb8-0af1-4d36-b14c-aaa482dc2abc[(GraphGist)]
+. pass:a[<a play-topic='{guides}/leaks'>Analyzing Offshore Leaks</a>] {graphgist}/ec65c2fa-9d83-4894-bc1e-98c475c7b57a[(GraphGist)]
+. pass:a[<a play-topic='{guides}/network'>Network Dependency Graph</a>] {graphgist}/306bb0c7-9820-4c29-9835-15625e4e9f96[(GraphGist)]
+. pass:a[<a play-topic='{guides}/jobs'>Job Recommendation System</a>] {graphgist}/4cea8113-30e9-46bc-bbb0-06236a9bd8b9[(GraphGist)]
+
+=== Other Resources
+
+* http://neo4j.com/graphgists[All Graph Gists] 
+* http://portal.graphgist.org[GraphGist Author Portal] 

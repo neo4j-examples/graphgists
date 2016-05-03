@@ -3,6 +3,10 @@ export GUIDES=../neo4j-guides
 rm -rf html
 mkdir html
 
+$GUIDES/run.sh index.adoc html/index.html +1 http://guides.neo4j.com/graphgists
+
+s3cmd put -P html/index.html s3://guides.neo4j.com/graphgists
+
 #. http://neo4j.com/graphgist/9d627127-003b-411a-b3ce-f8d3970c2afa[Bank Fraud Detection]
 
 $GUIDES/run.sh fraud/bank-fraud-detection.adoc html/fraud

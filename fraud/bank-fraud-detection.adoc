@@ -5,13 +5,11 @@
 :domain: finance
 :use-case: fraud-detection
 
-:toc:
+== Introduction to Problem
 
 (original source: https://github.com/neo4j-contrib/gists/blob/master/other/BankFraudDetection.adoc )
 
 This interactive Neo4j graph tutorial covers bank fraud detection scenarios.
-
-== Introduction to Problem
 
 Banks and Insurance companies lose billions of dollars every year to fraud.
 Traditional methods of fraud detection play an important role in minimizing these losses.
