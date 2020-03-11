@@ -192,7 +192,7 @@ That means that we not only want the illegitimate transactions but also the tran
 ----
 MATCH (victim:Person)-[r:HAS_BOUGHT_AT]->(merchant)
 WHERE r.status = "Disputed"
-MATCH victim-[t:HAS_BOUGHT_AT]->(othermerchants)
+MATCH (victim)-[t:HAS_BOUGHT_AT]->(othermerchants)
 WHERE t.status = "Undisputed" AND t.time < r.time
 WITH victim, othermerchants, t ORDER BY t.time DESC
 RETURN victim.name AS `Customer Name`, othermerchants.name AS `Store Name`, t.amount AS Amount, t.time AS `Transaction Time`
@@ -211,7 +211,7 @@ We just have to tweak the Cypher query to sort out the previous results accordin
 ----
 MATCH (victim:Person)-[r:HAS_BOUGHT_AT]->(merchant)
 WHERE r.status = "Disputed"
-MATCH victim-[t:HAS_BOUGHT_AT]->(othermerchants)
+MATCH (victim)-[t:HAS_BOUGHT_AT]->(othermerchants)
 WHERE t.status = "Undisputed" AND t.time < r.time
 WITH victim, othermerchants, t ORDER BY t.time DESC
 RETURN DISTINCT othermerchants.name AS `Suspicious Store`, count(DISTINCT t) AS Count, collect(DISTINCT victim.name) AS Victims
