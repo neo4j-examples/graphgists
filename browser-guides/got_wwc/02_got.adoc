@@ -1,0 +1,254 @@
+= Game of Thrones: Characters and Episodes
+:csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:icons: font
+
+== The Game of Thrones dataset
+
+Now that you've got a bit of practice with the Cypher syntax it's time to work with a bigger dataset.
+
+For this section it's best to start with a blank slate but first a quick overview about deleting graph data.
+
+image::{img}slides.jpg[]
+
+== Delete all the things
+
+Run the following query to delete all the data we've created so far:
+
+[source, cypher]
+----
+MATCH (n)
+DETACH DELETE n
+----
+
+The `DETACH DELETE` clause deletes a node and any relationships connected to it.
+
+We'll also delete the constraint that we created on `:Character(name)`.
+In the real dataset, some characters have the same name and are distinguished by having a different `id`.
+
+[source, cypher]
+----
+DROP CONSTRAINT character_name;
+----
+
+Now we're ready to explore the Game of Thrones dataset.
+
+== LOAD CSV - The ETL Power Tool
+
+We're going to be using the `LOAD CSV` command in Cypher so first look at the slides for a brief introduction.
+
+image::{img}slides.jpg[]
+
+== LOAD CSV - Exploring the data
+
+As well as importing data from CSV files we can also use `LOAD CSV` to explore those same files.
+
+Run the following query to see how many characters there are:
+
+[source, cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/characters.csv" AS row
+RETURN COUNT(*)
+----
+
+Refer to the link:https://neo4j.com/docs/cypher-refcard/current/[Cypher Refcard^] to see the full set of commands/functions available to us.
+
+== LOAD CSV - Exploring the data
+
+We can look at the individual rows by returning them directly rather than applying the `COUNT` function.
+
+The following query will return the first 5 rows of the CSV file.
+
+[source, cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/characters.csv" AS row
+RETURN row
+LIMIT 5
+----
+
+The `LIMIT` clause works the same way as in SQL.
+
+Try returning more rows or removing the `LIMIT` clause to see what other data the file contains.
+
+== Create the characters
+
+Now let's combine `LOAD CSV` with the commands we learnt in the first half of the session and put all the GoT characters into our graph.
+Run the following query:
+
+[source, cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/characters.csv" AS row
+MERGE (c:Character {id: row.link})
+ON CREATE SET c.name = row.character
+----
+
+This query:
+
+* iterates over every row in the `characters.csv` file
+* creates a node with the `Character` label and an `id` property if such a node doesn't already exist
+* sets the `name` property if the node is being created
+
+== Finding characters
+
+Now let's see what we've imported into the database.
+Run the following query to see a sample of the nodes we've just created:
+
+[source, cypher]
+----
+MATCH (c:Character)
+RETURN c
+ORDER BY rand()
+LIMIT 25
+----
+
+The use of the `rand()` function means we get a different 25 characters each time.
+Try running the query a few times.
+
+Now that we've got the characters loaded it's time to import some episodes for them to appear in.
+
+== Importing episodes
+
+We have a CSV file containing episodes which we can explore by running the following query:
+
+[source, cypher, subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/overview.csv" AS row
+RETURN row
+LIMIT 10
+----
+
+We'll run the following query to create a node for each episode:
+
+[source, cypher, subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/overview.csv" AS row
+MERGE (episode:Episode {id: toInteger(row.episodeId)})
+ON CREATE SET
+  episode.season = toInteger(row.season),
+  episode.number = toInteger(row.episode),
+  episode.title = row.title
+----
+
+By default properties have the `String` data type.
+In this case we want `season`, `number` and `id` to be numeric so we coerce the data using the `toInteger` function.
+
+So now we've got characters and episodes but we still haven't got a graph as they aren't connected yet.
+Let's do that next.
+
+== Connecting episodes and characters
+
+(Surprise, surprise) We also have a CSV file containing the episodes that characters appeared in.
+We can explore that by running the following query:
+
+[source, cypher, subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/characters_episodes.csv" AS row
+RETURN row
+LIMIT 10
+----
+
+We're going to create an `APPEARED_IN` relationship between a `Character` and `Episode` for each row in the file.
+
+[source, cypher, subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/characters_episodes.csv" AS row
+MATCH (episode:Episode {id: toInteger(row.episodeId)})
+MATCH (character:Character {id: row.character})
+MERGE (character)-[:APPEARED_IN]->(episode)
+----
+
+This query:
+
+* looks up an episode
+* looks up a character
+* creates an `APPEARED_IN` relationship between them if one doesn't already exist.
+
+If you run this query again you'll see that it doesn't do anything the second time around.
+
+== Characters and Episodes
+
+We should now have a graph connecting Game of Thrones characters with the episodes that they appear in.
+
+Run the following query to check everything has imported correctly:
+
+[source, cypher]
+----
+MATCH (character:Character)-[:APPEARED_IN]->(episode:Episode)
+RETURN *
+ORDER BY rand()
+LIMIT 25
+----
+
+This query:
+
+* looks up nodes with the label `Character`
+* that have an outgoing `APPEARED_IN` relationship
+* to nodes with the label `Episode`
+* and finds 25 paths that match that pattern and returns them
+
+Spend a couple of minutes clicking around the graph visualisation to get a feel for the data we've imported.
+
+== Aggregation queries
+
+In the next section we'll have an exercise where you will write queries to answer some questions.
+A couple of these queries will require use of aggregation functions so we'll quickly go over those.
+
+Perhaps the most obvious question to answer after after importing characters and episodes is `Who appeared in the most episodes?`.
+We can write the following query to answer that question:
+
+[source, cypher]
+----
+MATCH (character:Character)-[:APPEARED_IN]->()
+RETURN character.name, COUNT(*) AS appearances
+ORDER BY appearances DESC
+----
+
+Look at the slides for a quick explanation of this query:
+
+image::{img}slides.jpg[]
+
+== Exercise
+
+Here's a few questions for you to try and answer:
+
+* Who appeared in the most episodes in season 4?
+* Which `Stark` character appeared the least times?
+* Which episodes does `Arya Stark` not appear in? (You'll need to write a `WHERE NOT` clause in this query)
+
+Don't forget the link:https://neo4j.com/docs/cypher-refcard/current/[Cypher Refcard^] is your friend!
+
+== Answer: Who appeared in the most episodes in season 4?
+
+[source, cypher]
+----
+MATCH (character:Character)-[:APPEARED_IN]->({season: 4})
+RETURN character.id, character.name, COUNT(*) AS appearances
+ORDER BY appearances DESC
+----
+
+== Answer: Which `Stark` character appeared the least times?
+
+[source, cypher]
+----
+MATCH (character:Character)-[:APPEARED_IN]->()
+WHERE character.name ENDS WITH "Stark"
+RETURN character.id, character.name, COUNT(*) AS appearances
+ORDER BY appearances
+LIMIT 1
+----
+
+== Answer: Which episodes does `Arya Stark` not appear in?
+
+[source, cypher]
+----
+MATCH (episode: Episode)
+WHERE NOT (:Character {name: "Arya Stark"})-[:APPEARED_IN]->(episode)
+RETURN episode
+ORDER BY episode.id
+----
+
+== Next Step
+
+In the next section we're going to look at the houses that characters belong to.
+
+pass:a[<a play-topic='{guides}/03_got_houses.html'>Houses</a>]

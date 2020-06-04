@@ -1,0 +1,211 @@
+= Game of Thrones: Houses
+:csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import/
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:icons: font
+
+== Importing houses
+
+In this next section we're going to import the houses that characters belong to.
+
+Run the following query to explore the houses CSV file:
+
+[source, cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/houses.csv" AS row
+RETURN row
+----
+
+Now let's create a node with the `House` label for each row in the file:
+
+[source, cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/houses.csv" AS row
+MERGE (house:House {id: row.link})
+ON CREATE SET house.name = row.name
+----
+
+Run the following query to return all the houses:
+
+[source, cypher]
+----
+MATCH (house:House)
+RETURN house
+----
+
+You should see 73 nodes if the import has worked as expected.
+
+== Exercise: Create allegiances
+
+Now it's your turn!
+Run the following query to view the allegiances between characters and houses:
+
+[source, cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/characters_houses.csv" AS row
+RETURN row.character, row.house
+----
+
+Now create a `HAS_ALLEGIANCE_TO` relationship for each character/house pair in the file.
+
+== Answer: Create allegiances
+
+[source, cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/characters_houses.csv" AS row
+MATCH (character:Character {id: row.character})
+MATCH (house:House {id: row.house})
+MERGE (character)-[:HAS_ALLEGIANCE_TO]->(house)
+----
+
+== Exploring allegiances
+
+Run the following query to check that the allegiances have been created:
+
+[source, cypher]
+----
+MATCH (character:Character)-[:HAS_ALLEGIANCE_TO]->(house)
+RETURN character.id, character.name, count(*) AS allegiances
+ORDER BY allegiances DESC
+----
+
+You should see `Randyll Tarly` in first place with 4 houses.
+
+== Exercise: What houses do people have allegiance to?
+
+Time for another mini exercise.
+
+See if you can tweak the query from the previous slide to include the names of the houses as well as the count.
+
+_Tip_ The link:https://neo4j.com/docs/cypher-manual/current/functions/aggregating/#functions-collect[`collect` function] will be helpful.
+
+== Answer: What houses do people have allegiance to?
+
+We just need to add a call to `collect()` as part of our `RETURN` statement:
+
+[source, cypher]
+----
+MATCH (character:Character)-[:HAS_ALLEGIANCE_TO]->(house)
+RETURN character.id, character.name, collect(house.name) AS houses, count(*) AS allegiances
+ORDER BY allegiances DESC
+----
+
+== Appearances of the Starks
+
+In the previous guide we wrote the following query to find the `Stark` character who appeared in the least episodes.
+
+[source, cypher]
+----
+MATCH (character:Character)-[:APPEARED_IN]->()
+WHERE character.name ENDS WITH "Stark"
+RETURN character.id, character.name, count(*) AS appearances
+ORDER BY appearances
+LIMIT 1
+----
+
+This query made the assumption that all members of `House Stark` had a name that ended in `Stark`, which isn't necessarily the case.
+
+The following query finds the most prominent members of `House Stark` who don't have a `Stark` surname:
+
+[source, cypher]
+----
+MATCH (:House {name: "House Stark"})<-[:HAS_ALLEGIANCE_TO]-(character:Character)-[:APPEARED_IN]->()
+WHERE NOT(character.name ENDS WITH "Stark")
+RETURN character.id, character.name, count(*) AS appearances
+ORDER BY appearances DESC
+----
+
+Try tweaking the query to see if there are prominent characters of other houses who don't have the surname of that House.
+
+== Multiple aggregations
+
+Let's revisit one of our queries from the first section where we found the characters who'd appeared in the most episodes:
+
+[source, cypher]
+----
+MATCH (character:Character)-[:APPEARED_IN]->()
+RETURN character.name, count(*) AS appearances
+ORDER BY appearances DESC
+----
+
+It would be cool to see which houses each character had allegiance too as well.
+We might try to extend the query to use the `collect` function to do this with the following query:
+
+[source, cypher]
+----
+MATCH (house:House)<-[:HAS_ALLEGIANCE_TO]-(character:Character)-[:APPEARED_IN]->()
+RETURN character.id, character.name, collect(house.name) AS houses, count(*) AS appearances
+ORDER BY appearances DESC
+----
+
+Unfortunately, this doesn't give us the result we might have expected.
+We've got the house names repeated loads of times and `appearances` is now wrong!
+
+== Multiple aggregations
+
+The problem is that we're doing aggregations across different relationships.
+But we're trying to do it all in one go.
+
+Look at the slides for an explanation of how we can use the `WITH` keyword to get around this:
+
+image::{img}slides.jpg[]
+
+== Multiple aggregations using `WITH`
+
+The following query will correctly calculate the houses and appearances for each character:
+
+[source, cypher]
+----
+MATCH (house:House)<-[:HAS_ALLEGIANCE_TO]-(character:Character)
+WITH character, collect(house.name) AS houses
+MATCH (character)-[:APPEARED_IN]->()
+RETURN character.id, character.name, houses, count(*) AS appearances
+ORDER BY appearances DESC
+----
+
+== Exercise
+
+Update the query to:
+
+* only show characters who have appeared in 30 or more episodes.
+* and have allegiance to more than 1 house.
+
+_Tip_ The link:https://neo4j.com/docs/cypher-manual/current/clauses/with/[WITH] and link:https://neo4j.com/docs/cypher-manual/current/functions/scalar/#functions-size[size()] documentation pages are your friends.
+
+== Answer: only show characters who have appeared in 30 or more episodes.
+
+[source, cypher]
+----
+MATCH (house:House)<-[:HAS_ALLEGIANCE_TO]-(character:Character)
+
+WITH character, collect(house.name) AS houses
+MATCH (character)-[:APPEARED_IN]->()
+
+WITH character, houses, count(*) AS appearances
+WHERE appearances >= 30
+
+RETURN character.id, character.name, houses, appearances
+ORDER BY appearances DESC
+----
+
+== Answer: only show characters who have appeared in 30 or more episodes and have allegiance to more than 1 house.
+
+[source, cypher]
+----
+MATCH (house:House)<-[:HAS_ALLEGIANCE_TO]-(character:Character)
+
+WITH character, collect(house.name) AS houses
+WHERE size(houses) > 1
+MATCH (character)-[:APPEARED_IN]->()
+
+WITH character, houses, count(*) AS appearances
+WHERE appearances >= 30
+
+RETURN character.id, character.name, houses, appearances
+ORDER BY appearances DESC
+----
+
+== Next Step
+
+In the next section, we're going to look at the relationships between different characters and the houses they belong to.
+
+pass:a[<a play-topic='{guides}/04_got_families.html'>Family Ties</a>]

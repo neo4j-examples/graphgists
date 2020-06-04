@@ -1,0 +1,123 @@
+= Introduction to Graphs and Data
+:description: Introduce graphs and Cypher to young students with hands-on queries and exploration
+:img: cypher_create.jpg
+:tags: browser-guide, intro, cypher, students
+
+== Welcome to Neo4j!
+
+image::{img}cypher_create.jpg[float=right,width=400]
+
+Neo4j is a database, a storage for *things* and their *relationships*.
+
+It is operated with a language called _Cypher_.
+
+With it, you can store things, but also find them again.
+
+Let's try that now. Continue with the arrow to the right.
+
+== Save things
+
+We can create ourselves:
+
+[source,cypher]
+----
+MERGE (me:Person {name: 'Jennifer'})
+RETURN me
+----
+
+And then we can find ourselves, too:
+
+[source,cypher]
+----
+MATCH (p:Person {name: 'Jennifer'})
+RETURN p
+----
+
+We show things as circles: `()` or `(:person {name: 'Jennifer'})`
+
+Can you find your neighbors? Give it a try!
+
+We can also find all the people:
+
+[source,cypher]
+----
+MATCH (p:Person)
+RETURN p
+----
+
+== Change things
+
+We can also store more than the name, like birthday or favorite color.
+
+We can find each other and then add new information.
+
+[source,cypher]
+----
+MATCH (p:Person {name: 'Jennifer'})
+SET p.birthday = 'May'.
+SET p.color = 'green'
+RETURN p
+----
+
+Now we can see who all likes the color `green`.
+
+[source,cypher]
+----
+MATCH (p:Person)
+WHERE p.color = 'green'
+RETURN p
+----
+
+What if we wanted to find out who doesn't like the color green? Or who has a birthday in `July`?
+
+== Connect things
+
+For this, we need two (a pair) of things.
+
+Find *you* and *your* neighbor to your right.
+
+[source,cypher]
+----
+MATCH (a:Person {name: 'Jennifer'})
+MATCH (b:Person {name: 'Diego'})
+RETURN a,b
+----
+
+Relationships are arrows like `+-->+` or `+-[:KNOWS]->+`.
+
+Now we can connect the neighbors.
+
+[source,cypher]
+----
+MATCH (a:Person {name: 'Jennifer'})
+MATCH (b:Person {name: 'Diego'})
+MERGE (a)-[k:KNOWS]->(b)
+RETURN *
+----
+
+How long is our chain? Could we find all the groups of neighbors?
+
+[source,cypher]
+----
+MERGE (a)-[k:KNOWS]->(b)
+RETURN *
+----
+
+== What can you save?
+
+Answer: ANYTHING!
+
+* Hobbies, friends, family
+* People, movies, songs, books, comics
+* Countries, cities, streets
+* Schools, classes, dates and times
+* Stars, planets, animals, plants
+
+Or whatever you feel like and what you are interested in.
+
+Let's have a look at two things: 
+
+* pass:a[<a play-topic='movies'> movies</a>]
+* pass:a[<a play-topic='query-template'>helper</a>]
+
+//Translated with www.DeepL.com/Translator (free version)

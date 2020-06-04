@@ -1,0 +1,84 @@
+= Game of Thrones: Families
+:csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:icons: font
+
+== Importing families
+
+In this final section, we're going to import the family relationships between characters.
+
+Run the following query to explore the family ties CSV file:
+
+[source,cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/family_ties.csv" AS row
+RETURN row
+----
+
+We've got mother and father relationships between pairs of characters.
+The father relationships are a bit more nuanced which we can see by running the following query:
+
+[source,cypher, subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/family_ties.csv" AS row
+RETURN DISTINCT row.relationship, row.type
+----
+
+We have biological fathers, adoptive and legal fathers.
+
+== Importing families
+
+First let's import the mother relationships.
+We'll create a `PARENT_OF` relationship from a mother to their child for each row in the CSV file:
+
+[source, cypher, subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/family_ties.csv" AS row
+WITH row WHERE row.relationship = "mother"
+MATCH (character1:Character {id: row.character1})
+MATCH (character2:Character {id: row.character2})
+MERGE (character2)-[:PARENT_OF {type: "mother"}]->(character1)
+----
+
+Now we'll do the same with the fathers but we'll also record the type of father relationship as part of the `type` property on the relationship.
+
+[source, cypher, subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{csv-url}/family_ties.csv" AS row
+WITH row WHERE row.relationship = "father"
+MATCH (character1:Character {id: row.character1})
+MATCH (character2:Character {id: row.character2})
+MERGE (character2)-[:PARENT_OF {type: row.type + " " + row.relationship}]->(character1)
+----
+
+== Who are Jon Snow's parents?
+
+Now we can finally start exploring the relationships between different characters.
+We'll start by finding Jon Snow's parents:
+
+[source, cypher]
+----
+MATCH path = (character:Character {name: "Jon Snow"})<-[:PARENT_OF]-(parent)
+RETURN path
+----
+
+This query returns both his biological and adoptive fathers.
+If we want to only return his biological parents we can tweak the query like so:
+
+[source, cypher]
+----
+MATCH path = (character:Character {name: "Jon Snow"})<-[parentOf:PARENT_OF]-(parent)
+WHERE parentOf.type IN ["mother", "biological father"]
+RETURN path
+----
+
+== Who are Jon Snow's biological grandparents?
+
+And finally we can find Jon Snow's biological grandparents!
+
+[source, cypher]
+----
+MATCH path = (:Character {name: "Jon Snow"})<-[:PARENT_OF*..2]-(parent)
+WHERE all(x in relationships(path) WHERE x.type IN ["mother", "biological father"])
+RETURN path
+----
