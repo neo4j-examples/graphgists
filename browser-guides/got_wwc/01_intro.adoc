@@ -1,0 +1,226 @@
+= Intro to Neo4j and Cypher
+:csv-url: https://raw.githubusercontent.com/neo4j-meetups/modeling-worked-example/master/data/
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:icons: font
+
+== Intro to Neo4j
+
+Welcome to the first of a set of interactive guides.
+In these guides you'll execute some pre written Cypher queries as well as having the chance to write some yourself.
+
+Let's get started!
+
+== Your Turn - `CREATE` Arya
+
+We'll use the `CREATE` keyword to create a node representing Arya Stark.
+Run the following query:
+
+[source,cypher]
+----
+CREATE (:Character {name: 'Arya Stark'})
+----
+
+This query:
+
+* creates a node
+* with the `Character` label and
+* a `name` property with value `Arya Stark`
+
+Properties are stored as key/value pairs.
+The allowed data types are: strings, numbers, booleans and arrays.
+
+== MATCH - Finding Arya
+
+Now let's try and find Arya.
+
+We want to `MATCH` a pattern in the graph.
+In this case that pattern is a node with the `Character` label and with the `name` property set to `Arya Stark`.
+
+[source,cypher]
+----
+MATCH (character:Character {name: 'Arya Stark'})
+RETURN character
+----
+
+This is syntactic sugar for the following long hand:
+
+[source,cypher]
+----
+MATCH (character:Character)
+WHERE character.name = 'Arya Stark'
+RETURN character
+----
+
+== SET - Add and update properties
+
+Let's add Arya's title to the Arya node:
+
+[source, cypher]
+----
+MATCH (character:Character {name: 'Arya Stark'})
+SET character.title = "Princess"
+RETURN character
+----
+
+== Schema-less by default
+
+Try creating Arya again:
+
+[source,cypher]
+----
+CREATE (:Character {name: 'Arya Stark'})
+----
+
+What happens?
+
+[source,cypher]
+----
+MATCH (character:Character {name: 'Arya Stark'})
+RETURN character
+----
+
+Oh no! We've now got two Aryas!
+
+== Constraints
+
+image::{img}slides.jpg[]
+
+== Constraints
+
+Let's create a constraint on the `name` property for any `Character` nodes so we don't end up with duplicates.
+
+[source, cypher]
+----
+CREATE CONSTRAINT character_name ON (c:Character)
+ASSERT c.name IS UNIQUE;
+----
+
+Unfortunately we can't actually create the constraint because we already have two `Character` nodes with the same `name`.
+
+== Deleting the second Arya
+
+We need to delete the second Arya we created.
+
+We can work out which node that is by finding the one that doesn't have the `title` property.
+We'll then use the `DELETE` command to get rid of that node:
+
+[source, cypher]
+----
+MATCH (character:Character {name: 'Arya Stark'})
+WHERE NOT EXISTS (character.title)
+DELETE character
+----
+
+Now we can try and apply our constraint again:
+
+[source, cypher]
+----
+CREATE CONSTRAINT character_name ON (c:Character)
+ASSERT c.name IS UNIQUE;
+----
+
+You can see which constraints and indexes have been created by running the following command:
+
+[source, cypher]
+----
+:schema
+----
+
+== MERGE - Get-Or-Create
+
+Now let's try and create Arya again:
+
+[source,cypher]
+----
+CREATE (:Character {name: 'Arya Stark'})
+----
+
+This time the unique constraint stops us.
+
+The `MERGE` keyword can come in useful here.
+`MERGE` will:
+
+* `MATCH` to check the whole pattern exists
+* If not, Cypher will `CREATE` it
+* `MERGE`-ing on the constraint - ensures strong guarantees
+
+[source, cypher]
+----
+MERGE (character:Character {name: 'Arya Stark'})
+RETURN character
+----
+
+== Exercise: Create some more nodes
+
+Now it's your turn!
+We need to create nodes to represent `House Stark` and `Winter is Coming`.
+
+image::{img}nodes.png[]
+
+== Answer: Create some more nodes
+
+[source,cypher]
+----
+MERGE (allegiance:House {name: 'House Stark'})
+RETURN allegiance
+----
+
+[source,cypher]
+----
+MERGE (episode:Episode {number: 1})
+ON CREATE SET episode.title = 'Winter is Coming'
+RETURN episode
+----
+
+== Create relationships
+
+Now we need to connect our nodes together.
+
+We'll start by writing a query to find and return `Arya Stark` and `House Stark`:
+
+[source, cypher]
+----
+MATCH (house:House {name: 'House Stark'})
+MATCH (character:Character {name: 'Arya Stark'})
+RETURN character, house
+----
+
+To create a relationship between them we can use the `CREATE` or `MERGE` keywords.
+
+[source, cypher]
+----
+MATCH (house:House {name: 'House Stark'})
+MATCH (character:Character {name: 'Arya Stark'})
+CREATE (character)-[:HAS_ALLEGIANCE_TO]->(house)
+----
+
+or
+
+[source, cypher]
+----
+MATCH (house:House {name: 'House Stark'})
+MATCH (character:Character {name: 'Arya Stark'})
+MERGE (character)-[:HAS_ALLEGIANCE_TO]->(house)
+----
+
+The `MERGE` version of the query will only create the relationship once no matter how many times we run it.
+The `CREATE` version will create a new relationship each time we run it.
+
+== Exercise: Create a relationship between `Arya Stark` and `Winter is Coming`
+
+Following the example in the previous example, let's now create a relationship with Arya and Winter is Coming.
+
+== Answer: Create a relationship between `Arya Stark` and `Winter is Coming`
+
+[source, cypher]
+----
+MATCH (character:Character {name: 'Arya Stark'})
+MATCH (episode:Episode {number: 1})
+MERGE (character)-[:APPEARED_IN]->(episode)
+----
+
+== Next Step
+
+In the next section we're going to import the full dataset and play with that
+
+pass:a[<a play-topic='{guides}/02_got.html'>Game of Thrones dataset</a>]
