@@ -54,7 +54,7 @@ We can find each other and then add new information.
 [source,cypher]
 ----
 MATCH (p:Person {name: 'Jennifer'})
-SET p.birthday = 'May'.
+SET p.birthday = 'May'
 SET p.color = 'green'
 RETURN p
 ----
