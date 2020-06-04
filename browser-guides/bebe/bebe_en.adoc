@@ -1,6 +1,6 @@
 = Introduction to Graphs and Data
 :description: Introduce graphs and Cypher to young students with hands-on queries and exploration
-:img: cypher_create.jpg
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
 :tags: browser-guide, intro, cypher, students
 
 == Welcome to Neo4j!
