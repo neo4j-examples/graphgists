@@ -12,8 +12,7 @@ This article demonstrates how to use the Neo4j Browser for querying, visualizati
 Please have https://neo4j.com/download/[Neo4j^] downloaded and installed.
 It also helps if you have read the section on https://neo4j.com/developer/graph-database[graph databases^].
 
-[#install-neo4j-browser]
-== Installing Neo4j Browser
+== Install Neo4j Browser
 
 If you haven't already, https://neo4j.com/download/[download^] Neo4j. 
 Using the provided instructions (shown when downloading), follow Step 1 to install and start the Neo4j Desktop application.
@@ -34,12 +33,12 @@ Just to review, so far, we have shown two ways to interact with Neo4j.
 
 Now that we can access the graph database, we can start working with data using our query language, https://neo4j.com/developer/cypher[Cypher^].
 
-For an introduction to Browser's features and navigation as Neo4j's user interface, you can type `:play intro` into the command-line and press kbd:[Enter] or click the play button.
+For an introduction to Browser's features and navigation as Neo4j's user interface, you can type `:play intro` into the command-line and press kbd:[Enter] or click the play button (image:{img}cypher_run_button.jpg[width=25]).
 
 [#neo4j-feedback]
 == Feedback & Questions
 
-If you have feedback or questions on how to use Neo4j Browser, there is a small messaging system in the configuration drawer.
+If you have feedback or questions on how to use Neo4j Browser, there is a small messaging system in the configuration (icon:cog[]) drawer.
 You can provide your name and send us a message.
 
 [#browser-sync]
@@ -56,9 +55,9 @@ You just need to click the cloud icon in the left-side menu and log in with your
 
 If you want to learn more about Neo4j, Cypher, or Neo4j Browser before diving in, click on any of the helpful links shown after startup (commands also shown below).
 These are quick guides that introduce the different concepts.
-You can find more helpful links in the left sidebar of Neo4j in the "Documents" tab.
+You can find more helpful links in the left sidebar of Neo4j in the "Documents" tab (icon:book[]).
 
-To pin a particular pane to the top of the window (under command line) so that it stays at the top when you run queries after it, just click the pushpin button.
+To pin a particular pane to the top of the window (under command line) so that it stays at the top when you run queries after it, just click the pushpin button (image:{img}pin_button.png[width=25]).
 This is especially helpful for pinning guides to the top so they do not get pushed down to the bottom of the window as you run queries.
 
 [%autowidth.spread]
@@ -69,9 +68,9 @@ This is especially helpful for pinning guides to the top so they do not get push
 |Cypher |Neo4j's graph query language introduction |`:play cypher`
 |The Movie Graph |A mini graph model of connections between actors and movies |`:play movie graph`
 |The Northwind Database |A classic use case of RDBMS to graph with import instructions and queries |`:play northwind graph`
-|Custom Guides |Use _:play <url>_ to play a custom guide (link:/developer/guide-create-neo4j-browser-guide/[custom guide documentation^])|`:play
+|Custom Guides |Use _:play <url>_ to play a custom guide (https://neo4j.com/developer/guide-create-neo4j-browser-guide/[custom guide documentation^])|`:play
 
-http://guides.neo4j.com/graphgist/restaurant_recommendation.html`
+https://guides.neo4j.com/bebe.html`
 |===
 
 All you have to do is enter any of the above commands in the Browser command line (at the top of the pane) and follow the accompanying guides to walk through the training or scenarios.
@@ -167,7 +166,7 @@ You can put several Cypher statements into the command line input (with semicolo
 To do this, go to the `Settings` tab on your Neo4j Browser window and make sure the box is checked for `Enable multi statement query editor`.
 These steps are shown in the image below.
 
-image::{img}enable_multiline_queries.jpg[width=300]
+image::{img}enable_multiline_queries.jpg[width=300,link="{img}enable_multiline_queries.jpg",role="popup-link"]
 
 .Output, Export, & Visualization Tips
 You can switch between `Graph`, `Table`, `Text`, and `Code` views to see the results in various formats by clicking the icons on the left of each pane.
