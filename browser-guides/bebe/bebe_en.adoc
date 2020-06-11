@@ -1,4 +1,5 @@
 = Introduction to Graphs and Data
+:author: Michael Hunger
 :description: Introduce graphs and Cypher to young students with hands-on queries and exploration
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
 :tags: browser-guide, intro, cypher, students

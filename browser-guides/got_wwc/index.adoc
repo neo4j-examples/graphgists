@@ -1,4 +1,5 @@
 = An Intro to Neo4j with Game of Thrones
+:author: Mark Needham
 :description: Learn Cypher and explore the Game of Thrones world
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
 :tags: browser-guide, intro, cypher, load-csv, aggregation
@@ -7,10 +8,19 @@
 
 image::{img}nodes.png[float=right]
 
+ifdef::env-guide[]
 . pass:a[<a play-topic='{guides}/01_intro.html'>Intro to Cypher</a>]
 . pass:a[<a play-topic='{guides}/02_got.html'>Game of Thrones: Characters and Episodes</a>]
 . pass:a[<a play-topic='{guides}/03_got_houses.html'>Game of Thrones: Houses</a>]
 . pass:a[<a play-topic='{guides}/04_got_families.html'>Game of Thrones: Family Ties</a>]
+endif::[]
+ifdef::env-graphgist[]
+. pass:a[<a play-topic='01_intro.adoc'>Intro to Cypher</a>]
+. pass:a[<a play-topic='02_got.adoc'>Game of Thrones: Characters and Episodes</a>]
+. pass:a[<a play-topic='03_got_houses.adoc'>Game of Thrones: Houses</a>]
+. pass:a[<a play-topic='04_got_families.adoc'>Game of Thrones: Family Ties</a>]
+link:...[]
+endif::[]
 
 == Further Resources
 

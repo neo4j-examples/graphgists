@@ -208,4 +208,9 @@ ORDER BY appearances DESC
 
 In the next section, we're going to look at the relationships between different characters and the houses they belong to.
 
+ifdef::env-guide[]
 pass:a[<a play-topic='{guides}/04_got_families.html'>Family Ties</a>]
+endif::[]
+ifdef::env-graphgist[]
+pass:a[<a play-topic='04_got_families.adoc'>Family Ties</a>]
+endif::[]
