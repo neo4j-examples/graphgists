@@ -15,12 +15,12 @@ ifdef::env-guide[]
 . pass:a[<a play-topic='{guides}/03_got_houses.html'>Game of Thrones: Houses</a>]
 . pass:a[<a play-topic='{guides}/04_got_families.html'>Game of Thrones: Family Ties</a>]
 endif::[]
+
 ifdef::env-graphgist[]
-. pass:a[<a play-topic='{gist}/01_intro.adoc'>Intro to Cypher</a>]
-. pass:a[<a play-topic='{gist}/02_got.adoc'>Game of Thrones: Characters and Episodes</a>]
-. pass:a[<a play-topic='{gist}/03_got_houses.adoc'>Game of Thrones: Houses</a>]
-. pass:a[<a play-topic='{gist}/04_got_families.adoc'>Game of Thrones: Family Ties</a>]
-link:...[]
+. link:{gist}/01_intro.adoc[Intro to Cypher^]
+. link:{gist}/02_got.adoc[Game of Thrones: Characters and Episodes^]
+. link:{gist}/03_got_houses.adoc[Game of Thrones: Houses^]
+. link:{gist}/04_got_families.adoc[Game of Thrones: Family Ties^]
 endif::[]
 
 == Further Resources
