@@ -1,6 +1,7 @@
 = Game of Thrones: Houses
 :csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import/
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:guides: https://guides.neo4j.com/got_wwc
 :icons: font
 
 == Importing houses
@@ -212,5 +213,5 @@ ifdef::env-guide[]
 pass:a[<a play-topic='{guides}/04_got_families.html'>Family Ties</a>]
 endif::[]
 ifdef::env-graphgist[]
-pass:a[<a play-topic='04_got_families.adoc'>Family Ties</a>]
+link:{gist}/04_got_families.adoc[Family Ties^]
 endif::[]

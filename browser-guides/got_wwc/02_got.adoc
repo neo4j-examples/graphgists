@@ -1,6 +1,7 @@
 = Game of Thrones: Characters and Episodes
 :csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:guides: https://guides.neo4j.com/got_wwc
 :icons: font
 
 == The Game of Thrones dataset
@@ -255,5 +256,5 @@ ifdef::env-guide[]
 pass:a[<a play-topic='{guides}/03_got_houses.html'>Houses</a>]
 endif::[]
 ifdef::env-graphgist[]
-pass:a[<a play-topic='03_got_houses.adoc'>Houses</a>]
+link:{gist}/03_got_houses.adoc[Houses^]
 endif::[]
