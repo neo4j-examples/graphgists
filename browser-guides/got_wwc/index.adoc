@@ -17,10 +17,10 @@ ifdef::env-guide[]
 endif::[]
 
 ifdef::env-graphgist[]
-. link:{gist}/01_intro.adoc[Intro to Cypher^]
-. link:{gist}/02_got.adoc[Game of Thrones: Characters and Episodes^]
-. link:{gist}/03_got_houses.adoc[Game of Thrones: Houses^]
-. link:{gist}/04_got_families.adoc[Game of Thrones: Family Ties^]
+. link:{gist}/01_intro.adoc[Intro to Cypher,window=_blank]
+. link:{gist}/02_got.adoc[Game of Thrones: Characters and Episodes,window=_blank]
+. link:{gist}/03_got_houses.adoc[Game of Thrones: Houses,window=_blank]
+. link:{gist}/04_got_families.adoc[Game of Thrones: Family Ties,window=_blank]
 endif::[]
 
 == Further Resources
