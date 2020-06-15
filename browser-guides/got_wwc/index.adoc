@@ -2,6 +2,7 @@
 :author: Mark Needham
 :description: Learn Cypher and explore the Game of Thrones world
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/got_wwc
 :tags: browser-guide, intro, cypher, load-csv, aggregation
 
 == Welcome to An Intro to Neo4j with Game of Thrones
@@ -15,10 +16,10 @@ ifdef::env-guide[]
 . pass:a[<a play-topic='{guides}/04_got_families.html'>Game of Thrones: Family Ties</a>]
 endif::[]
 ifdef::env-graphgist[]
-. pass:a[<a play-topic='01_intro.adoc'>Intro to Cypher</a>]
-. pass:a[<a play-topic='02_got.adoc'>Game of Thrones: Characters and Episodes</a>]
-. pass:a[<a play-topic='03_got_houses.adoc'>Game of Thrones: Houses</a>]
-. pass:a[<a play-topic='04_got_families.adoc'>Game of Thrones: Family Ties</a>]
+. pass:a[<a play-topic='{gist}/01_intro.adoc'>Intro to Cypher</a>]
+. pass:a[<a play-topic='{gist}/02_got.adoc'>Game of Thrones: Characters and Episodes</a>]
+. pass:a[<a play-topic='{gist}/03_got_houses.adoc'>Game of Thrones: Houses</a>]
+. pass:a[<a play-topic='{gist}/04_got_families.adoc'>Game of Thrones: Family Ties</a>]
 link:...[]
 endif::[]
 
