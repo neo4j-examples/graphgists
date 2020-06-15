@@ -1,6 +1,7 @@
 = Intro to Neo4j and Cypher
 :csv-url: https://raw.githubusercontent.com/neo4j-meetups/modeling-worked-example/master/data/
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:guides: https://guides.neo4j.com/got_wwc
 :icons: font
 
 == Intro to Neo4j
@@ -227,5 +228,5 @@ ifdef::env-guide[]
 pass:a[<a play-topic='{guides}/02_got.html'>Game of Thrones dataset</a>]
 endif::[]
 ifdef::env-graphgist[]
-pass:a[<a play-topic='02_got.adoc'>Game of Thrones dataset</a>]
+link:{gist}/02_got.adoc[Game of Thrones dataset^]
 endif::[]
