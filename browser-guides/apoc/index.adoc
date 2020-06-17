@@ -1,6 +1,6 @@
 = Awesome Procedures on Cypher (APOC)
 :author: Jennifer Reif
-:description: Learn to use some of the most popular procedures in the APOC library and explore the capatilities the library can provide
+:description: Learn to use some of the most popular procedures in the APOC library and explore the capabilities the library can provide
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
 :guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
