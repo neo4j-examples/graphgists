@@ -1,0 +1,164 @@
+= Date & Time Conversion in APOC
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:guides: https://guides.neo4j.com/apoc
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
+:icons: font
+
+== APOC Date & Time Conversion
+
+Neo4j supports date and temporal values, but often, we are dealing with differing date formats between systems or files.
+These can be difficult to express and translate without a few flexible procedures to handle converting one value formatting to another.
+
+APOC has several procedures for converting and formatting various date, time, and temporal values.
+They save valuable time in manually converting values or creating a procedure from scratch!
+The full list of available procedures is in the https://neo4j.com/docs/labs/apoc/current/temporal/[APOC documentation^].
+
+== Data set for this guide
+
+image::{img}northwind_data_model.png[role=right]
+
+We will use the Northwind retail system data to test the date and time procedures in this guide.
+To load the data, we can type `:play northwind` into the Neo4j Browser command line and execute the statement.
+
+A browser guide will appear.
+Go ahead and step through the guide, running all of the queries to load all the `Product`, `Supplier`, `Category`, `Order`, and `Customer` data with indexes on specific properties.
+
+Once completed, we can move to the next slide and start using APOC with this data.
+
+== Converting dates from Integer to String
+
+The APOC `apoc.date.format()` takes an integer value for the date and converts it to a string in the desired format, including a custom one.
+This is commonly used when translating data from APIs, flat files, or even other databases and moving that data into or out of Neo4j.
+
+Format: `apoc.date.format(12345, ['ms'/'s'], ['yyyy/MM/dd HH:mm:ss'])`
+
+This procedure has 3 parameters - 
+
+1. the date integer value to convert
+2. how specific the first parameter is (`s` for seconds, `ms` for milliseconds)
+3. how we want the date string result to look
+
+=== apoc.date.format Example:
+
+Our Northwind data has `Customer` nodes who hopefully make orders with our business.
+We probably want to record timestamps when the first contact was sent to the business to see which customers were initially contacted in certain months and which probably made sales in the same year.
+
+[source, cypher]
+----
+WITH 841914000 as dateInt //1996-09-05 09:00 in epoch seconds
+MERGE (c:Customer {companyName: 'Island Trading'})
+ SET c.firstContact = apoc.date.format(dateInt, 's', 'yyyy-MM-dd HH:mm:ss')
+RETURN c
+----
+
+In the example above, we have a date integer in seconds, and we want to update our customer information with that datetime in a human-readable format.
+To do that, we merge the `Customer` node and set the `firstContact` property equal to the converted date (using the procedure).
+
+In the return, we should see the customer's node with all its properties and the formatted date!
+
+== Converting dates from String to Integer
+
+Let us do the reverse of what we just did on the previous slide by converting a string value to an integer with `apoc.date.parse()`.
+This is helpful for comparing date strings from and to various formats, most commonly in data import or export.
+
+Format: `apoc.date.parse('2019/03/25 03:15:59', ['ms'/'s'], ['yyyy/MM/dd HH:mm:ss'])`
+
+The procedure needs 3 parameters - 
+
+1. the date string that needs converted
+2. how specific the conversion should be (down to seconds `s` or milliseconds `ms`)
+3. what the format is of the date string (1st parameter)
+
+=== apoc.date.parse Example:
+
+Let us say that we received a notification from our monitoring system that there was an error in the system at timestamp `882230400`, so we need to find out which orders were possibly affected by the error.
+We can use `apoc.date.parse()` to convert the string-formatted date in our Northwind data to a timestamp and compare that to the timestamp we have from our error system.
+
+[source, cypher]
+----
+WITH 882230400 as errorTimestamp //1997-12-16 00:00:00.000 in epoch seconds
+MATCH (o:Order)
+WHERE apoc.date.parse(o.orderDate, 's', 'yyyy-MM-dd HH:mm:ss.SSS') = errorTimestamp
+RETURN o
+----
+
+In our example, we are given a date integer (epoch time from the error in monitoring system) and want to find the orders that were made on that date.
+We use `MATCH` to search for `Order` nodes where the converted `orderDate` property (using the procedure) matches the date integer of the error and return the orders that are found.
+
+In the return, we should see 3 orders that have an order date of `1997-12-16`!
+
+== Adding or subtracting units from timestamps
+
+The marketing department might want to see how well a marketing campaign did to generate sales.
+The campaign was published at timestamp `891388800`, and we need to find out how many sales it generated within the first 30 days running.
+
+We can use `apoc.date.add()` to take a point in time of epoch milliseconds (integer) and add or subtract a specified time value to find the desired timestamp.
+
+Format: `apoc.date.add(12345, 'ms', -365, 'd')`
+
+The procedure above contains 4 parameters - 
+
+1. the date integer for adding or subtracting
+2. how specific the date integer is (`s` for seconds, `ms` for milliseconds)
+3. the number to add or subtract from the date integer
+4. the unit type to add or subtract
+
+=== apoc.date.add Example:
+
+[source, cypher]
+----
+WITH 891388800 as startDate
+WITH startDate, apoc.date.add(startDate, 's', 30, 'd') as endDate
+MATCH (o:Order)
+WHERE startDate < apoc.date.parse(o.orderDate,'s','yyyy-MM-dd HH:mm:ss.SSS') < endDate
+RETURN count(o)
+----
+
+In our query above, we first set the campaign start timestamp as a variable and then pass that to the next line, where we also use that `startDate` to calculate our end date (using the procedure).
+The `apoc.date.add` calculates it by adding 30 days (the `30` and `d` parameters) to the start date and setting that as our `endDate`.
+We then search for `Order` nodes where the `orderDate` (converted from string to integer using `apoc.date.parse()`) is greater than the start date of the campaign and less than the end date.
+
+In the return, we should see the number of orders made within 30 days of the campaign publish - a total of 70!
+
+== Converting date string to temporal type
+
+So far, we have worked with order dates as strings with a particular format.
+However, Neo4j supports date and time types, so it would probably make things much easier if we converted to the native types.
+
+There is an APOC procedure to convert the format from a string to a temporal type.
+Since Neo4j is compatible with the https://en.wikipedia.org/wiki/ISO_8601[ISO 8601^] standard, we will use that for our result format.
+
+Format: `apoc.date.convertFormat('2019-12-31 16:14:20', 'yyyy-MM-dd HH:mm:ss', 'iso_date_format')`
+
+The procedure contains 3 parameters - 
+
+1. the date string that needs converted
+2. what the format is of the date string
+3. the format for the resulting temporal type (can be specified manually, as https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html[Java formats^], or as these https://www.elastic.co/guide/en/elasticsearch/reference/5.5/mapping-date-format.html#built-in-date-formats[built-in formats^])
+
+=== apoc.date.convertFormat Example:
+
+[source, cypher]
+----
+MATCH (o:Order)
+ SET o.isoOrderDate = apoc.date.convertFormat(o.orderDate, 'yyyy-MM-dd HH:mm:ss.SSS', 'iso_date_time')
+RETURN o
+----
+
+In the query above, we find all the orders in our system and set a new property called `isoOrderDate` that is equal to the converted `orderDate` string.
+The `orderDate` is converted using the procedure, specifying the string format it is currently in and the `iso_date_time` format (2019-01-01T00:00:00) we want to have as the result.
+
+Results of the query should return a sample (Browser will limit how much JavaScript has to render) of the orders we updated.
+Clicking on one shows all the properties on that node, including the new `isoOrderDate` property that is formatted as we expected!
+
+== Next Step
+
+In the next section, we are going to see how to use APOC to load JSON data into Neo4j.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/03_load_json.html'>Load JSON Data</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+link:{gist}/03_load_json.adoc[Load JSON Data^]
+endif::[]

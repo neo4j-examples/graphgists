@@ -1,0 +1,124 @@
+= Batch Data with APOC
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:guides: https://guides.neo4j.com/apoc
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
+:icons: font
+
+== Batch Data in Neo4j with APOC
+
+Sometimes, the updates that need to be made to data are operationally intensive and require more resources than can be allocated in a single transaction.
+APOC provides a few options for batching data to handle these larger demands.
+
+== Data set for this guide
+
+image::{img}northwind_data_model.png[role=right]
+
+Just like in our previous sections on using APOC for refactoring or importing, we will use the Northwind retail system data to test the refactoring procedures in this guide.
+
+If you haven't loaded the data from earlier guides in this series (or if you want to start with clean data), you can run the code block below.
+The second statement will open the Northwind browser guide where you will need to execute each of the Cypher queries to load the data.
+
+[source,cypher]
+----
+MATCH (n) DETACH DELETE n;
+:play northwind-graph;
+----
+
+== Batching data with apoc.periodic.iterate
+
+For making updates to data in the graph, we may want to make the update across the entire graph or we may want to select a subset of data for updating.
+Either way, we could be dealing with vast amounts of data and may want to batch imports coming from files or other systems to load into our graph.
+
+The `apoc.periodic.iterate` procedure is one of the best ways to handle a variety of import and update scenarios in a batch manner.
+It uses a data-driven statement to select or read data, then uses an operation statement for specifying what we want to do with each batch.
+
+Format: `apoc.periodic.iterate('data-driven statement', 'operations statement', {config: ...})`
+
+The procedure has 3 parameters - 
+
+1. the data-driven statement for selecting/reading data into batches
+2. the operations statement for updating/creating data in batches
+3. any configurations
+
+=== apoc.periodic.commit Example:
+
+Let's start with an example that is narrow in scope and is based on the need that we might want to flag products that need to be reordered.
+Perhaps we want to send our stock associates messages or put these items on a weekly report.
+
+To do this, we can search for products where our stock level is equal to or less than our reorder level and add an extra label to those nodes for easy retrieval by various systems or people.
+
+[source,cypher]
+----
+CALL apoc.periodic.iterate(
+    'MATCH (p:Product) WHERE p.unitsInStock <= p.reorderLevel RETURN p',
+    'SET p:Reorder',
+    {batchSize: 100, batchMode: 'BATCH'}
+) YIELD batches, total, timeTaken, committedOperations, failedOperations, failedBatches, retries, errorMessages
+RETURN batches, total, timeTaken, committedOperations, failedOperations, failedBatches, retries, errorMessages
+----
+
+Our statement above calls the procedure and uses the first Cypher query to select all of the Products where our stock is less or equal to the reorder level.
+Then, our second statement needs to add the `Reorder` label to those `Product` nodes.
+Next, we set some config for batchsize and the mode we want batches to execute.
+Because our Northwind data set is small, our batch size is also very small (it's not uncommon to see batchSizes set at 10,000 or more on larger graphs).
+
+Finally, we retrieve some statistics about our procedure execution, so that we have insight if anything goes wrong and can verify all the batches were successful.
+Note that since we set our batch size to 100, and we only have 22 updates (22 Product nodes have stock less than/equal to reorder level), it completes in a single batch.
+If we had hundreds or thousands of products in our graph and had low stock on most of them, however, we would see more batches.
+We could also have added a `parallel: true` config, since these updates wouldn't conflict (no relationships involved).
+However, since our graph is very small and we don't have very many updates, we don't need to add this configuration on this statement.
+
+We can verify the update worked by running a query like the one below.
+
+[source,cypher]
+----
+MATCH (p:Product)
+RETURN p LIMIT 25;
+----
+
+=== Another apoc.periodic.iterate Example:
+
+Let's take, for instance, that we might want to track and maintain our order line item information as a separate node, rather than properties on a relationship.
+We may be querying those relationship properties more often than initially thought, and query performance may see a dip, since relationship properties are not as optimized as patterns.
+
+To do this, we can use `apoc.periodic.iterate` to select all of the `ORDERS` relationships in our graph and add a `LineItem` intermediary node with relationships.
+
+[source,cypher]
+----
+CALL apoc.periodic.iterate(
+    'MATCH (o:Order)-[r:ORDERS]->(p:Product) RETURN r, o, p',
+    'MERGE (i:LineItem {id: o.orderID+p.productID}) 
+    SET i.quantity = r.quantity, i.unitPrice = r.unitPrice, i.discount = r.discount
+    MERGE (o)-[rel:HAS_ITEM]->(i)-[rel2:IS_FOR]-(p)
+    DELETE r',
+    {batchSize: 10000, batchMode: 'BATCH'}
+) YIELD batches, total, timeTaken, committedOperations, failedOperations, failedBatches, retries, errorMessages
+RETURN batches, total, timeTaken, committedOperations, failedOperations, failedBatches, retries, errorMessages
+----
+
+Our statement above calls the procedure and selects all of the Orders with an `ORDERS` relationship to Products in the first query.
+Then, our second statement takes those patterns and create a new intermediary node (`LineItem`) with the line item properties (from the existing `ORDERS` relationships).
+The next merge statement connects the new line items to the related `Order` and `Product` nodes, and the last statement deletes the old `ORDERS` relationships, since we have the new pattern.
+
+Finally, we set some config for batch size and the mode we want batches to execute.
+We retrieve some statistics about our procedure execution, so that we have insight if anything goes wrong and can verify all the batches were successful.
+Note that since we set our batch size to 10,000, and we only have 2,155 updates, it completes in a single batch.
+If our graph was much larger, however, we could very easily see more batches.
+
+We can verify everything looks correct with the query below by selecting a specific customer and pulling all their orders with the new line items and related products.
+
+[source,cypher]
+----
+MATCH (c:Customer {companyName: 'Hanari Carnes'})-[r:PURCHASED]-(o:Order)-[r2:HAS_ITEM]-(i:LineItem)-[r3:IS_FOR]-(p:Product)
+RETURN c, r, o, r2, i, r3, p LIMIT 25
+----
+
+== Next Steps
+
+You are well on your way to mastering the APOC library and improving your interaction with graph data in Neo4j!
+Feel free to check out many of our other APOC resources for continuing your learning and discovering the many more useful procedures and functions available.
+
+* https://neo4j.com/docs/labs/apoc/current/[Reference the APOC documentation^]
+* https://www.youtube.com/playlist?list=PL9Hl4pk2FsvXEww23lDX_owoKoqqBQpdq[Video series: see how to use APOC procedures^]
+* https://community.neo4j.com/c/neo4j-graph-platform/procedures-apoc/77[Ask questions: join our Neo4j Community Site to get APOC help^]
+* https://neo4j.com/labs/apoc/[Learn more about APOC and contributing^]
