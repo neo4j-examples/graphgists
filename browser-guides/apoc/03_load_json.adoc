@@ -1,0 +1,345 @@
+= Load JSON Data with APOC
+:icons: font
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/browser-guides/data
+:northwind: https://data.neo4j.com/northwind
+:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:guides: https://guides.neo4j.com/apoc
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
+
+== Load JSON into Neo4j with APOC
+
+Using APIs can be a big opportunity to translate and transport data between systems.
+Many systems have some way to read and ingest or export data into a JSON format.
+The APOC library provides this ability for Neo4j.
+
+With the `apoc.load.json*` procedures, you can retrieve data from URLs and turn it into values for Cypher to consume.
+Cypher is pretty good at deconstructing nested documents with dot syntax, slices, UNWIND, etc. to help turn nested data into graphs.
+
+Other procedures, such as `apoc.convert.*json*` help to translate values to and from JSON format.
+The full list of available procedures is in the https://neo4j.com/docs/labs/apoc/current/temporal/[APOC documentation^].
+
+== Data set for this guide
+
+image::{img}northwind_data_model.png[role=right]
+
+Just like in our previous section on using APOC for dates and times, we will use the Northwind retail system data to test the date and time procedures in this guide.
+However, we are going to work with a JSON file version and load the data into our graph from there.
+
+Since we can inspect the file with our procedure, we don't need to load it just yet and can move to the next slide and start using APOC.
+
+== Importing JSON to Neo4j
+
+There are several procedures we can use to work with JSON data in APOC, but the procedure we will start with in order to load our data is `apoc.load.json`.
+It takes a filepath or URL of JSON and results in a map of the data.
+We can combine this procedure with other procedures or Cypher in order to manipulate or clean data, as well as create or update the data in Neo4j.
+
+Format: `apoc.load.json(url, path, {config})`
+
+This procedure has 3 parameters - 
+
+1. the url of the JSON data (filepath or a URL)
+2. can specify any JSON path variables (for loading certain subsections of the data)
+3. configuration options and values (`failOnError` to fail if there is an error on parsing the JSON)
+
+=== apoc.load.json Example:
+
+Let's load a bit more of our Northwind data to add employees and their territories, so we can see which employees handle certain areas and who they report to in the organizational hierarchy.
+
+To set this up without impacting our existing data, we can create a separate database (Neo4j 4.0+) for now with the below commands.
+
+[source,cypher]
+----
+:use system;
+create database employees;
+:use employees;
+----
+
+=== Inspect the JSON file
+
+Our new employee data is in a JSON file that we can load using the `apoc.load.json` procedure.
+
+First, we can inspect the file to see what the data looks like and how it is formatted.
+
+[source, cypher]
+----
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file) YIELD value
+RETURN value
+----
+
+In our code above, we set up the filepath and filename as a variable so we can refer to the shortened name later.
+The next line calls the `apoc.load.json` procedure, passes in the file, and yields the json object from it.
+Our return line returns that json object, so we can see the whole JSON document.
+
+[NOTE]
+--
+If you have a large JSON file, you may not want to return the whole document.
+Instead, you can `UNWIND` substructures and only return a sample of these items using the `LIMIT` clause in Cypher.
+An example of this is shown in the https://neo4j.com/docs/labs/apoc/current/import/load-json/#load-json-examples-stackoverflow[APOC documentation^] to inspect the 5 most recent StackOverflow questions.
+--
+
+=== Determine model
+
+Now that we know what the structure looks like, we can actually load the data into our database!
+As we saw when we inspected the data, we have a list of employees and related information.
+We want to turn this into `Employee` nodes, `Territory` nodes (with relationships to the employees who serve each), and add relationships between employees to understand reporting hierarchies.
+
+image::{img}northwind_data_model.png[role=right]
+
+With the goal structure on the right in mind, let's put together our procedure with Cypher statements to create the data.
+
+=== Load our Employees
+
+First, we will create our initial `Employee` nodes.
+
+[source, cypher]
+----
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file) YIELD value
+UNWIND value.employees as employee
+MERGE (e:Employee {employeeID: employee.employeeID})
+ SET e += {country: employee.country, lastName: employee.lastName, 
+           firstName: employee.firstName, title: employee.title, 
+           titleOfCourtesy: employee.titleOfCourtesy, birthDate: employee.birthDate,
+           region: employee.region, extension: employee.extension, 
+           hireDate: employee.hireDate, address: employee.address, 
+           notes: employee.notes, photoPath: employee.photoPath, 
+           city: employee.city, homePhone: employee.homePhone, 
+           postalCode: employee.postalCode, photo: employee.photo}
+RETURN e
+----
+
+This code has the same first two lines as our inspection query previously, but the third line and beyond is where it differs.
+We unwind our list of employees into individual employee objects.
+The next line uniquely creates each employee (with `MERGE`), and the following lines add the other properties we want to have on our `Employee` nodes.
+Our return statement returns the nodes we just created.
+
+We still want to create our territories that each employee manages and the employee reporting structure.
+Let's iterate over the file again and load our territories next.
+
+=== Load our Territories
+
+[source, cypher]
+----
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file) YIELD value
+UNWIND value.employees as employee
+MATCH (e:Employee {employeeID: employee.employeeID})
+WITH e, employee
+UNWIND employee.territories as territory
+MERGE (t:Territory {territoryID: territory.territoryID})
+ SET t += {territoryDescription: territory.territoryDescription}
+MERGE (e)-[rel:SERVES]->(t)
+RETURN *
+----
+
+In this query, we read our JSON file and unwind the employee list, then we match each employee to ones we recently loaded into our graph.
+Next, we need to unwind our list of territories and uniquely create the `Territory` nodes, setting all those properties.
+The following line creates the `SERVES` relationships between our `Employee` and `Territory` nodes to show which employees cover which territories.
+Lastly, we return all the data we dealt with in this query (`Employee` nodes, `Territory` nodes, and the `SERVES` relationships).
+
+For our final query, we will add in our reporting relationships between employees.
+
+=== Load our Reporting Structure
+
+[source, cypher]
+----
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file) YIELD value
+UNWIND value.employees as employee
+MATCH (e:Employee {employeeID: employee.employeeID})
+WITH e, employee.manager as manager
+MATCH (m:Employee {employeeID: manager.employeeID})
+MERGE (e)-[rel:REPORTS_TO]->(m)
+RETURN *
+----
+
+This code matches the employees in the JSON file with those in our database, then passes those and the manager portion of the JSON to the next match to find employees that have the manager's id.
+We uniquely create the relationship between the employee and the manager employee before returning everything.
+
+== More complex JSON structures
+
+Sometimes, you may only need to load a nested portion or substructure of a larger JSON object/list.
+This is where the ability to use JSON paths is helpful.
+
+JSON paths use expressions to refer to structures in JSON (if you are familiar with XPath for XML documents, JsonPath is the equivalent for JSON).
+More information is linked in the https://neo4j.com/docs/labs/apoc/current/import/load-json/#load-json-json-path[APOC documentation^].
+
+We can use our `apoc.load.json` procedure and specify a JSON path as the second parameter to load substructures.
+To add a bit more information to our employees, we might want to see which territories belong to certain broader regions.
+This might help us understand how many employees we have in different regions, which regions might be more active, and where to add more employees.
+
+=== Inspect file using JSON Path
+
+Let's inspect the file again using a JSON path to extract our territory information from the employee file.
+
+[source,cypher]
+----
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file, '$.employees[*].territories[*]') YIELD value
+RETURN value
+----
+
+Here, we are using the same file variable and passing that into our `apoc.load.json` procedure.
+The second parameter in the procedure call differs by specifying that we want to only look at the territory list substructure.
+This allows us to skip unwinding each of the higher-level objects to get to what we really need - the territory information.
+
+The `$` is for the root object.
+Since we have a list of employees within that root, we use the `.` annotation to look for the `employees` substructure that is an array, and we want to pull all the items in that list with `[\*]`.
+Then, within each employee in the list, we have a list of territories that we can retrieve with the `.territories[\*]`.
+Finally, we yield that nested structure from the procedure and return it, so we can take a look.
+
+In our next step, we can create `Region` nodes and connect our existing `Territory` nodes to their related regions.
+
+=== Load our Regions
+
+[source,cypher]
+----
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file, '$.employees[*].territories[*]') YIELD value
+MATCH (t:Territory {territoryID: value.territoryID})
+WITH t, value.region as region
+MERGE (r:Region {regionID: region.regionID})
+ SET r += {regionDescription: region.regionDescription}
+MERGE (t)-[part:PART_OF]->(r)
+RETURN *
+----
+
+Our code above uses the same JSON path as when we inspected the file and matches existing `Territory` nodes to those in the file.
+Then, it passes the matched territories and the region section of the JSON and uniquely creates `Region` nodes with an id and description on each.
+It also creates the relationship between the territory and region nodes before returning our data in the last line.
+We should see four regions connected to various territories.
+
+We can also validate the data model by running the `CALL db.schema.visualization` procedure, which should return our `Employee` node with a relationship to itself for reporting structure, a relationship from `Employee` to `Territory` for which employees serves which territories, and a relationship from `Territory` to `Region` for which territories are part of which regions.
+
+== Converting data to/from JSON
+
+There may be cases when we want to handle JSON data, but our data is in another format that needs translated first.
+APOC has a few conversion procedures and functions that will take a variety of types of data and either move data to or from a JSON format.
+
+First, let's see how we take other types of data and turn it into JSON.
+We might have data stored in CSV files that we want to try to translate into JSON for storing.
+The `apoc.convert.toJson` procedure will take nearly any data type (including CSV!) and try to convert it to a JSON string.
+Let's try that with some data from our Northwind data set.
+
+=== apoc.convert.toJson Example:
+
+We might not want to store regions as separate nodes.
+Instead, we could dump that data to the territory nodes as embedded JSON.
+To do this, we can read our CSV file of regions with the `apoc.load.csv` and return each row as a JSON string by using the `apoc.convert.toJson` for converting the comma-separated values to the familiar key/value JSON format.
+
+[source,cypher]
+----
+WITH '{northwind}/regions.csv' as test
+CALL apoc.load.csv(test) YIELD map
+RETURN apoc.convert.toJson(map)
+----
+
+This code above simply translates the data, but we could add Cypher statements to it for setting the JSON to a property on the `Territory` nodes.
+It could look something like the code on the next slide.
+
+=== Set JSON string as property on nodes
+
+[source,cypher]
+----
+WITH '{northwind}/regions.csv' as test
+CALL apoc.load.csv(test) YIELD map
+MATCH (t:Territory)-[p:PART_OF]->(r:Region {regionID: map.regionID})
+ SET t.region = apoc.convert.toJson(map)
+RETURN *
+----
+
+First, we load our CSV file and return the map output value, which is a JSON-like object format.
+We could also return a list format or simply the line number from that procedure.
+Then, we find the territories in our graph that are assigned to each region from the CSV file and set the `region` property on the `Territory` node equal to the CSV row converted into a JSON string.
+
+We can confirm everything worked as intended when we return all that data and confirm that the `Region` node data tied to each territory now shows up in the `region` property on the `Territory` node.
+
+=== apoc.convert.fromJsonList Example:
+
+Now let's take JSON data and convert it into something Cypher will understand, allowing us to run some of the operations available in Cypher on it.
+For instance, we might want to see how many territories an employee covers or retrieve the most-recently added territory for an employee.
+
+First, we need to put a JSON string list as a property in our graph.
+We will put the list of territories for each employee on the `Employee` nodes, so we could do some quick reporting for our employees every month or quarter.
+
+[source,cypher]
+----
+//Load territories on Employee nodes
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file,'$.employees[*]') YIELD value
+MATCH (e:Employee {employeeID: value.employeeID})
+WITH e, apoc.convert.toJson(value.territories) as tList
+ SET e.territories = tList
+RETURN *
+----
+
+=== Use Cypher functions on converted JSON list
+
+Next, we will use that list (JSON string) to run some Cypher functions and pull information from it for our reports.
+
+[source,cypher]
+----
+//Find count of territories for each employee and last territory in list
+MATCH (e:Employee)
+WITH e, apoc.convert.fromJsonList(e.territories) as tList
+RETURN e.employeeID, size(tList) as territoryCount, last(tList) as recentTerritory
+ORDER BY territoryCount DESC
+----
+
+In our query, we search our graph for `Employee` nodes and convert the JSON list string (in our `territories` property) to a list Cypher can operate on with the `apoc.convert.fromJsonList` function.
+The third line returns each employee with the count of the territories in the json list and the last territory in the list.
+We used the `ORDER BY` clause in the last line to sort the employees in descending order by the number of territories covered, so we see those who have the most at the top.
+
+=== apoc.convert.fromJsonMap Example:
+
+Similar to how we dealt with a JSON list string, we can also convert JSON map strings into something Cypher can read and operate on.
+For instance, we could store the region data on the `Territory` nodes (instead of creating separate `Region` nodes) and run Cypher functions or operations to retrieve values from the embedded map.
+
+First, we need to store our JSON map string on the `Territory` nodes.
+
+[source,cypher]
+----
+//Store region data as a json map string in property on Territory
+WITH '{data-url}/employee-map.json' as file
+CALL apoc.load.json(file,'$.employees[*].territories[*]') YIELD value
+MATCH (t:Territory {territoryID: value.territoryID})
+WITH t, apoc.convert.toJson(value.region) as rMap
+ SET t.region = rMap
+RETURN *
+----
+
+=== Use Cypher functions on converted JSON map
+
+Now we can run Cypher operations on that map string to get information from it.
+We might want to see the regions that each employee works in by converting the JSON map string to a map that Cypher can read and accessing our `regionDescription` map property.
+
+[source,cypher]
+----
+//See which region each employee operates in
+MATCH (e:Employee)-[s:SERVES]->(t:Territory)
+WITH e, apoc.convert.fromJsonMap(t.region) as rMap
+RETURN DISTINCT(e.employeeID), rMap.regionDescription
+----
+
+We could also return only the employees who work in the `Northern` region.
+
+[source,cypher]
+----
+MATCH (e:Employee)-[s:SERVES]->(t:Territory)
+WITH e, apoc.convert.fromJsonMap(t.region) as rMap
+WHERE rMap.regionDescription = 'Northern'
+RETURN DISTINCT(e.employeeID), rMap.regionDescription
+----
+
+== Next Step
+
+In the next section, we are going to see how to use APOC to refactor data in Neo4j.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/04_refactor_data.html'>Refactor Data</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+link:{gist}/04_refactor_data.adoc[Refactor Data^]
+endif::[]
