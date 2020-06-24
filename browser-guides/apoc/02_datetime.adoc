@@ -1,5 +1,5 @@
 = Date & Time Conversion in APOC
-:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:img: https://guides.neo4j.com/img
 :guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
@@ -15,7 +15,7 @@ The full list of available procedures is in the https://neo4j.com/docs/labs/apoc
 
 == Data set for this guide
 
-image::{img}northwind_data_model.png[role=right]
+image::{img}/northwind_data_model.png[role=right]
 
 We will use the Northwind retail system data to test the date and time procedures in this guide.
 To load the data, we can type `:play northwind` into the Neo4j Browser command line and execute the statement.

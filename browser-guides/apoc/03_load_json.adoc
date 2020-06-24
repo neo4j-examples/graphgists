@@ -2,7 +2,7 @@
 :icons: font
 :data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/browser-guides/data
 :northwind: https://data.neo4j.com/northwind
-:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:img: https://guides.neo4j.com/img
 :guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 
@@ -20,7 +20,7 @@ The full list of available procedures is in the https://neo4j.com/docs/labs/apoc
 
 == Data set for this guide
 
-image::{img}northwind_data_model.png[role=right]
+image::{img}/northwind_data_model.png[role=right]
 
 Just like in our previous section on using APOC for dates and times, we will use the Northwind retail system data to test the date and time procedures in this guide.
 However, we are going to work with a JSON file version and load the data into our graph from there.
@@ -84,7 +84,7 @@ Now that we know what the structure looks like, we can actually load the data in
 As we saw when we inspected the data, we have a list of employees and related information.
 We want to turn this into `Employee` nodes, `Territory` nodes (with relationships to the employees who serve each), and add relationships between employees to understand reporting hierarchies.
 
-image::{img}northwind_data_model.png[role=right]
+image::{img}/northwind_data_model.png[role=right]
 
 With the goal structure on the right in mind, let's put together our procedure with Cypher statements to create the data.
 

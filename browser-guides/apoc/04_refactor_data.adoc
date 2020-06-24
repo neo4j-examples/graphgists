@@ -1,5 +1,5 @@
 = Refactor with APOC
-:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:img: https://guides.neo4j.com/img
 :guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
@@ -15,7 +15,7 @@ In this section, we will take a look at using several of these procedures to alt
 
 == Data set for this guide
 
-image::{img}northwind_data_model.png[role=right]
+image::{img}/northwind_data_model.png[role=right]
 
 Just like in our previous sections on using APOC for import or date/time values, we will use the Northwind retail system data to test the refactoring procedures in this guide.
 
@@ -52,7 +52,7 @@ RETURN output
 
 After running this statement, we can run our data model query again or retrieve a sample of the data to see the change.
 
-[souce,cypher]
+[source,cypher]
 ----
 CALL db.schema.visualization
 ----

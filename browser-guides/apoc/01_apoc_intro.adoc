@@ -1,6 +1,6 @@
 = Intro to APOC
 :data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/browser-guides/data
-:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:img: https://guides.neo4j.com/img
 :guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
