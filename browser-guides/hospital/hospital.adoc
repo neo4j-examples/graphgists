@@ -2,7 +2,7 @@
 :author: Tomaz Bratanic
 :description: Approach hierarchical tree structures in Neo4j by querying and exploring a hospital data set
 :img: https://guides.neo4j.com/img
-:tags: hierarchy, trees, parent-child
+:tags: hierarchy, trees, parent-child, hospital, load-csv, apoc
 
 image:{img}/hospitalmeta.jpg[hospitalmeta,width=400]
 
