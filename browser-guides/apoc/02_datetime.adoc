@@ -1,5 +1,5 @@
 = Date & Time Conversion in APOC
-:img: https://guides.neo4j.com/apoc/img
+:img: https://s3.amazonaws.com/guides.neo4j.com/apoc/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
 

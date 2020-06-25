@@ -1,7 +1,7 @@
 = Awesome Procedures on Cypher (APOC)
 :author: Jennifer Reif
 :description: Learn to use some of the most popular procedures in the APOC library and explore the capabilities the library can provide
-:img: https://guides.neo4j.com/apoc/img
+:img: https://s3.amazonaws.com/guides.neo4j.com/apoc/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :tags: apoc, procedures, temporal, load-json, data-import, refactor, batching, periodic
 
