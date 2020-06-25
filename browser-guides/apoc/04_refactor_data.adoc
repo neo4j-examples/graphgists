@@ -1,6 +1,4 @@
 = Refactor with APOC
-:img: https://guides.neo4j.com/img
-:guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
 
@@ -15,7 +13,7 @@ In this section, we will take a look at using several of these procedures to alt
 
 == Data set for this guide
 
-image::{img}/northwind_data_model.png[role=right]
+image::{img}/northwind_data_model.png[float=right]
 
 Just like in our previous sections on using APOC for import or date/time values, we will use the Northwind retail system data to test the refactoring procedures in this guide.
 
@@ -38,7 +36,7 @@ Format: `apoc.refactor.invert(rel) YIELD input, output, error`
 
 This procedure has 1 parameter for the relationship (or relationship variable) of the one we want to flip.
 
-=== apoc.refactor.invert Example:
+== apoc.refactor.invert Example:
 
 With our scenario in the last slide, we want to invert the `PART_OF` relationship between `Product` and `Category` nodes.
 The query below shows us how to use the `apoc.refactor.invert` procedure to do that.
@@ -72,7 +70,7 @@ The procedure has 3 parameters -
 2. the new string type (name) we want the relationship to have
 3. (optional) provided list of specific relationships we want to change
 
-=== apoc.refactor.rename.type Example:
+== apoc.refactor.rename.type Example:
 
 Let's change the name of our `PART_OF` relationship between the `Category` and `Product` nodes so that it fits our business model more accurately.
 
@@ -111,7 +109,7 @@ The procedure has up to 7 parameters -
 6. any additional properties we'd like copied from the old node to the new
 7. if we have a lot of nodes to update, we can specify to do it in batches
 
-=== apoc.refactor.categorize Example:
+== apoc.refactor.categorize Example:
 
 Before we can execute this procedure, we need to put a constraint on the new node and property key.
 That can be done with the statement below.
@@ -131,10 +129,9 @@ CALL apoc.refactor.categorize('country', 'LOCATED_IN', true, 'Country', 'country
 
 Here, we have specified that we want to take the `country` property, which is on the `Customer` nodes and create a `LOCATED_IN` relationship that is outgoing from the customer to a new `Country` node with the property called `countryName` on the new node.
 
-[NOTE]
---
-This procedure will remove the country property from the `Customer` nodes and move them to `Country`, rather than making a copy of the property to the new nodes.
---
+*Note:* This procedure will remove the country property from the `Customer` nodes and move them to `Country`, rather than making a copy of the property to the new nodes.
+
+== Verify categories
 
 Now, if we run either our visualization or a sample data query, we can verify.
 Here, we will run a sample data query to see move of the property from `Customer` to `Country`.
@@ -163,7 +160,7 @@ The procedure has 2 parameters -
 1. the relationship that we want to change
 2. the node where we want the relationship to go
 
-=== apoc.refactor.to Example:
+== apoc.refactor.to Example:
 
 We can alter where the `PURCHASED` relationship goes with the APOC code below.
 
@@ -184,12 +181,9 @@ RETURN c, rel, other LIMIT 50
 
 With this new structure, we can run queries to see how many different products a customer has purchased, how many products within specific categories, and most similar customers (based on products in common) without going through the `Order` nodes to find this information.
 
-[NOTE]
---
-We have also diluted our order tracking where we no longer can easily tell which orders a specific customer made.
+*Note:* We have also diluted our order tracking where we no longer can easily tell which orders a specific customer made.
 Refactoring may make some queries easier, but others more complex.
 Impacts of changes should be evaluated.
---
 
 == Condensing multiple relationships
 
@@ -205,7 +199,7 @@ The procedure has 2 parameters -
 1. a list of the relationships we want to merge
 2. any configuration for whether we want properties to be overwritten, discarded, or combined
 
-=== apoc.refactor.mergeRelationships Example:
+== apoc.refactor.mergeRelationships Example:
 
 Now, we can go ahead and see this in action to condense our relationships between customers and products to a single relationship and tracking the number of times a customer has purchased a particular product.
 
@@ -222,6 +216,8 @@ In our query, we find `Customer` nodes with a `PURCHASED` relationship to `Produ
 We then aggregate those patterns into unique rows (based on aggregations for customer and product nodes), as well as collect the relationships into a list (so we can merge them) and count the relationships to store.
 The next line calls the procedure and passes in the list of relationships, adding configuration to discard properties on duplicate relationships and outputs the relationships from the merge.
 Next, we set the `purchaseCount` property on each relationship with the count of purchases between individual customers and products and return the results.
+
+== Verify merged relationships
 
 If we run a quick sample query like the one below, we can verify that we now have a single relationship between each `Customer` and `Product` and that the `purchaseCount` stores the number of times someone has purchased something.
 
