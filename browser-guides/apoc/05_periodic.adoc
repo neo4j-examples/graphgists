@@ -1,6 +1,4 @@
 = Batch Data with APOC
-:img: https://guides.neo4j.com/img
-:guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
 
@@ -11,7 +9,7 @@ APOC provides a few options for batching data to handle these larger demands.
 
 == Data set for this guide
 
-image::{img}/northwind_data_model.png[role=right]
+image::{img}/northwind_data_model.png[float=right]
 
 Just like in our previous sections on using APOC for refactoring or importing, we will use the Northwind retail system data to test the refactoring procedures in this guide.
 
@@ -40,7 +38,7 @@ The procedure has 3 parameters -
 2. the operations statement for updating/creating data in batches
 3. any configurations
 
-=== apoc.periodic.commit Example:
+== apoc.periodic.commit Example:
 
 Let's start with an example that is narrow in scope and is based on the need that we might want to flag products that need to be reordered.
 Perhaps we want to send our stock associates messages or put these items on a weekly report.
@@ -68,6 +66,8 @@ If we had hundreds or thousands of products in our graph and had low stock on mo
 We could also have added a `parallel: true` config, since these updates wouldn't conflict (no relationships involved).
 However, since our graph is very small and we don't have very many updates, we don't need to add this configuration on this statement.
 
+== Verify results
+
 We can verify the update worked by running a query like the one below.
 
 [source,cypher]
@@ -76,7 +76,7 @@ MATCH (p:Product)
 RETURN p LIMIT 25;
 ----
 
-=== Another apoc.periodic.iterate Example:
+== Another apoc.periodic.iterate Example:
 
 Let's take, for instance, that we might want to track and maintain our order line item information as a separate node, rather than properties on a relationship.
 We may be querying those relationship properties more often than initially thought, and query performance may see a dip, since relationship properties are not as optimized as patterns.
@@ -104,6 +104,8 @@ Finally, we set some config for batch size and the mode we want batches to execu
 We retrieve some statistics about our procedure execution, so that we have insight if anything goes wrong and can verify all the batches were successful.
 Note that since we set our batch size to 10,000, and we only have 2,155 updates, it completes in a single batch.
 If our graph was much larger, however, we could very easily see more batches.
+
+== Verify results
 
 We can verify everything looks correct with the query below by selecting a specific customer and pulling all their orders with the new line items and related products.
 

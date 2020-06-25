@@ -1,20 +1,18 @@
 = Awesome Procedures on Cypher (APOC)
 :author: Jennifer Reif
 :description: Learn to use some of the most popular procedures in the APOC library and explore the capabilities the library can provide
-:img: https://guides.neo4j.com/img
-:guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :tags: apoc, procedures, temporal, load-json, data-import, refactor, batching, periodic
 
-image::{img}/apoc-neo4j-user-defined-procedures.jpg[float=right]
+== Welcome to APOC
 
 The APOC library is a set of standard user-defined procedures to extend Cypher in Neo4j.
 User-defined procedures are custom implementations of certain functionality that cannot be easily expressed in Cypher.
 They are implemented in Java, so they are deployable to a Neo4j instance and callable directly from Cypher.
 
-The APOC library consists of over 450 procedures to help with many different tasks in areas like data integration, data conversion, and much more.
+image::{img}/apoc-neo4j-user-defined-procedures.jpg[float=right]
 
-== Welcome to APOC
+The APOC library consists of over 450 procedures to help with many different tasks in areas like data integration, data conversion, and much more.
 
 ifdef::env-guide[]
 . pass:a[<a play-topic='{guides}/01_apoc_intro.html'>Intro to APOC</a>]

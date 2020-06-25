@@ -1,7 +1,5 @@
 = Intro to APOC
-:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/browser-guides/data
-:img: https://guides.neo4j.com/img
-:guides: https://guides.neo4j.com/apoc
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
 
@@ -71,7 +69,7 @@ You can also integrate them into your Cypher statements, which makes them much m
 
 Load JSON example:
 
-[source, cypher]
+[source, cypher,subs=attributes]
 ----
 WITH '{data-url}/person.json' AS url
 CALL apoc.load.json(url) YIELD value as person

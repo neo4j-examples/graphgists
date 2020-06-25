@@ -1,6 +1,4 @@
 = Date & Time Conversion in APOC
-:img: https://guides.neo4j.com/img
-:guides: https://guides.neo4j.com/apoc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :icons: font
 
@@ -15,10 +13,15 @@ The full list of available procedures is in the https://neo4j.com/docs/labs/apoc
 
 == Data set for this guide
 
-image::{img}/northwind_data_model.png[role=right]
+image::{img}/northwind_data_model.png[float=right]
 
 We will use the Northwind retail system data to test the date and time procedures in this guide.
-To load the data, we can type `:play northwind` into the Neo4j Browser command line and execute the statement.
+To load the data, we can run the browser guide below.
+
+[source,cypher]
+----
+:play northwind
+----
 
 A browser guide will appear.
 Go ahead and step through the guide, running all of the queries to load all the `Product`, `Supplier`, `Category`, `Order`, and `Customer` data with indexes on specific properties.
@@ -38,7 +41,7 @@ This procedure has 3 parameters -
 2. how specific the first parameter is (`s` for seconds, `ms` for milliseconds)
 3. how we want the date string result to look
 
-=== apoc.date.format Example:
+== apoc.date.format Example:
 
 Our Northwind data has `Customer` nodes who hopefully make orders with our business.
 We probably want to record timestamps when the first contact was sent to the business to see which customers were initially contacted in certain months and which probably made sales in the same year.
@@ -69,7 +72,7 @@ The procedure needs 3 parameters -
 2. how specific the conversion should be (down to seconds `s` or milliseconds `ms`)
 3. what the format is of the date string (1st parameter)
 
-=== apoc.date.parse Example:
+== apoc.date.parse Example:
 
 Let us say that we received a notification from our monitoring system that there was an error in the system at timestamp `882230400`, so we need to find out which orders were possibly affected by the error.
 We can use `apoc.date.parse()` to convert the string-formatted date in our Northwind data to a timestamp and compare that to the timestamp we have from our error system.
@@ -103,7 +106,7 @@ The procedure above contains 4 parameters -
 3. the number to add or subtract from the date integer
 4. the unit type to add or subtract
 
-=== apoc.date.add Example:
+== apoc.date.add Example:
 
 [source, cypher]
 ----
@@ -136,7 +139,7 @@ The procedure contains 3 parameters -
 2. what the format is of the date string
 3. the format for the resulting temporal type (can be specified manually, as https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html[Java formats^], or as these https://www.elastic.co/guide/en/elasticsearch/reference/5.5/mapping-date-format.html#built-in-date-formats[built-in formats^])
 
-=== apoc.date.convertFormat Example:
+== apoc.date.convertFormat Example:
 
 [source, cypher]
 ----
