@@ -30,9 +30,9 @@ children._
 
 Let's load some data into our graph to explore.
 
-=== Add constraints
+=== Add constraints and indexes
 
-First, we need to add indexes and constraints, as they will optimize your queries. The first array in the procedure below sets the indexes, and the second array contains the unique constraints.
+First, we need to add indexes and constraints, as they will optimize our queries. The first array in the procedure below sets the indexes, and the second array contains the unique constraints. You will need to have the APOC library installed.
 
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
@@ -41,7 +41,7 @@ CALL apoc.schema.assert(
  {Hospital:['id'],State:['name']});
 ----
 
-== Load CSV
+== Location hierarchical tree import
 
 You can notice that we do not take the standard approach, where we
 merge each node separately, but we merge them in pattern with their
@@ -60,16 +60,25 @@ MERGE (city)<-[:IS_IN]-(zip:ZipCode{name:row.`ZIP Code`})
 MERGE (zip)<-[:IS_IN]-(address:Address{name:row.Address})
 // for entities, it is best to have an id system
 MERGE (h:Hospital{id:row.`Provider ID`})
-ON CREATE SET h.phone=row.`Phone Number`,
-              h.emergency_services = row.`Emergency Services`,
-              h.name= row.`Hospital Name`,
-              h.mortality = row.`Mortality national comparison`,
-              h.safety = row.`Safety of care national comparison`,
-              h.timeliness = row.`Timeliness of care national comparison`,
-              h.experience = row.`Patient experience national comparison`,
-              h.effectiveness = row.`Effectiveness of care national comparison`
 MERGE (h)-[:IS_IN]->(address)
-//Some metadata about hospitals
+----
+
+== Additional hospital information
+
+We will also import some additional information about the hospitals such as their ratings, ownership, and more.
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/tomasonjo/hospitals-neo4j/master/Hospital%20General%20Information.csv" as row
+MATCH (h:Hospital{id:row.`Provider ID`})
+SET h.phone=row.`Phone Number`,
+    h.emergency_services = row.`Emergency Services`,
+    h.name= row.`Hospital Name`,
+    h.mortality = row.`Mortality national comparison`,
+    h.safety = row.`Safety of care national comparison`,
+    h.timeliness = row.`Timeliness of care national comparison`,
+    h.experience = row.`Patient experience national comparison`,
+    h.effectiveness = row.`Effectiveness of care national comparison`
 MERGE (type:HospitalType{name:row.`Hospital Type`})
 MERGE (h)-[:HAS_TYPE]->(type)
 MERGE (ownership:Ownership{name: row.`Hospital Ownership`})
@@ -80,11 +89,14 @@ MERGE (h)-[:HAS_RATING]->(rating)
 
 == Geospatial import
 
+The last thing to import is the geospatial information of hospitals.
+
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/tomasonjo/hospitals-neo4j/master/gpsinfo.csv" as row
 MATCH (hospital:Hospital {id:row.id})
-SET hospital.latitude = row.latitude, hospital.longitude = row.longitude
+SET hospital.latitude = toFloat(row.latitude), 
+    hospital.longitude = toFloat(row.longitude)
 ----
 
 == Spatial query example
@@ -94,13 +106,15 @@ hospitals. Distance is in meters. *Note: does not work in Neo4j Sandbox.*
 
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-with "1 Liberty Island, New York" as myLocation
-call apoc.spatial.geocodeOnce(myLocation) yield location
+WITH "Liberty Island, Manhattan" as myLocation
+call apoc.spatial.geocodeOnce(myLocation) YIELD location
 WITH point({longitude: location.longitude, latitude: location.latitude}) as myPosition,100 as distanceInKm
 MATCH (h:Hospital)-->(rating:Rating)
 WHERE exists(h.latitude) and
-distance(myPosition, point({longitude:h.longitude,latitude:h.latitude})) < (distanceInKm * 100)
-RETURN h,rating.name as rating,distance(myPosition, point({longitude:h.longitude,latitude:h.latitude})) as distance order by distance limit 10
+  distance(myPosition, point({longitude:h.longitude,latitude:h.latitude})) < (distanceInKm * 100)
+RETURN h.name as hospital,rating.name as rating,distance(myPosition, 
+       point({longitude:h.longitude,latitude:h.latitude})) as distance 
+ORDER BY distance LIMIT 10
 ----
 
 == Data Validation
@@ -111,9 +125,9 @@ We can check if any `:Address` has more than one relationship going up the hiera
 
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-match (a:Address)
-with a where size((a)-[:IS_IN]->()) > 1
-return a
+MATCH (a:Address)
+WHERE size((a)-[:IS_IN]->()) > 1
+RETURN a
 ----
 
 === Validation #2
@@ -124,8 +138,11 @@ location path because every hospital have exactly one address.
 
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-MATCH path=(h:Hospital)-[:IS_IN*..10]->(location) where not (location)-[:IS_IN]->()
-return distinct(length(path)) as length,count(*) as numberOfPaths,count(distinct(h)) as numberOfHospitals
+MATCH path=(h:Hospital)-[:IS_IN*..10]->(location) 
+WHERE NOT (location)-[:IS_IN]->()
+RETURN distinct(length(path)) as length,
+       count(*) as numberOfPaths,
+       count(distinct(h)) as numberOfHospitals
 ----
 
 === Validation #3
@@ -135,8 +152,8 @@ This is useful when learning. You do not wish to have nodes without labels.
 
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-match (n)
-return size(labels(n)) as size,count(*)
+MATCH (n)
+RETURN size(labels(n)) as size,count(*) as count
 ----
 
 == Queries
@@ -148,7 +165,8 @@ Lets run a few queries and learn about our data.
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (r)<-[:HAS_RATING]-(h:Hospital)-[:HAS_OWNERSHIP]->(o)
-return o.name as ownership,avg(toINT(r.name)) as averageRating order by averageRating desc limit 15
+RETURN o.name as ownership,avg(toInteger(r.name)) as averageRating 
+ORDER BY averageRating DESC LIMIT 15
 ----
 
 === Number of hospitals per city
@@ -156,7 +174,8 @@ return o.name as ownership,avg(toINT(r.name)) as averageRating order by averageR
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (h:Hospital)-[:IS_IN*3..3]->(city)
-return city.name as city,count(h) as NumberOfHospitals order by NumberOfHospitals desc limit 15
+RETURN city.name as city,count(h) as NumberOfHospitals 
+ORDER BY NumberOfHospitals DESC LIMIT 15
 ----
 
 === Top 10 states by rating
@@ -164,22 +183,27 @@ return city.name as city,count(h) as NumberOfHospitals order by NumberOfHospital
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (r)<-[:HAS_RATING]-(h:Hospital)-[:IS_IN*5..5]->(state)
-where not r.name="Not Available"
-return state.name as state,avg(toINT(r.name)) as averageRating,count(h) as numberOfHospitals order by averageRating desc limit 15
+WHERE NOT r.name="Not Available"
+RETURN state.name as state,avg(toInteger(r.name)) as averageRating,count(h) as numberOfHospitals 
+ORDER BY averageRating DESC LIMIT 15
 ----
 
 === Which states have the most above-average hospitals in effectivness
 
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-MATCH (h:Hospital)-[:IS_IN*5..5]->(state) where h.effectiveness = "Above the National average"
-return state.name as state,h.effectiveness,count(h) as numberOfHospitals order by numberOfHospitals desc limit 15
+MATCH (h:Hospital)-[:IS_IN*5..5]->(state) 
+WHERE h.effectiveness = "Above the National average"
+RETURN state.name as state,h.effectiveness,count(h) as numberOfHospitals
+ORDER BY numberOfHospitals DESC LIMIT 15
 ----
 
 === Which states have the most below-average hospitals in mortality
 
 [source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-MATCH (h:Hospital)-[:IS_IN*5..5]->(state) where h.mortality = "Below the National average"
-return state.name as state,h.mortality,count(h) as numberOfHospitals order by numberOfHospitals desc limit 15
+MATCH (h:Hospital)-[:IS_IN*5..5]->(state)
+WHERE h.mortality = "Below the National average"
+RETURN state.name as state,h.mortality,count(h) as numberOfHospitals
+ORDER BY numberOfHospitals DESC LIMIT 15
 ----
