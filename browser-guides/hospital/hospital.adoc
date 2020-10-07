@@ -34,7 +34,7 @@ Let's load some data into our graph to explore.
 
 First, we need to add indexes and constraints, as they will optimize our queries. The first array in the procedure below sets the indexes, and the second array contains the unique constraints. You will need to have the APOC library installed.
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 CREATE INDEX ON :County(name);
 CREATE INDEX ON :City(name);
@@ -52,7 +52,7 @@ merge each node separately, but we merge them in pattern with their
 parent in a hierarchical tree because some counties/cities/addresses share
 the same name.
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/tomasonjo/hospitals-neo4j/master/Hospital%20General%20Information.csv" as row
 WITH row
@@ -73,7 +73,7 @@ MERGE (h)-[:IS_IN]->(address)
 
 We will also import some additional information about the hospitals such as their ratings, ownership, and more.
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/tomasonjo/hospitals-neo4j/master/Hospital%20General%20Information.csv" as row
 WITH row
@@ -99,7 +99,7 @@ MERGE (h)-[:HAS_RATING]->(rating)
 
 The last thing to import is the geospatial information of hospitals.
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/tomasonjo/hospitals-neo4j/master/gpsinfo.csv" as row
 WITH row
@@ -114,7 +114,7 @@ SET hospital.latitude = toFloat(row.latitude),
 Let's say you get lost on `Liberty Island` and want to find the nearest 10
 hospitals. Distance is in meters. *Note: does not work in Neo4j Sandbox.*
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 WITH "Liberty Island, Manhattan" as myLocation
 call apoc.spatial.geocodeOnce(myLocation) YIELD location
@@ -133,7 +133,7 @@ ORDER BY distance LIMIT 10
 
 We can check if any `:Address` has more than one relationship going up the hierarchy. Every node has a single outgoing relationship to its parent rule.
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH (a:Address)
 WHERE size((a)-[:IS_IN]->()) > 1
@@ -146,7 +146,7 @@ We can also check the length of all the paths in location tree.
 Because of our rules we placed, every hospital must have exactly one
 location path because every hospital have exactly one address.
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH path=(h:Hospital)-[:IS_IN*..10]->(location) 
 WHERE NOT (location)-[:IS_IN]->()
@@ -160,7 +160,7 @@ RETURN distinct(length(path)) as length,
 Check how many labels each node has.
 This is useful when learning. You do not wish to have nodes without labels.
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH (n)
 RETURN size(labels(n)) as size,count(*) as count
@@ -172,7 +172,7 @@ Lets run a few queries and learn about our data.
 
 === Average rating by ownership
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH (r)<-[:HAS_RATING]-(h:Hospital)-[:HAS_OWNERSHIP]->(o)
 RETURN o.name as ownership,avg(toInteger(r.name)) as averageRating 
@@ -181,7 +181,7 @@ ORDER BY averageRating DESC LIMIT 15
 
 === Number of hospitals per city
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH (h:Hospital)-[:IS_IN*3..3]->(city)
 RETURN city.name as city,count(h) as NumberOfHospitals 
@@ -190,7 +190,7 @@ ORDER BY NumberOfHospitals DESC LIMIT 15
 
 === Top 10 states by rating
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH (r)<-[:HAS_RATING]-(h:Hospital)-[:IS_IN*5..5]->(state)
 WHERE NOT r.name="Not Available"
@@ -200,7 +200,7 @@ ORDER BY averageRating DESC LIMIT 15
 
 === Which states have the most above-average hospitals in effectivness
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH (h:Hospital)-[:IS_IN*5..5]->(state) 
 WHERE h.effectiveness = "Above the National average"
@@ -210,7 +210,7 @@ ORDER BY numberOfHospitals DESC LIMIT 15
 
 === Which states have the most below-average hospitals in mortality
 
-[source,cypher,subs=attributes]
+[source,cypher]
 ----
 MATCH (h:Hospital)-[:IS_IN*5..5]->(state)
 WHERE h.mortality = "Below the National average"
