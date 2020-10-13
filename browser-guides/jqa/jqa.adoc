@@ -524,7 +524,7 @@ RETURN class as internalClass, field, fieldtype as internalType
 
 == Resources
 
-* https://jqassistant.org/blog/releases/[Releases]
+* https://jqassistant.org/[jQAssistant Developer Blog]
 * https://jqassistant.org/get-started/[Get Started / Download]
 * https://jqassistant.github.io/jqassistant/doc/1.8.0/[Documentation]
 * https://github.com/jQAssistant/jqassistant[GitHub]
