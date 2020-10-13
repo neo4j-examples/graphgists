@@ -3,6 +3,7 @@
 :description: Introduce graphs and Cypher to young students with hands-on queries and exploration
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
 :tags: browser-guide, intro, cypher, students
+:neo4j-version: 3.5
 
 == Welcome to Neo4j!
 

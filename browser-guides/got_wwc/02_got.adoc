@@ -3,6 +3,7 @@
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
 :guides: https://guides.neo4j.com/got_wwc
 :icons: font
+:neo4j-version: 3.5
 
 == The Game of Thrones dataset
 

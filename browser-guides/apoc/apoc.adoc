@@ -4,6 +4,7 @@
 :img: https://s3.amazonaws.com/guides.neo4j.com/apoc/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
 :tags: apoc, procedures, temporal, load-json, data-import, refactor, batching, periodic
+:neo4j-version: 3.5
 
 == Welcome to APOC
 

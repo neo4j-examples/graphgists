@@ -3,6 +3,7 @@
 :description: Use Neo4j Browser for querying, visualization, and data interaction
 :img: https://s3.amazonaws.com/guides.neo4j.com/img/
 :tags: browser-guide, intro, neo4j-browser, styling, visualization
+:neo4j-version: 3.5
 
 == Welcome to Neo4j Browser
 

@@ -1,0 +1,109 @@
+<style type="text/css" media="screen">
+/*
+.nodes-image {
+	margin:-100;
+}
+*/	
+@import url("//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css");
+
+.imageblock .content img, .image img {max-width: 900px;max-height: 300px;}
+.deck h3, .deck h4 {display: block !important;margin-bottom:8px;margin-top:5px;}
+.listingblock {margin:8px;}
+.pull-bottom {position:relative;bottom:1em;}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note:before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip:before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning:before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution:before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important:before{content:"\f06a";color:#bf0000}
+.admonitionblock.note.speaker { display:none; }
+</style>
+<style type="text/css" media="screen">
+#editor.maximize-editor .CodeMirror-code { font-size:24px; line-height:26px; }
+</style>
+<article class="guide" ng-controller="AdLibDataController">
+  <carousel class="deck container-fluid">
+    <!--slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Installing Awesome Procedures (apoc)</h3>
+        <p class="lead">Information</p>
+			<!dl>
+				
+				
+				
+				
+				
+			</dl>
+		</div>
+      <div class="col-sm-9">
+        <figure>
+          <img style="width:300px" src=""/>
+        </figure>
+      </div>
+    </slide-->
+    
+
+
+   <h4>Installing Awesome Procedures (apoc)</h4>
+   
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Installing Awesome Procedures (apoc)</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p><a href="https://twitter.com/mesirii">Michael Hunger</a> has created the <a href="https://github.com/neo4j-contrib/neo4j-apoc-procedures">apoc</a> library which contains lots of useful procedures that we can use in our neo4j applications.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s get <code>apoc</code> installed on our local instances of Neo4j:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You should have already copied <code>apoc.jar</code> onto your machine.
+If you haven&#8217;t then grab a USB stick from one of the trainers or download the latest version of apoc from <a href="https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/latest" class="bare">https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/latest</a></p>
+</li>
+<li>
+<p>Copy <code>apoc.jar</code> into your <code>plugins</code> folder wherever you have installed Neo4j.</p>
+</li>
+<li>
+<p>Restart Neo4j</p>
+</li>
+</ul>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Check apoc installed correctly</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>If you run the following command you can see which additional procedures are now available to us:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CALL dbms.procedures()
+YIELD name, signature
+WITH name, signature
+WHERE name STARTS WITH "apoc"
+RETURN name, signature<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you don&#8217;t see any rows grab your closest trainer for help.</p>
+</div>
+<div class="paragraph">
+<p>Once you&#8217;ve got it installed you can close this guide and return to the previous one.</p>
+</div>
+	</div>
+  </div>
+</slide>
+  </carousel>
+</article>

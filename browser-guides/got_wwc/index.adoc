@@ -5,6 +5,7 @@
 :guides: https://guides.neo4j.com/got_wwc
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/got_wwc
 :tags: browser-guide, intro, cypher, load-csv, aggregation
+:neo4j-version: 3.5
 
 == Welcome to An Intro to Neo4j with Game of Thrones
 

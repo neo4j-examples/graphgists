@@ -1,0 +1,533 @@
+﻿= jQAssistant Demo Guide
+:author: Michael Hunger
+:description: With this guide, you can interactively explore your software project and find some interesting insights
+:img: https://s3.amazonaws.com/guides.neo4j.com/jqa/img
+:tags: jqassistant, tools, reporting
+:neo4j-version: 3.5
+
+image:{img}/jqassistant.png[jqa,width=400]
+
+== Introduction
+
+jQAssistant is a QA tool that allows the definition and validation of project-specific rules on a structural level. It is built upon the Neo4j graph database and can easily be plugged into the build process to automate detection of constraint violations and generate reports about user-defined concepts and metrics.
+
+Example use cases:
+
+* Enforce naming conventions (e.g. EJBs, JPA entities, test classes, packages, maven modules, etc.)
+* Validate dependencies between modules of your project
+* Separate API and implementation packages
+* Detect common problems like cyclic dependencies or tests without assertions
+
+== Using jQAssistant
+
+The rules are expressed in Cypher - Neo4j's easy-to-learn query language:
+
+.Tests that don't call assert methods
+[source,cypher]
+----
+MATCH (t:Test:Method)
+WHERE NOT (t)-[:INVOKES]->(:Assert:Method)
+RETURN t AS TestWithoutAssertion
+----
+
+License: jQAssistant is contributed under GNU General Public License, v3.
+
+== Scan Process
+
+If you haven't scanned your project yet, please download jQAssistant https://jqassistant.org/get-started/[here].
+
+Then run the scan of your project with this command:
+
+----
+bin/jqassistant.sh scan -f lib
+----
+
+It will scan the following aspects:
+
+* Java class and jar files
+* Maven pom.xml
+* XML configuration files
+* Spring Configuration
+* Persistence.xml
+* ...and more
+
+== Start Neo4j and run jqa
+
+Then you can start your Neo4j server with
+
+----
+bin/jqassistant.sh server
+----
+
+and run this guide with `:play http://guides.neo4j.com/jqa` inside that server.
+
+== Data Overview
+
+If you have your Neo4j instance running on the scanned data, you can get a quick overview on the data model with this query
+
+[source,cypher]
+----
+call db.schema()
+----
+
+For a tabular overview use this:
+
+[source,cypher]
+----
+MATCH (n) 
+// a collection of multiple labels is turned into rows
+UNWIND labels(n) as label
+RETURN label, count(*)
+ORDER BY count(*) asc
+----
+
+=== Analysis: How many types are contained IN the project?
+
+This query counts all nodes labeled with `Type` and `File` i.e. all Java types that are directly scanned from a file.
+
+[source,cypher]
+----
+MATCH (t:Type:File)
+RETURN count(t)
+----
+
+== Analysis: Which class extends FROM another class?
+
+This query shows the first 20 FQNs of classes and their super-type (class or interface).
+
+[source,cypher]
+----
+MATCH (c1:Class)-[:EXTENDS]->(c2:Type)
+RETURN c1.fqn, c2.fqn
+ LIMIT 20
+----
+
+== Analysis: Which classes contain the highest number of methods?
+
+Each Type `DECLARES` members, i.e. links to `Method` or `Field` nodes.
+Here we just count the methods and return the top 20 offenders.
+
+[source,cypher]
+----
+MATCH (class:Class)-[:DECLARES]->(method:Method)
+RETURN class.fqn, count(method) AS Methods
+ORDER BY Methods DESC
+LIMIT 20
+----
+
+== Analysis: Which class has the deepest inheritance hierarchy?
+
+We follow the EXTENDS relationship transitively up to the top of the hierarchy and return the top 20 longest inheritance chains.
+
+[source,cypher]
+----
+MATCH h = (class:Class)-[:EXTENDS*]->(super:Type)
+WHERE NOT EXISTS ( (super)-[:EXTENDS]->() )
+RETURN class.fqn, length(h) AS Depth
+ORDER BY Depth DESC
+LIMIT 20
+----
+
+== Analysis: Which classes are affected by certain exceptions?
+
+:fqn: pass:a['<span value-key="fqn">some.package.AClass</span>']
+:package: pass:a['<span value-key="package">some.package.</span>']
+:exception: pass:a['<span value-key="exception">java.io.IOException</span>']
+
+Now we want to know which methods are transitively calling a constructor of the given exception type.
+
+++++
+<input style="display:inline;width:30%;" value-for="exception" class="form-control" value="java.io.IOException" size="40">
+++++
+
+[source,cypher,subs=attributes]
+----
+MATCH (e:Type)-[:DECLARES]->(init:Constructor)
+WHERE e.fqn = {exception}
+WITH e, init
+MATCH (type:Type)-[:DECLARES]->(method:Method)
+MATCH path = (method)-[:INVOKES*]->(init)
+RETURN type, path LIMIT 10    
+----
+
+== Analysis: How many methods call something in a given package?
+
+It would be interesting to know how many methods are affected if you change the return type of a method. 
+Or how much effort it would take to decouple some architectural artifacts.
+
+++++
+<input style="display:inline;width:30%;" value-for="package" class="form-control" value="some.package." size="40">
+++++
+
+[source,cypher]
+----
+MATCH  (caller:Method:Java)-[:INVOKES]->(callee:Method:Java)<-[:DECLARES]-(t:Type) 
+WHERE t.fqn STARTS WITH {package}
+RETURN t.fqn, callee.name, count(caller) AS callers
+ORDER BY callers
+----
+
+== Visibility: Find unnecessary public visibility
+
+First step: put a label ‘Public’ on the public methods.
+
+[source,cypher]
+----
+MATCH (m:Method)
+WHERE  m.visibility='public'
+ SET m:Public
+----
+
+== Visibility: step 2
+
+Second step - Report top 20 public methods which are called from within the same package.
+
+[source,cypher]
+----
+MATCH (package:Package)-[:CONTAINS]->(t1:Type)-[:DECLARES]->(m:Method),
+     (package:Package)-[:CONTAINS]->(t2:Type)-[:DECLARES]->(p:Method:Public),
+     (m)-[:INVOKES]->(p)
+WHERE t1 <> t2
+WITH p, t2, count(*) as freq
+ORDER BY freq DESC LIMIT 20
+RETURN p.name, t2.fqn, freq
+----
+
+== Immutability: Label classes with an immutable state as "Immutable"
+
+[source,cypher]
+----
+MATCH (immutable:Class)-[:DECLARES]->(field:Field)<-[:WRITES]-(accessorMethod)
+WHERE field.visibility = 'private'
+
+WITH immutable, collect(accessorMethod) AS accessorMethods
+WHERE ALL(accessorMethod IN accessorMethods WHERE accessorMethod:Constructor)
+
+SET immutable:Immutable
+RETURN immutable
+----
+
+== Further analysis: Mark types to investigate
+
+Mark the types in one package to be investigated.
+So instead of always checking this condition: `WHERE has(t.byteCodeVersion) AND t.fqn STARTS WITH {package}`, we can just match on the `:Investigate` label.
+
+++++
+<input style="display:inline;width:30%;" value-for="package" class="form-control" value="some.package." size="40">
+++++
+
+[source,cypher]
+----
+MATCH (t:Type:File)<-[:DEPENDS_ON]-(dependent:Type)
+ WHERE has(t.byteCodeVersion) AND t.fqn STARTS WITH {package}
+SET t:Investigate
+----
+
+== Further analysis: Add fan-in to type
+
+Let's add a property 'fanIn' to a Type with the number of other types depending on it.
+
+[source,cypher]
+----
+MATCH (t:Type:File:Investigate)<-[:DEPENDS_ON]-(dependent:Type)
+WITH t, count(dependent) AS dependents
+ SET t.fanIn = dependents
+RETURN t.fqn AS type
+----
+
+== Add fan-out to type
+
+Now let's add a property 'fanOut' to a Type with the number of other types it depends on.
+
+[source,cypher]
+----
+MATCH (t:Type:File:Investigate)-[:DEPENDS_ON]->(dependency:Type)
+
+WITH t, count(dependency) AS dependencies
+SET t.fanOut = dependencies
+
+RETURN t.fqn AS Type, t.fanOut AS fanOut
+ORDER BY fanOut DESC
+----
+
+== Add default fan-out
+
+We can also add a property 'fanOut' to all Types without fanOut property.
+
+[source,cypher]
+----
+MATCH (t:Type:File)
+ WHERE NOT has(t.fanOut)
+SET t.fanOut = 0
+RETURN t.fqn AS type
+----
+
+== Add default fan-out
+
+Next, add a property 'fanIn' to all Types without fanIn property.
+
+[source,cypher]
+----
+MATCH (t:Type:File:Investigate)
+ WHERE NOT has(t.fanIn)
+SET t.fanIn = 0
+RETURN t.fqn AS type
+----
+
+== Add type-coupling
+
+Let's add a property `typeCoupling` to a `Type` as sum of `fanIn` and `fanOut`.
+
+[source,cypher]
+----
+MATCH (t:Type:File:Investigate)
+SET t.typeCoupling = t.fanIn + t.fanOut
+RETURN t.fqn AS type, t.typeCoupling AS typeCoupling,
+      t.fanIn AS fanIn, t.fanOut AS fanOut
+ ORDER BY typeCoupling DESC, fanIn DESC
+----
+
+== Add in-package fan-out
+
+We can add a property 'inPackageFanOut' to a Type with the number of other types it depends on.
+
+[source,cypher]
+----
+MATCH (p1:Package)-[:CONTAINS]->(t:Type:File:Investigate)-[:DEPENDS_ON]->
+      (dependency:Type)<-[:CONTAINS]-(p2:Package)
+ WHERE p1 = p2 AND NOT dependency.fqn CONTAINS '$'
+
+WITH t, count(dependency) AS dependencies
+SET t.inPackageFanOut = dependencies
+
+RETURN t.fqn AS type, t.inPackageFanOut AS fanOut
+ORDER BY fanOut DESC
+----
+
+== Add in-package fan-in
+
+In this query, we add a property `inPackageFanIn` to a `Type` with the number of other types it depends on.
+
+[source,cypher]
+----
+MATCH (p1:Package)-[:CONTAINS]->(t:Type:File:Investigate)<-[:DEPENDS_ON]-
+     (dependency:Type)<-[:CONTAINS]-(p2:Package)
+ WHERE p1 = p2 AND NOT dependency.fqn CONTAINS '$'
+
+WITH t, count(dependency) AS dependencies
+
+SET t.inPackageFanIn = dependencies
+
+RETURN t.fqn AS type, t.inPackageFanIn AS fanIn
+ ORDER BY fanIn DESC
+----
+
+== Add type-in-package coupling
+
+Now we add a property `typeInPackageCoupling` to a `Type` as sum of `fanIn` and `fanOut`.
+
+[source,cypher]
+----
+MATCH (t:Type:File:Investigate)
+SET t.typeInPackageCoupling = t.inPackageFanIn + t.inPackageFanOut
+RETURN t.fqn AS type, t.typeInPackageCoupling AS typeCoupling,
+      t.inPackageFanIn AS FanIn, t.inPackageFanOut AS fanOut
+ ORDER BY typeCoupling DESC, fanIn DESC
+----
+
+== Unit Tests: Validate Assertions
+
+Unit tests should have one (logical) assert per test method. 
+Because some methods of a mocking framework also count as asserts, we want to label them. 
+
+== Mockito example:
+
+Here is an example for Mockito to label all assertion methods with name "verify*" declared by "org.mockito.Mockito" with `Junit4` and `Assert`.
+
+[source,cypher]
+----
+MATCH (assertType:Type)-[:DECLARES]->(assertMethod)
+ WHERE assertType.fqn = 'org.mockito.Mockito'
+ AND assertMethod.signature CONTAINS 'verify'
+SET assertMethod:Junit4:Assert
+RETURN assertMethod
+----
+
+== jUnit example:
+
+Also the org.junit.Assert.fail method counts as an assert too:
+
+[source,cypher]
+----
+MATCH (assertType:Type)-[:DECLARES]->(assertMethod)
+ WHERE assertType.fqn = 'org.junit.Assert'
+ AND assertMethod.signature starts with 'void fail'
+SET assertMethod:Junit4:Assert
+RETURN assertMethod
+----
+
+== Test Coverage
+
+Test coverage is a wide field. 
+There are lots of discussions about unit tests and test coverage. 
+
+There is a https://github.com/kontext-e/jqassistant-plugins/tree/master/jacoco[JaCoCo Plugin by Kontext E] for importing JaCoCo test coverage results into the jQAssistant database. 
+With all information in one database, you may define your test coverage rules (and exceptions from the rules) in a very flexible way. 
+
+One example based on methods and their complexity is that more complex methods need more test coverage because the probability for bugs is higher (as a rule of thumb). 
+
+== Define Test Coverage Goals
+
+So we define two ranges of method complexity based on the number of branches:
+
+[source,cypher]
+----
+CREATE (medium:TestCoverageRange {complexity : 'medium', min : 4, max : 5, coverage : 80})
+CREATE (high:TestCoverageRange {complexity : 'high', min : 6, max : 999999, coverage : 90})
+RETURN medium, high
+----
+
+== Find methods with too low coverage
+
+Now we can find methods with a too low test coverage:
+
+[source,cypher]
+----
+MATCH (tcr:TestCoverageRange)
+WITH tcr.min AS mincomplexity, tcr.max AS maxcomplexity, tcr.coverage AS coveragethreshold
+
+MATCH (cl:Jacoco:Class)--(m:Jacoco:Method)--(c:Jacoco:Counter {type: 'COMPLEXITY'})
+ WHERE c.missed + c.covered >= mincomplexity AND c.missed + c.covered <= maxcomplexity
+
+WITH m AS method, cl.fqn AS fqn, m.signature AS signature,
+    c.missed + c.covered AS complexity, coveragethreshold
+
+MATCH (m)--(branches:Jacoco:Counter {type: 'BRANCH'})
+ WHERE m = method
+WITH *, branches.covered * 100 / (branches.covered + branches.missed) AS coverage
+WHERE coverage < coveragethreshold
+
+RETURN complexity, coveragethreshold, coverage, fqn, signature
+ ORDER BY complexity, coverage
+----
+
+== Add exceptions from the rule
+
+And add some exceptions from this rule:
+
+* Methods equals() and hashCode() are generated by an IDE and need not to be tested
+* For some reason, we don’t want measure test coverage for the UI package
+* The `StringTool.doSomethingwithStrings` method should also be excluded
+* And we know that there are 10 other violations that we want to skip for now + (but we swear to handle this Technical Debt in the next spring)
+
+== Query to add exceptions:
+
+[source,cypher]
+----
+MATCH (tcr:TestCoverageRange)
+
+WITH tcr.min AS mincomplexity, tcr.max AS maxcomplexity, tcr.coverage AS coveragethreshold
+
+MATCH (cl:Jacoco:Class)--(m:Jacoco:Method)--(c:Jacoco:Counter {type: 'COMPLEXITY'})
+ WHERE c.missed + c.covered >= mincomplexity AND c.missed + c.covered <= maxcomplexity
+ AND NOT m.signature IN ['boolean equals(java.lang.Object)', 'int hashCode()']
+ AND NOT(cl.fqn STARTS WITH 'de.kontext_e.demo.ui')
+ AND NOT(cl.fqn = 'de.kontext_e.demo.tools.StringTool'
+ AND m.signature = 'java.lang.String doSomethingwithStrings(java.lang.String)')
+
+WITH m AS method, cl.fqn AS fqn, m.signature AS signature, c.missed+c.covered AS complexity, coveragethreshold AS coveragethreshold
+
+MATCH (m)--(branches:Jacoco:Counter {type: 'BRANCH'})
+ WHERE m=method AND branches.covered*100/(branches.covered+branches.missed) < coveragethreshold
+RETURN complexity, coveragethreshold, branches.covered*100/(branches.covered+branches.missed) AS coverage, fqn, signature
+ ORDER BY complexity, coverage
+ SKIP 10
+----
+
+== Special case: Frequently changed classes
+
+Maybe it is also a good idea to have a *higher test coverage for frequently changed classes*. 
+Using the https://github.com/kontext-e/jqassistant-plugins/tree/master/git[Git Plugin by Kontext E], there is a way to test this:
+
+[source,cypher]
+----
+MATCH (c:Git:Commit)-[:CONTAINS_CHANGE]->(change:Git:Change)-[:MODIFIES]->(f:Git:File)
+WHERE f.relativePath=~'.*.java'
+AND NOT f.relativePath CONTAINS 'ui'
+WITH count(c) AS cnt, replace(f.relativePath, '/','.') AS gitfqn
+ORDER BY cnt DESC
+LIMIT 10
+MATCH (class:Java:Class)
+WHERE gitfqn CONTAINS class.fqn
+WITH cnt, class.fqn AS classfqn
+MATCH (cl:Jacoco:Class)--(m:Jacoco:Method)--(c:Jacoco:Counter {type: 'COMPLEXITY'})
+WHERE classfqn=cl.fqn
+AND c.missed+c.covered > 3
+AND NOT(m.signature ='boolean equals(java.lang.Object)')
+AND NOT(m.signature ='int hashCode()')
+WITH m AS method, cl.fqn AS fqn, m.signature AS signature, c.missed+c.covered AS complexity
+MATCH (m)--(branches:Jacoco:Counter {type: 'BRANCH'})
+WHERE m=method
+AND branches.covered*100/(branches.covered+branches.missed) < 90
+RETURN DISTINCT fqn, signature, complexity, branches.covered*100/(branches.covered+branches.missed) AS coverage
+ORDER BY fqn
+SKIP 3
+----
+
+For the 10 most often changed Java files (except the ones in the UI package), the test coverage for branches should not be lower than 90 percent for methods with more than 3 branches - with three unnamed exceptions from this rule.
+
+== Encapsulation: Label types with internal FQNs as Internal
+:fqn_internal: pass:a['<span value-key="fqn_internal">.internal.</span>']
+
+++++
+<input style="display:inline;width:30%;" value-for="fqn_internal" class="form-control" value=".internal." size="40">
+++++
+
+[source,cypher]
+----
+MATCH (t:Type) WHERE t.fqn CONTAINS {fqn_internal}
+SET t:Internal
+----
+
+== API/SPI types must not extend/implement internal types
+
+[source,cypher]
+----
+MATCH
+    (class:Class)-[:EXTENDS|IMPLEMENTS]->(supertype:Type:Internal)
+WHERE NOT class:Internal
+RETURN DISTINCT class as extendsInternal
+----
+
+== API/SPI methods must not expose internal types
+
+[source,cypher]
+----
+// return values
+MATCH (class:Type)-[:DECLARES]->(method:Method)
+WHERE
+    NOT class:Internal
+    AND method.visibility IN ["public","protected"]
+    AND (exists ((method)-[:RETURNS]->(:Type:Internal)) OR 
+         exists ((method)-[:`HAS`]->(:Parameter)-[:OF_TYPE]->(:Internal)))
+RETURN method
+----
+
+== API/SPI fields must not expose internal types
+
+[source,cypher]
+----
+MATCH (class:Class:Internal)-[:DECLARES]->(field)-[:OF_TYPE]->(fieldtype:Type:Internal)
+WHERE field.visibility IN ["public","protected"]
+RETURN class as internalClass, field, fieldtype as internalType
+----
+
+== Resources
+
+* https://jqassistant.org/blog/releases/[Releases]
+* https://jqassistant.org/get-started/[Get Started / Download]
+* https://jqassistant.github.io/jqassistant/doc/1.8.0/[Documentation]
+* https://github.com/jQAssistant/jqassistant[GitHub]
+* https://github.com/kontext-e/jqassistant-plugins[jQA Plugins by Kontext E]
+* https://groups.google.com/forum/#!forum/jqassistant[Google Group]
+* http://stackoverflow.com/questions/tagged/jqassistant[Stackoverflow]
