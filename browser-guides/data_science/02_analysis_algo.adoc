@@ -1,0 +1,92 @@
+== Data Exploration
+:author: Neo4j Engineering
+:description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:tags: data-science, gds, graph-algorithms
+:neo4j-version: 3.5
+
+== Data visualization
+
+Let's briefly explore the dataset before running some algorithms.
+
+Run the following query to visualize the schema of your graph:
+
+[source,cypher]
+----
+CALL db.schema.visualization()
+----
+
+The `:Dead`, `:King`, and `:Knight` labels all appear on `:Person` nodes.
+You may find it useful to remove them from the visualization to make it easier to inspect.
+
+== Summary statistics
+
+Calculate some simple statistics to see how data is distributed.
+For example, find the minimum, maximum, average, and standard deviation of the number of interactions per character:
+
+[source,cypher]
+----
+MATCH (c:Person)-[:INTERACTS]->()
+WITH c, count(*) AS num
+RETURN min(num) AS min, max(num) AS max, avg(num) AS avg_interactions, stdev(num) AS stdev
+----
+
+Calculate the same grouped by book:
+
+[source,cypher]
+----
+MATCH (c:Person)-[r:INTERACTS]->()
+WITH r.book AS book, c, count(*) AS num
+RETURN book, min(num) AS min, max(num) AS max, avg(num) AS avg_interactions, stdev(num) AS stdev
+ORDER BY book
+----
+
+== Getting started with algorithms
+
+With Neo4j, you can run algorithms on explicitly and implicitly created graphs. In this tutorial, we will show you how to get the most out of the following algorithms:
+
+* Page Rank
+* Label Propagation
+* Weakly Connected Components (WCC)
+* Louvain
+* Node Similarity
+* Triangle Count
+* Local Clustering Coefficient
+
+== Algorithm syntax
+
+There are two ways to run algorithms on your graph - implicit and explicit. Explicit is a way to create a subgraph or projected graph that is stored in memory for running multiple algorithms without creating the subgraph each time. For this guide, we will focus on the implicit operation, which runs on the whole dataset or allows the user to create the subgraph adhoc.
+
+== Algorithm syntax: implicit graphs
+
+The implicit variant does not access the graph catalog.
+If you want to run an algorithm on such a graph, you configure the graph creation within the algorithm configuration map.
+
+[source]
+----
+CALL gds.<algo-name>.<mode>(
+  configuration: Map
+)
+----
+
+* `<algo-name>` is the algorithm name.
+* `<mode>` is the algorithm execution mode.
+The supported modes are:
+** `stream`: streams results back to the user.
+** `stats`: returns a summary of the results.
+** `write`: returns stats, as well as writes results to the Neo4j database.
+* The `configuration` parameter value is the algorithm-specific configuration.
+
+After the algorithm execution finishes, the graph is released from memory.
+
+== Next Steps
+
+Next, we will dive into using the first algorithm on our dataset - page rank.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/03_pagerank.html'>Centrality: Page Rank</a>]
+endif::[]
+ifdef::env-graphgist[]
+link:{gist}/03_pagerank.adoc[Centrality: Page Rank^]
+endif::[]

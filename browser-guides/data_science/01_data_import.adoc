@@ -1,0 +1,541 @@
+== Data and Import
+:author: Neo4j Engineering
+:description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:tags: data-science, gds, import, load-csv, foreach
+:neo4j-version: 3.5
+
+== The example dataset
+
+image::{img}/AStormOfSwords.jpg[float="right",width=150]
+
+Before you can run any of the algorithms, you need to import your data in Neo4j. 
+
+The example dataset used to demonstrate the GDS library is based on the Game of Thrones fantasy saga. You may recognize it from the blogs, events, and sandbox. However, both data and queries are different enough from previous installments that it merits your attention.
+
+=== Attribution
+
+The dataset is partly based on the following works:
+
+_https://networkofthrones.wordpress.com/[Network of Thrones, A Song of Math and Westeros^], research by Dr. Andrew Beveridge._ +
+_https://www.macalester.edu/~abeverid/index.html[A. Beveridge and J. Shan, "Network of Thrones," Math Horizons Magazine , Vol. 23, No. 4 (2016), pp. 18-22^]_ +
+_https://www.kaggle.com/mylesoneill/game-of-thrones[Game of Thrones, Explore deaths and battles from this fantasy world], by Myles O'Neill, https://www.kaggle.com/[https://www.kaggle.com/^]_ +
+_https://github.com/tomasonjo/neo4j-game-of-thrones[Game of Thrones^], by Tomaz Bratanic, GitHub repository._
+
+== Graph of character interactions...and more
+
+The graph contains `:Person` nodes (representing the characters) and `:INTERACTS` relationships (representing the characters' interactions).
+An interaction occurs each time two characters' names (or nicknames) *appear within 15 words of one another* in the book text.
+For more information about the data extraction process, see _https://networkofthrones.wordpress.com/from-book-to-network/[Network of Thrones, A Song of Math and Westeros^], research by Dr. Andrew Beveridge._
+
+The `(:Person)-[:INTERACTS]->(:Person)` graph is enriched with data on houses, battles, commanders, kings, knights, regions, locations, and deaths.
+
+Now, let's import the data.
+
+== Data ingestion
+
+First, we need to enable multi-statment queries so we can put multiple queries into the editor and run them sequentially.
+
+.Enable `multi statement queries`
+[source]
+----
+:config "enableMultiStatementMode":true
+----
+
+Next, we will add some constraints for data integrity and performance.
+
+.Unique constraints on names of the nodes `:Location`, `:Region`, `:Battle`, `:Person`, and `:House`
+[source, cypher]
+----
+CREATE CONSTRAINT ON (n:Location) ASSERT n.name IS UNIQUE;
+CREATE CONSTRAINT ON (n:Region) ASSERT n.name IS UNIQUE;
+CREATE CONSTRAINT ON (n:Battle) ASSERT n.name IS UNIQUE;
+CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE;
+CREATE CONSTRAINT ON (n:House) ASSERT n.name IS UNIQUE;
+----
+
+Now we have a structure that allows for easier import. The next several queries create the various data segments.
+
+== Import Battles
+
+[source, cypher]
+----
+LOAD CSV WITH HEADERS FROM 'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/battles.csv' AS row
+MERGE (b:Battle {name: row.name})
+  ON CREATE SET b.year = toInteger(row.year),
+  b.summer = row.summer,
+  b.major_death = row.major_death,
+  b.major_capture = row.major_capture,
+  b.note = row.note,
+  b.battle_type = row.battle_type,
+  b.attacker_size = toInteger(row.attacker_size),
+  b.defender_size = toInteger(row.defender_size);
+----
+
+== Import Attackers and Battle Outcomes
+
+[source, cypher]
+----
+LOAD CSV WITH HEADERS FROM 'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/battles.csv' AS row
+// Because there is only attacker_outcome in the data, do a CASE statement for defender_outcome.
+WITH row,
+     CASE WHEN row.attacker_outcome = 'win' THEN 'loss'
+       ELSE 'win'
+       END AS defender_outcome
+
+// Match the battle
+MATCH (b:Battle {name: row.name})
+
+// All battles have at least one attacker, so you don't have to use FOREACH.
+MERGE (attacker1:House {name: row.attacker_1})
+MERGE (attacker1)-[a1:ATTACKER]->(b)
+  ON CREATE SET a1.outcome = row.attacker_outcome
+
+// Use FOREACH to skip the null values.
+FOREACH
+(ignoreMe IN CASE WHEN row.defender_1 IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (defender1:House {name: row.defender_1})
+  MERGE (defender1)-[d1:DEFENDER]->(b)
+    ON CREATE SET d1.outcome = defender_outcome
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.defender_2 IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (defender2:House {name: row.defender_2})
+  MERGE (defender2)-[d2:DEFENDER]->(b)
+    ON CREATE SET d2.outcome = defender_outcome
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.attacker_2 IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (attacker2:House {name: row.attacker_2})
+  MERGE (attacker2)-[a2:ATTACKER]->(b)
+    ON CREATE SET a2.outcome = row.attacker_outcome
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.attacker_3 IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (attacker2:House {name: row.attacker_3})
+  MERGE (attacker3)-[a3:ATTACKER]->(b)
+    ON CREATE SET a3.outcome = row.attacker_outcome
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.attacker_4 IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (attacker4:House {name: row.attacker_4})
+  MERGE (attacker4)-[a4:ATTACKER]->(b)
+    ON CREATE SET a4.outcome = row.attacker_outcome
+);
+----
+
+== Add Battle Locations
+
+[source, cypher]
+----
+LOAD CSV WITH HEADERS FROM 'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/battles.csv'
+AS row
+MATCH (b:Battle {name: row.name})
+// Use coalesce to replace the null values with "Unknown".
+MERGE (location:Location {name: coalesce(row.location, 'Unknown')})
+MERGE (b)-[:IS_IN]->(location)
+MERGE (region:Region {name: row.region})
+MERGE (location)-[:IS_IN]->(region);
+----
+
+== Add People in Battles
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/battles.csv' AS row
+
+// Split the columns that may contain more than one person.
+WITH row,
+     split(row.attacker_commander, ',') AS att_commanders,
+     split(row.defender_commander, ',') AS def_commanders,
+     split(row.attacker_king, '/') AS att_kings,
+     split(row.defender_king, '/') AS def_kings,
+     row.attacker_outcome AS att_outcome,
+     CASE WHEN row.attacker_outcome = 'win' THEN 'loss'
+       ELSE 'win'
+       END AS def_outcome
+MATCH (b:Battle {name: row.name})
+
+UNWIND att_commanders AS att_commander
+MERGE (p:Person {name: trim(att_commander)})
+MERGE (p)-[ac:ATTACKER_COMMANDER]->(b)
+  ON CREATE SET ac.outcome = att_outcome
+
+// To end the unwind and correct cardinality(number of rows), use any aggregation function ( e.g. count(*)).
+WITH b, def_commanders, def_kings, att_kings, att_outcome, def_outcome,
+     COUNT(*) AS c1
+UNWIND def_commanders AS def_commander
+MERGE (p:Person {name: trim(def_commander)})
+MERGE (p)-[dc:DEFENDER_COMMANDER]->(b)
+  ON CREATE SET dc.outcome = def_outcome
+
+// Reset cardinality with an aggregation function (end the unwind).
+WITH b, def_kings, att_kings, att_outcome, def_outcome, COUNT(*) AS c2
+UNWIND def_kings AS def_king
+MERGE (p:Person {name: trim(def_king)})
+MERGE (p)-[dk:DEFENDER_KING]->(b)
+  ON CREATE SET dk.outcome = def_outcome
+
+// Reset cardinality with an aggregation function (end the unwind).
+WITH b, att_kings, att_outcome, COUNT(*) AS c3
+UNWIND att_kings AS att_king
+MERGE (p:Person {name: trim(att_king)})
+MERGE (p)-[ak:ATTACKER_KING]->(b)
+  ON CREATE SET ak.outcome = att_outcome;
+----
+
+== Add People to their Houses
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM
+'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/character-deaths.csv'
+AS row
+WITH row,
+     CASE WHEN row.Nobility = '1' THEN 'Noble'
+       ELSE 'Commoner'
+       END AS status_value
+
+// Remove House for better linking.
+MERGE (house:House {name: replace(row.Allegiances, 'House ', '')})
+MERGE (person:Person {name: row.Name})
+SET person.gender = CASE WHEN row.Gender = '1' THEN 'male'
+  ELSE 'female'
+  END,
+person.book_intro_chapter = row.`Book Intro Chapter`,
+person.book_death_chapter = row.`Death Chapter`,
+person.book_of_death = row.`Book of Death`,
+person.death_year = toInteger(row.`Death Year`)
+MERGE (person)-[:BELONGS_TO]->(house)
+MERGE (status:Status {name: status_value})
+MERGE (person)-[:HAS_STATUS]->(status)
+
+// Use FOREACH to skip the null values.
+FOREACH
+(ignoreMe IN CASE WHEN row.GoT = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book1:Book {sequence: 1})
+    ON CREATE SET book1.name = 'Game of thrones'
+  MERGE (person)-[:APPEARED_IN]->(book1)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.CoK = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book2:Book {sequence: 2})
+    ON CREATE SET book2.name = 'Clash of kings'
+  MERGE (person)-[:APPEARED_IN]->(book2)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.SoS = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book3:Book {sequence: 3})
+    ON CREATE SET book3.name = 'Storm of swords'
+  MERGE (person)-[:APPEARED_IN]->(book3)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.FfC = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book4:Book {sequence: 4})
+    ON CREATE SET book4.name = 'Feast for crows'
+  MERGE (person)-[:APPEARED_IN]->(book4)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.DwD = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book5:Book {sequence: 5})
+    ON CREATE SET book5.name = 'Dance with dragons'
+  MERGE (person)-[:APPEARED_IN]->(book5)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.`Book of Death` IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (book:Book {sequence: toInteger(row.`Book of Death`)})
+  MERGE (person)-[:DIED_IN]->(book)
+);
+----
+
+== Add People Relationships
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM
+'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/character-predictions.csv'
+AS row
+MERGE (p:Person {name: row.name})
+// Set properties on the person node.
+SET p.title = row.title,
+p.death_year = toInteger(row.DateoFdeath),
+p.birth_year = toInteger(row.dateOfBirth),
+p.age = toInteger(row.age),
+p.gender = CASE WHEN row.male = '1' THEN 'male'
+  ELSE 'female'
+  END
+
+// Use FOREACH to skip the null values.
+FOREACH
+(ignoreMe IN CASE WHEN row.mother IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (mother:Person {name: row.mother})
+  MERGE (p)-[:RELATED_TO {name: 'mother'}]->(mother)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.spouse IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (spouse:Person {name: row.spouse})
+  MERGE (p)-[:RELATED_TO {name: 'spouse'}]->(spouse)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.father IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (father:Person {name: row.father})
+  MERGE (p)-[:RELATED_TO {name: 'father'}]->(father)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.heir IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (heir:Person {name: row.heir})
+  MERGE (p)-[:RELATED_TO {name: 'heir'}]->(heir)
+)
+
+// Remove "House " from the value for better linking.
+FOREACH
+(ignoreMe IN CASE WHEN row.house IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (house:House {name: replace(row.house, 'House ', '')})
+  MERGE (p)-[:BELONGS_TO]->(house)
+);
+----
+
+== Import Cultures
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM
+'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/character-predictions.csv'
+AS row
+MERGE (p:Person {name: row.name})
+
+// Use FOREACH to skip the null values. Lower row.culture for better linking.
+FOREACH
+(ignoreMe IN CASE WHEN row.culture IS NOT NULL THEN [1]
+  ELSE []
+  END |
+  MERGE (culture:Culture {name: toLower(row.culture)})
+  MERGE (p)-[:MEMBER_OF_CULTURE]->(culture)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.book1 = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book:Book {sequence: 1})
+  MERGE (p)-[:APPEARED_IN]->(book)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.book2 = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book:Book {sequence: 2})
+  MERGE (p)-[:APPEARED_IN]->(book)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.book3 = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book:Book {sequence: 3})
+  MERGE (p)-[:APPEARED_IN]->(book)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.book4 = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book:Book {sequence: 4})
+  MERGE (p)-[:APPEARED_IN]->(book)
+)
+FOREACH
+(ignoreMe IN CASE WHEN row.book5 = '1' THEN [1]
+  ELSE []
+  END |
+  MERGE (book:Book {sequence: 5})
+  MERGE (p)-[:APPEARED_IN]->(book)
+);
+----
+
+== Import Death Data
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'https://s3.eu-north-1.amazonaws.com/com.neo4j.gds.browser-guide/data/character-predictions.csv' AS row
+
+WITH row,
+     CASE WHEN row.isAlive = '0' THEN [1]
+       ELSE []
+       END AS dead_person,
+     CASE WHEN row.isAliveMother = '0' THEN [1]
+       ELSE []
+       END AS dead_mother,
+     CASE WHEN row.isAliveFather = '0' THEN [1]
+       ELSE []
+       END AS dead_father,
+     CASE WHEN row.isAliveHeir = '0' THEN [1]
+       ELSE []
+       END AS dead_heir,
+     CASE WHEN row.isAliveSpouse = '0' THEN [1]
+       ELSE []
+       END AS dead_spouse
+
+MATCH (p:Person {name: row.name})
+// Use OPTIONAL MATCH (mother:Person {name: row.mother}) not to stop the query if the Person is not found.
+OPTIONAL MATCH (mother:Person {name: row.mother})
+OPTIONAL MATCH (father:Person {name: row.father})
+OPTIONAL MATCH (heir:Person {name: row.heir})
+OPTIONAL MATCH (spouse:Spouse {name: row.spouse})
+
+// Set the label Dead to each dead person.
+FOREACH (d IN dead_person | SET p:Dead)
+FOREACH (d IN dead_mother | SET mother:Dead)
+FOREACH (d IN dead_father | SET father:Dead)
+FOREACH (d IN dead_heir | SET heir:Dead)
+FOREACH (d IN dead_spouse | SET spouse:Dead);
+----
+
+== Import additional labels
+
+[source,cypher]
+----
+MATCH (p:Person) where exists (p.death_year)
+SET p:Dead;
+
+MATCH (p:Person)-[:DEFENDER_KING|ATTACKER_KING]-()
+SET p:King;
+
+MATCH (p:Person) where toLower(p.title) contains "king"
+SET p:King;
+
+MATCH (p:Person) where p.title = "Ser"
+SET p:Knight;
+----
+
+== Setup for importing interactions
+
+We want to set a few parameters for some of the values coming from our multiple data sources.
+
+[source,cypher]
+----
+//Map the names coming from the different data sources.
+:param [map] => {
+  RETURN
+    {
+      `Aemon Targaryen (Maester Aemon)`: 'Aemon Targaryen (son of Maekar I)',
+      `Arstan`:                          'Barristan Selmy',
+      `Garin (orphan)`:                  'Garin (Orphan)',
+      `Hareth (Moles Town)`:             "Hareth (Mole's Town)",
+      `Jaqen Hghar`:                     "Jaqen H'ghar",
+      `Lommy Greenhands`:                'Lommy',
+      `Rattleshirt`:                     'Lord of Bones',
+      `Thoros of Myr`:                   'Thoros'
+    } AS map
+};
+----
+
+== Import interactions: Books 1 & 2
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/mathbeveridge/asoiaf/2d8ded13eda5128ace5e3b995253d69e62bc4bf6/data/asoiaf-book1-edges.csv' AS row
+WITH replace(row.Source, '-', ' ') AS srcName,
+     replace(row.Target, '-', ' ') AS tgtName,
+     toInteger(row.weight) AS weight
+MERGE (src:Person {name: coalesce($map[srcName], srcName)})
+MERGE (tgt:Person {name: coalesce($map[tgtName], tgtName)})
+MERGE (src)-[i:INTERACTS {book: 1}]->(tgt)
+  ON CREATE SET i.weight = weight
+  ON MATCH SET i.weight = i.weight + weight
+MERGE (src)-[r:INTERACTS_1]->(tgt)
+  ON CREATE SET r.weight = weight, r.book = 1;
+
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/mathbeveridge/asoiaf/2d8ded13eda5128ace5e3b995253d69e62bc4bf6/data/asoiaf-book2-edges.csv' AS row
+WITH replace(row.Source, '-', ' ') AS srcName,
+     replace(row.Target, '-', ' ') AS tgtName,
+     toInteger(row.weight) AS weight
+MERGE (src:Person {name: coalesce($map[srcName], srcName)})
+MERGE (tgt:Person {name: coalesce($map[tgtName], tgtName)})
+MERGE (src)-[i:INTERACTS {book: 2}]->(tgt)
+  ON CREATE SET i.weight = weight
+  ON MATCH SET i.weight = i.weight + weight
+MERGE (src)-[r:INTERACTS_2]->(tgt)
+  ON CREATE SET r.weight = weight, r.book = 2;
+----
+
+== Import interactions: Books 3, 4, & 5
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/mathbeveridge/asoiaf/2d8ded13eda5128ace5e3b995253d69e62bc4bf6/data/asoiaf-book3-edges.csv' AS row
+WITH replace(row.Source, '-', ' ') AS srcName,
+     replace(row.Target, '-', ' ') AS tgtName,
+     toInteger(row.weight) AS weight
+MERGE (src:Person {name: coalesce($map[srcName], srcName)})
+MERGE (tgt:Person {name: coalesce($map[tgtName], tgtName)})
+MERGE (src)-[i:INTERACTS {book: 3}]->(tgt)
+  ON CREATE SET i.weight = weight
+  ON MATCH SET i.weight = i.weight + weight
+MERGE (src)-[r:INTERACTS_3]->(tgt)
+  ON CREATE SET r.weight = weight, r.book = 3;
+
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/mathbeveridge/asoiaf/2d8ded13eda5128ace5e3b995253d69e62bc4bf6/data/asoiaf-book4-edges.csv' AS row
+WITH replace(row.Source, '-', ' ') AS srcName,
+     replace(row.Target, '-', ' ') AS tgtName,
+     toInteger(row.weight) AS weight
+MERGE (src:Person {name: coalesce($map[srcName], srcName)})
+MERGE (tgt:Person {name: coalesce($map[tgtName], tgtName)})
+MERGE (src)-[i:INTERACTS {book: 4}]->(tgt)
+  ON CREATE SET i.weight = weight
+  ON MATCH SET i.weight = i.weight + weight
+MERGE (src)-[r:INTERACTS_4]->(tgt)
+  ON CREATE SET r.weight = weight, r.book = 4;
+
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/mathbeveridge/asoiaf/2d8ded13eda5128ace5e3b995253d69e62bc4bf6/data/asoiaf-book5-edges.csv' AS row
+WITH replace(row.Source, '-', ' ') AS srcName,
+     replace(row.Target, '-', ' ') AS tgtName,
+     toInteger(row.weight) AS weight
+MERGE (src:Person {name: coalesce($map[srcName], srcName)})
+MERGE (tgt:Person {name: coalesce($map[tgtName], tgtName)})
+MERGE (src)-[i:INTERACTS {book: 5}]->(tgt)
+  ON CREATE SET i.weight = weight
+  ON MATCH SET i.weight = i.weight + weight
+MERGE (src)-[r:INTERACTS_5]->(tgt)
+  ON CREATE SET r.weight = weight, r.book = 5;
+----
+
+== Next Steps
+
+In the next section of this guide, we will explore the data and then prepare to run algorithms.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/02_analysis_algo.html'>Data Exploration</a>]
+endif::[]
+ifdef::env-graphgist[]
+link:{gist}/02_analysis_algo.adoc[Data Exploration^]
+endif::[]

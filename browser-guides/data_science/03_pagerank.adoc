@@ -1,0 +1,141 @@
+== Page Rank
+:author: Neo4j Engineering
+:description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:tags: data-science, gds, graph-algorithms, pagerank, centrality
+:neo4j-version: 3.5
+
+== Page Rank
+
+image::{img}/PageRanks-Example.png[float="right", width="300"]
+
+Page Rank is an algorithm that measures the transitive influence and connectivity of nodes to find the most *influential* nodes in a graph. It computes an influence value for each node, called a _score_. As a result, the score of a node is a certain weighted average of the scores of its direct neighbors.
+
+*How Page Rank works*
+
+PageRank is an _iterative_ algorithm.
+In each iteration, every node propagates its score evenly divided to its neighbors. The algorithm runs for a configurable maximum number of iterations (default is 20), or until the node scores converge. That occurs when the maximum change in node score between two sequential iterations is smaller than the configured `tolerance` value.
+
+In the following chapters, you will see how Page Rank identifies the most important nodes.
+
+== Page Rank: stream mode
+
+Let's find out who is influential in the graph by running Page Rank.
+First, we run a basic Page Rank call in `stream` mode.
+
+[source, cypher]
+----
+CALL gds.pageRank.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+}) YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS name, score
+ORDER BY score DESC LIMIT 10
+----
+
+Then, you compare the Page Rank of each `Person` node with the number of interactions for that node.
+
+[source,cypher]
+----
+CALL gds.pageRank.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+}) YIELD nodeId, score AS pageRank
+WITH gds.util.asNode(nodeId) AS n, pageRank
+MATCH (n)-[i:INTERACTS]-()
+RETURN n.name AS name, pageRank, count(i) AS interactions
+ORDER BY pageRank DESC LIMIT 10
+----
+
+The result shows that not always the most talkative characters have the highest rank.
+
+== Page Rank: write mode
+
+Now that we have the results from our Page Rank query, we can write them back to Neo4j and use them for further queries. Specify the name of the property to which the algorithm will write using the `writeProperty` key in the config map passed to the procedure.
+
+[source,cypher]
+----
+CALL gds.pageRank.write({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'pageRank'})
+----
+
+== Page Rank: rank per book
+
+Along with the generic `INTERACTS` relationships, you also have `INTERACTS_1`, `INTERACTS_2`, etc. for the different books.
+Let's compute and write the Page Rank scores for the first book.
+
+[source, cypher]
+----
+CALL gds.pageRank.write({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS_1: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'pageRank1'
+})
+----
+
+== Page Rank: exercise
+
+Let's see what you have learned so far.
+
+Try to calculate the Page Rank of the other books in the series and store the results in the database to measure and analyze influence.
+
+* Write queries that call `gds.pageRank.write` for the `INTERACTS_2`, `INTERACTS_3`, `INTERACTS_4`, and `INTERACTS_5` relationship types. (*Hint:* take a look at the previous query as a model)
+
+== Page Rank: answer questions
+
+Now, try to write queries to answer the following questions:
+
+* Which character has the biggest increase in influence from book 1 to 5?
+* Which character has the biggest decrease?
+
+*Note:* Answers are on the next slide.
+
+== Page Rank: exercise answer
+
+.Biggest increase
+[source, cypher]
+----
+MATCH (p:Person)
+RETURN p.name, p.pageRank1, p.pageRank5, p.pageRank5 - p.pageRank1 AS difference
+ORDER BY difference DESC
+LIMIT 10
+----
+
+.Biggest decrease
+[source, cypher]
+----
+MATCH (p:Person)
+RETURN p.name, p.pageRank1, p.pageRank5, p.pageRank5 - p.pageRank1 AS difference
+ORDER BY difference
+LIMIT 10
+----
+
+== Next Steps
+
+The next guide will look at the label propagation algorithm to find groups of people in communities.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/04_label_propagation.html'>Communities: Label Propagation</a>]
+endif::[]
+ifdef::env-graphgist[]
+link:{gist}/04_label_propagation.adoc[Communities: Label Propagation^]
+endif::[]

@@ -99,7 +99,7 @@ This query shows the first 20 FQNs of classes and their super-type (class or int
 ----
 MATCH (c1:Class)-[:EXTENDS]->(c2:Type)
 RETURN c1.fqn, c2.fqn
- LIMIT 20
+LIMIT 20
 ----
 
 == Analysis: Which classes contain the highest number of methods?
@@ -122,7 +122,7 @@ We follow the EXTENDS relationship transitively up to the top of the hierarchy a
 [source,cypher]
 ----
 MATCH h = (class:Class)-[:EXTENDS*]->(super:Type)
-WHERE NOT EXISTS ( (super)-[:EXTENDS]->() )
+WHERE NOT EXISTS((super)-[:EXTENDS]->())
 RETURN class.fqn, length(h) AS Depth
 ORDER BY Depth DESC
 LIMIT 20
@@ -161,7 +161,7 @@ Or how much effort it would take to decouple some architectural artifacts.
 
 [source,cypher]
 ----
-MATCH  (caller:Method:Java)-[:INVOKES]->(callee:Method:Java)<-[:DECLARES]-(t:Type) 
+MATCH (caller:Method:Java)-[:INVOKES]->(callee:Method:Java)<-[:DECLARES]-(t:Type) 
 WHERE t.fqn STARTS WITH {package}
 RETURN t.fqn, callee.name, count(caller) AS callers
 ORDER BY callers
@@ -210,7 +210,7 @@ RETURN immutable
 == Further analysis: Mark types to investigate
 
 Mark the types in one package to be investigated.
-So instead of always checking this condition: `WHERE has(t.byteCodeVersion) AND t.fqn STARTS WITH {package}`, we can just match on the `:Investigate` label.
+So instead of always checking this condition: `WHERE exists(t.byteCodeVersion) AND t.fqn STARTS WITH {package}`, we can just match on the `:Investigate` label.
 
 ++++
 <input style="display:inline;width:30%;" value-for="package" class="form-control" value="some.package." size="40">
@@ -219,7 +219,7 @@ So instead of always checking this condition: `WHERE has(t.byteCodeVersion) AND 
 [source,cypher]
 ----
 MATCH (t:Type:File)<-[:DEPENDS_ON]-(dependent:Type)
- WHERE has(t.byteCodeVersion) AND t.fqn STARTS WITH {package}
+WHERE exists(t.byteCodeVersion) AND t.fqn STARTS WITH {package}
 SET t:Investigate
 ----
 
@@ -242,10 +242,8 @@ Now let's add a property 'fanOut' to a Type with the number of other types it de
 [source,cypher]
 ----
 MATCH (t:Type:File:Investigate)-[:DEPENDS_ON]->(dependency:Type)
-
 WITH t, count(dependency) AS dependencies
 SET t.fanOut = dependencies
-
 RETURN t.fqn AS Type, t.fanOut AS fanOut
 ORDER BY fanOut DESC
 ----
@@ -257,7 +255,7 @@ We can also add a property 'fanOut' to all Types without fanOut property.
 [source,cypher]
 ----
 MATCH (t:Type:File)
- WHERE NOT has(t.fanOut)
+WHERE NOT exists(t.fanOut)
 SET t.fanOut = 0
 RETURN t.fqn AS type
 ----
@@ -269,7 +267,7 @@ Next, add a property 'fanIn' to all Types without fanIn property.
 [source,cypher]
 ----
 MATCH (t:Type:File:Investigate)
- WHERE NOT has(t.fanIn)
+ WHERE NOT exists(t.fanIn)
 SET t.fanIn = 0
 RETURN t.fqn AS type
 ----
@@ -284,7 +282,7 @@ MATCH (t:Type:File:Investigate)
 SET t.typeCoupling = t.fanIn + t.fanOut
 RETURN t.fqn AS type, t.typeCoupling AS typeCoupling,
       t.fanIn AS fanIn, t.fanOut AS fanOut
- ORDER BY typeCoupling DESC, fanIn DESC
+ORDER BY typeCoupling DESC, fanIn DESC
 ----
 
 == Add in-package fan-out
@@ -295,7 +293,7 @@ We can add a property 'inPackageFanOut' to a Type with the number of other types
 ----
 MATCH (p1:Package)-[:CONTAINS]->(t:Type:File:Investigate)-[:DEPENDS_ON]->
       (dependency:Type)<-[:CONTAINS]-(p2:Package)
- WHERE p1 = p2 AND NOT dependency.fqn CONTAINS '$'
+WHERE p1 = p2 AND NOT dependency.fqn CONTAINS '$'
 
 WITH t, count(dependency) AS dependencies
 SET t.inPackageFanOut = dependencies
@@ -312,14 +310,11 @@ In this query, we add a property `inPackageFanIn` to a `Type` with the number of
 ----
 MATCH (p1:Package)-[:CONTAINS]->(t:Type:File:Investigate)<-[:DEPENDS_ON]-
      (dependency:Type)<-[:CONTAINS]-(p2:Package)
- WHERE p1 = p2 AND NOT dependency.fqn CONTAINS '$'
-
+WHERE p1 = p2 AND NOT dependency.fqn CONTAINS '$'
 WITH t, count(dependency) AS dependencies
-
 SET t.inPackageFanIn = dependencies
-
 RETURN t.fqn AS type, t.inPackageFanIn AS fanIn
- ORDER BY fanIn DESC
+ORDER BY fanIn DESC
 ----
 
 == Add type-in-package coupling
@@ -331,8 +326,8 @@ Now we add a property `typeInPackageCoupling` to a `Type` as sum of `fanIn` and 
 MATCH (t:Type:File:Investigate)
 SET t.typeInPackageCoupling = t.inPackageFanIn + t.inPackageFanOut
 RETURN t.fqn AS type, t.typeInPackageCoupling AS typeCoupling,
-      t.inPackageFanIn AS FanIn, t.inPackageFanOut AS fanOut
- ORDER BY typeCoupling DESC, fanIn DESC
+      t.inPackageFanIn AS fanIn, t.inPackageFanOut AS fanOut
+ORDER BY typeCoupling DESC, fanIn DESC
 ----
 
 == Unit Tests: Validate Assertions
@@ -347,8 +342,8 @@ Here is an example for Mockito to label all assertion methods with name "verify*
 [source,cypher]
 ----
 MATCH (assertType:Type)-[:DECLARES]->(assertMethod)
- WHERE assertType.fqn = 'org.mockito.Mockito'
- AND assertMethod.signature CONTAINS 'verify'
+WHERE assertType.fqn = 'org.mockito.Mockito'
+AND assertMethod.signature CONTAINS 'verify'
 SET assertMethod:Junit4:Assert
 RETURN assertMethod
 ----
@@ -360,8 +355,8 @@ Also the org.junit.Assert.fail method counts as an assert too:
 [source,cypher]
 ----
 MATCH (assertType:Type)-[:DECLARES]->(assertMethod)
- WHERE assertType.fqn = 'org.junit.Assert'
- AND assertMethod.signature starts with 'void fail'
+WHERE assertType.fqn = 'org.junit.Assert'
+AND assertMethod.signature starts with 'void fail'
 SET assertMethod:Junit4:Assert
 RETURN assertMethod
 ----
@@ -397,18 +392,18 @@ MATCH (tcr:TestCoverageRange)
 WITH tcr.min AS mincomplexity, tcr.max AS maxcomplexity, tcr.coverage AS coveragethreshold
 
 MATCH (cl:Jacoco:Class)--(m:Jacoco:Method)--(c:Jacoco:Counter {type: 'COMPLEXITY'})
- WHERE c.missed + c.covered >= mincomplexity AND c.missed + c.covered <= maxcomplexity
+WHERE c.missed + c.covered >= mincomplexity AND c.missed + c.covered <= maxcomplexity
 
 WITH m AS method, cl.fqn AS fqn, m.signature AS signature,
     c.missed + c.covered AS complexity, coveragethreshold
 
 MATCH (m)--(branches:Jacoco:Counter {type: 'BRANCH'})
- WHERE m = method
+WHERE m = method
 WITH *, branches.covered * 100 / (branches.covered + branches.missed) AS coverage
 WHERE coverage < coveragethreshold
 
 RETURN complexity, coveragethreshold, coverage, fqn, signature
- ORDER BY complexity, coverage
+ORDER BY complexity, coverage
 ----
 
 == Add exceptions from the rule
@@ -427,21 +422,19 @@ And add some exceptions from this rule:
 MATCH (tcr:TestCoverageRange)
 
 WITH tcr.min AS mincomplexity, tcr.max AS maxcomplexity, tcr.coverage AS coveragethreshold
-
 MATCH (cl:Jacoco:Class)--(m:Jacoco:Method)--(c:Jacoco:Counter {type: 'COMPLEXITY'})
- WHERE c.missed + c.covered >= mincomplexity AND c.missed + c.covered <= maxcomplexity
- AND NOT m.signature IN ['boolean equals(java.lang.Object)', 'int hashCode()']
- AND NOT(cl.fqn STARTS WITH 'de.kontext_e.demo.ui')
- AND NOT(cl.fqn = 'de.kontext_e.demo.tools.StringTool'
- AND m.signature = 'java.lang.String doSomethingwithStrings(java.lang.String)')
+WHERE c.missed + c.covered >= mincomplexity AND c.missed + c.covered <= maxcomplexity
+AND NOT m.signature IN ['boolean equals(java.lang.Object)', 'int hashCode()']
+AND NOT(cl.fqn STARTS WITH 'de.kontext_e.demo.ui')
+AND NOT(cl.fqn = 'de.kontext_e.demo.tools.StringTool'
+AND m.signature = 'java.lang.String doSomethingwithStrings(java.lang.String)')
 
 WITH m AS method, cl.fqn AS fqn, m.signature AS signature, c.missed+c.covered AS complexity, coveragethreshold AS coveragethreshold
-
 MATCH (m)--(branches:Jacoco:Counter {type: 'BRANCH'})
- WHERE m=method AND branches.covered*100/(branches.covered+branches.missed) < coveragethreshold
+WHERE m=method AND branches.covered*100/(branches.covered+branches.missed) < coveragethreshold
 RETURN complexity, coveragethreshold, branches.covered*100/(branches.covered+branches.missed) AS coverage, fqn, signature
- ORDER BY complexity, coverage
- SKIP 10
+ORDER BY complexity, coverage
+SKIP 10
 ----
 
 == Special case: Frequently changed classes
@@ -493,8 +486,7 @@ SET t:Internal
 
 [source,cypher]
 ----
-MATCH
-    (class:Class)-[:EXTENDS|IMPLEMENTS]->(supertype:Type:Internal)
+MATCH (class:Class)-[:EXTENDS|IMPLEMENTS]->(supertype:Type:Internal)
 WHERE NOT class:Internal
 RETURN DISTINCT class as extendsInternal
 ----
@@ -505,11 +497,10 @@ RETURN DISTINCT class as extendsInternal
 ----
 // return values
 MATCH (class:Type)-[:DECLARES]->(method:Method)
-WHERE
-    NOT class:Internal
-    AND method.visibility IN ["public","protected"]
-    AND (exists ((method)-[:RETURNS]->(:Type:Internal)) OR 
-         exists ((method)-[:`HAS`]->(:Parameter)-[:OF_TYPE]->(:Internal)))
+WHERE NOT class:Internal
+AND method.visibility IN ["public","protected"]
+AND (exists ((method)-[:RETURNS]->(:Type:Internal)) OR 
+    exists ((method)-[:`HAS`]->(:Parameter)-[:OF_TYPE]->(:Internal)))
 RETURN method
 ----
 

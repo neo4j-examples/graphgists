@@ -1,0 +1,35 @@
+== Simplified Neo4j Graph Data Science
+:author: Neo4j Engineering
+:description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:tags: data-science, gds, graph-algorithms
+:neo4j-version: 3.5
+
+== Welcome to an Introduction to Graph Data Science
+
+The Neo4j Graph Data Science (GDS) library contains a set of graph algorithms exposed through Cypher procedures.
+Graph algorithms provide insights into the graph structure and elements, for example, by computing centrality and similarity scores and detecting communities.
+
+This guide follows the ordinary workflow for running the product tier algorithms: PageRank, Label Propagation, Weakly Connected Components, Louvain, and Node Similarity. We will cover the following concepts:
+
+* Create a graph and manage created graphs.
+* Configure the algorithm to suit your needs and the data.
+
+image::{img}/graph-data-science.jpg[float=right]
+
+ifdef::env-guide[]
+. pass:a[<a play-topic='{guides}/01_eda.html'>Exploratory Data Analysis</a>]
+. pass:a[<a play-topic='{guides}/02_applied_graph_algorithms.html'>Applied Graph Algorithms</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+. link:{gist}/01_eda.adoc[Exploratory Data Analysis^]
+. link:{gist}/02_applied_graph_algorithms.adoc[Applied Graph Algorithms^]
+endif::[]
+
+== Further Resources
+
+For more resources, see link:https://neo4j.com/developer/graph-data-science/[the developer guides^].
+
+The official Graph Data Science (GDS) library documentation can be found link:https://neo4j.com/docs/graph-data-science/current/[here^].

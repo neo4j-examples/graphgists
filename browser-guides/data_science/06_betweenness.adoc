@@ -1,0 +1,82 @@
+== Betweenness Centrality
+:author: Neo4j Engineering
+:description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:tags: data-science, gds, graph-algorithms, betweenness, centrality
+:neo4j-version: 3.5
+
+== Betweenness Centrality
+
+image::{img}/Graph_betweenness[float="right", width="300"]
+
+*How Betweenness Centrality works*
+
+The algorithm calculates shortest paths without weighting between all pairs of nodes in the graph.
+Each node receives a score based on the number of shortest paths that pass through the node.
+Nodes that lie on more shortest paths between other nodes will have higher betweenness centrality scores.
+
+== Betweenness Centrality: stream mode
+
+Let's find out who is influential in the graph by running Betweenness Centrality.
+
+First, you run the Betweenness Centrality algorithm in `stream` mode.
+
+[source, cypher]
+----
+CALL gds.betweenness.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+}) YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS name, score
+ORDER BY score DESC LIMIT 10
+----
+
+If you ran Page Rank previously, you may notice that the result is similar.
+You can run the Page Rank query again and compare the result.
+
+[source, cypher]
+----
+CALL gds.pageRank.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+}) YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS name, score
+ORDER BY score DESC LIMIT 10
+----
+
+The result is similar, but not identical.
+In general, betweenness centrality is a good metric to identify bottlenecks and bridges in a graph, while page rank is used to understand the influence of a node in a network.
+
+== Betweenness Centrality: stats, write and mutate
+
+In stats mode, betweenness centrality will return the minimum, maximum, and sum of the centrality scores.
+
+[source, cypher]
+----
+CALL gds.betweenness.stats({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+})
+YIELD minimumScore, maximumScore, scoreSum
+----
+
+The same is returned by the write and mutate modes as well, in addition to writing results back to Neo4j (write mode) or mutating the in-memory graph (mutate mode).
+
+== Next Steps
+
+Congratulations! We have learned and practiced some of the key algorithms for studying influence (centrality) and communities (community detection).
+For additional learning, see the full and expanded https://localhost:7474/browser?cmd=play&arg=graph-data-science[guide] for the graph data science library.
+https://neo4j.com/docs/graph-data-science/current/[Reference documentation] for the Neo4j graph data science library is also available for detailed information.

@@ -1,0 +1,171 @@
+== Louvain
+:author: Neo4j Engineering
+:description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:tags: data-science, gds, graph-algorithms, louvain, community
+:neo4j-version: 3.5
+
+== Louvain
+
+image::{img}/louvain.jpg[float="right",width=300]
+
+The Louvain algorithm, like Label Propagation, is a community detection algorithm that identifies clusters of nodes in a graph.
+It calculates how densely connected the nodes within a community are.
+Louvain also reveals a hierarchy of communities at different scales, which enables you to zoom in on different levels of granularity and find sub-communities within other sub-communities.
+
+*How Louvain works*
+
+Louvain is a _greedy_, _hierarchical clustering_ algorithm, meaning that it repeats the following two steps until it finds a global optimum:
+
+. Assign the nodes to communities, favoring local grouping.
+. Aggregate the nodes from the same community to form a single node, which inherits all connected relationships.
+
+These two steps are repeated until no further reassignments of communities are possible.
+You can get different results between different runs of the Louvain algorithm because the nodes can be reassigned to groups randomly.
+
+*What to consider*
+
+Louvain is significantly slower than Label Propagation, and the results can be hard to interpret.
+
+The algorithm can also use weights to calculate the communities.
+A good sign that you need to tweak your schema or weighting is when you notice that the results include only a _single_ giant community, or every node is a community on its own.
+
+== Louvain: examples
+
+Let's compute the Louvain community structure of our person interactions.
+
+[source, cypher]
+----
+CALL gds.louvain.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+})
+YIELD nodeId, communityId
+RETURN gds.util.asNode(nodeId).name AS person, communityId
+ORDER BY communityId DESC
+----
+
+The query returns the name of each person and the id of the community to which it belongs.
+If you want to investigate how many communities are available, and the number of members of each community, you can change the RETURN statement.
+
+[source, cypher]
+----
+CALL gds.louvain.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+})
+YIELD nodeId, communityId
+RETURN communityId, COUNT(DISTINCT nodeId) AS members
+ORDER BY members DESC
+----
+
+The result is 1382 communities, 11 of which with more than one member.
+
+== Louvain: weighting
+
+Now let's run the Louvain algorithm on a weighted graph.
+This way, it considers the relationship weights when calculating the modularity.
+
+We will need to use the `weight` property on the INTERACTS relationship to evaluate communities with weights:
+
+[source,cypher]
+----
+CALL gds.louvain.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED',
+      aggregation: 'NONE',
+      properties: {
+      	weight: {
+          property: 'weight',
+          aggregation: 'NONE',
+          defaultValue: 0.0
+        }
+      }
+    }
+  },
+  relationshipWeightProperty: 'weight'
+})
+YIELD nodeId, communityId
+RETURN communityId, COUNT(DISTINCT nodeId) AS members
+ORDER BY members DESC
+----
+
+The result is 1384 communities, 13 of which with more than one member.
+
+== Louvain: intermediate communities
+
+Now let's try to identify communities at multiple levels in the graph: first small communities, and then combine those smaller groups into larger ones.
+
+To retrieve the intermediate communities, set `includeIntermediateCommunities` to `true`:
+
+[source,cypher]
+----
+CALL gds.louvain.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED',
+      aggregation: 'NONE',
+      properties: {
+      	weight: {
+          property: 'weight',
+          aggregation: 'NONE',
+          defaultValue: 0.0
+        }
+      }
+    }
+  },
+  includeIntermediateCommunities: true
+})
+YIELD nodeId, communityId, intermediateCommunityIds
+RETURN communityId, COUNT(DISTINCT nodeId) AS members, intermediateCommunityIds
+----
+
+You can extract membership in different levels of communities and see how the composition changes:
+
+[source,cypher]
+----
+CALL gds.louvain.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED',
+      aggregation: 'NONE',
+      properties: {
+      	weight: {
+          property: 'weight',
+          aggregation: 'NONE',
+          defaultValue: 0.0
+        }
+      }
+    }
+  },
+  includeIntermediateCommunities: true
+})
+YIELD nodeId, intermediateCommunityIds
+RETURN count(distinct intermediateCommunityIds[0]), count(distinct intermediateCommunityIds[1])
+----
+
+`includeIntermediateCommunities: false` is the default value, in which case, the `intermediateCommunityIds` field of the result is `null`.
+
+== Next Steps
+
+In the next guide, we will go back to centrality algorithms with a look at betweenness centrality.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/06_betweenness.html'>Centralities: Betweenness</a>]
+endif::[]
+ifdef::env-graphgist[]
+link:{gist}/06_betweenness.adoc[Centralities: Betweenness^]
+endif::[]

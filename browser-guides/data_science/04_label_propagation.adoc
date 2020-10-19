@@ -1,0 +1,216 @@
+== Label Propagation
+:author: Neo4j Engineering
+:description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:tags: data-science, gds, graph-algorithms, label-propagation, community
+:neo4j-version: 3.5
+
+== Label Propagation
+
+image::{img}/label-propagation-graph-algorithm-1.png[float="right",width=300]
+
+Label Propagation (LPA) is a fast algorithm for finding communities in a graph. It propagates labels throughout the graph and forms communities of nodes based on their influence.
+
+**How Label Propagation works**
+
+LPA is an _iterative_ algorithm.
+First, it assigns a unique community label to each node. In each iteration, the algorithm changes this label to the most common one among its neighbors. Densely connected nodes quickly broadcast their labels across the graph.
+At the end of the propagation, only a few labels remain. Nodes that have the same community label at convergence are considered to be in the same community. The algorithm runs for a configurable maximum number of iterations, or until it converges.
+
+For more details, see _https://neo4j.com/docs/graph-data-science/current/algorithms/label-propagation/[the documentation^]_.
+
+== Label Propagation: example
+
+Let's run label propagation to find the five largest communities of people interacting with each other. The weight property on the relationship represents the number of interactions between two people. In LPA, the weight is used to determine the influence of neighboring nodes when voting on community assignment.
+
+Let's now run LPA with just one iteration:
+
+[source, cypher]
+----
+CALL gds.labelPropagation.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED',
+      properties: 'weight'
+    }
+  },
+  relationshipWeightProperty: 'weight',
+  maxIterations: 1
+}) YIELD nodeId, communityId
+RETURN communityId, count(nodeId) AS size
+ORDER BY size DESC
+LIMIT 5
+----
+
+You can see that the nodes are assigned to initial communities. However, the algorithm needs multiple iterations to achieve a stable result.
+So, let's run the same procedure with two iterations and see how the results change.
+
+[source, cypher]
+----
+CALL gds.labelPropagation.stream({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED',
+      properties: 'weight'
+    }
+  },
+  relationshipWeightProperty: 'weight',
+  maxIterations: 2
+}) YIELD nodeId, communityId
+RETURN communityId, count(nodeId) AS size
+ORDER BY size DESC
+LIMIT 5
+----
+
+Usually, label propagation requires more than a few iterations to converge on a stable result.
+The number of the required iterations depends on the graph structure -- you should experiment.
+When you don't see the numbers in each community changing (or changing very minimally), then you have probably arrived at a good number of iterations.
+
+== Label Propagation: seeding
+
+Label Propagation can be seeded with an initial community label from a pre-existing node property. This allows you to compute communities incrementally. Let's write the results after the first iteration back to the source graph, under the write property name `community`.
+
+[source, cypher]
+----
+CALL gds.labelPropagation.write({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED',
+      properties: 'weight'
+    }
+  }
+  relationshipWeightProperty: 'weight',
+  maxIterations: 1,
+  writeProperty: 'community'
+})
+----
+
+You can now use the `community` property as a seed property for the second iteration.
+The results should be the same as the previous run with two iterations. Seeding is particularly useful when the source graph grows and you want to compute communities incrementally without starting again from scratch.
+
+Now, you can use the `seed` configuration key to specify the property from which you want to seed community IDs.
+
+[source, cypher]
+----
+CALL gds.labelPropagation.stream({
+    nodeProjection: {
+      Person: {
+        properties: 'community'
+      }
+    },
+    relationshipProjection: {
+      INTERACTS: {
+        orientation: 'UNDIRECTED',
+        properties: 'weight'
+      }
+    },
+    relationshipWeightProperty: 'weight',
+    maxIterations: 1,
+    seedProperty: 'community'
+}) YIELD nodeId, communityId
+RETURN communityId, count(nodeId) AS size
+ORDER BY size DESC
+LIMIT 5
+----
+
+== Label Propagation: exercise
+
+Now that you understand the basics of LPA, let's experiment a little.
+
+1. How many iterations does it take for LPA to converge on a stable number of communities? How many communities do you end up with?
+
+2. What happens when you run LPA for 1,000 maxIterations? (_hint: try using YIELD ranIterations_)
+
+3. What happens if you run LPA without weights? Do you find the same communities?
+
+*Bonus task*: What if you use house affiliations as seeds for communities? How would you use Cypher to create the initial seeds? Run the algorithm with the new seeds. Do you find a different set of communities?
+
+== Label Propagation: exercise answers
+
+1. 5 iterations is when the results stabilize and don't seem to change by increasing iterations more than 5.
+
+2. It only actually runs 6 times (5 to stabilize and the 6th to verify the community stabilization).
+
+[source,cypher]
+----
+CALL gds.labelPropagation.stats({
+  nodeProjection: 'Person',
+  relationshipProjection: {
+    INTERACTS: {
+      orientation: 'UNDIRECTED',
+      properties: 'weight'
+    }
+  },
+  relationshipWeightProperty: 'weight',
+  maxIterations: 1000
+}) YIELD ranIterations
+----
+
+The above query uses the stats mode (stream does not output _ranIterations_) and outputs the ranIterations statistic.
+
+== Label Propagation: exercise answers
+
+3. It does change the results. The communities are larger.
+
+[source,cypher]
+----
+CALL gds.labelPropagation.stream({
+    nodeProjection: {
+      Person: {
+        properties: 'community'
+      }
+    },
+    relationshipProjection: {
+      INTERACTS: {
+        orientation: 'UNDIRECTED'
+      }
+    },
+    maxIterations: 5
+}) YIELD nodeId, communityId
+RETURN communityId, count(nodeId) AS size
+ORDER BY size DESC
+LIMIT 5
+----
+
+== Label Propagation: exercise answers
+
+*Bonus task*: First, we need to write the algorithm to seed the communities for houses. The node query needs to pull both `Person` and `House` nodes into our graph on which to run label propagation. For the relationship query, we need to create our relationship query to both start and end on the `Person` nodes because the algorithms currently only support monopartite graphs.
+
+[source,cypher]
+----
+CALL gds.labelPropagation.write({
+  nodeQuery: 'MATCH (n) WHERE n:Person OR n:House RETURN id(n) as id',
+  relationshipQuery: 'MATCH (p1:Person)-[:BELONGS_TO]->(:House)<-[:BELONGS_TO]-(p2:Person) RETURN id(p1) AS source, id(p2) AS target',
+  writeProperty: 'houseCommunity'
+})
+----
+
+Now that we have seeded the communities, we can run the label propagation algorithm on those communities.
+
+[source,cypher]
+----
+CALL gds.labelPropagation.stream({
+  nodeQuery: 'MATCH (n) WHERE n:Person OR n:House RETURN id(n) as id',
+  relationshipQuery: 'MATCH (p1:Person)-[:BELONGS_TO]->(:House)<-[:BELONGS_TO]-(p2:Person) RETURN id(p1) AS source, id(p2) AS target',
+  maxIterations: 2,
+  seedProperty: 'houseCommunity'
+}) YIELD nodeId, communityId
+RETURN communityId, count(nodeId) AS size
+ORDER BY size DESC
+LIMIT 5
+----
+
+== Next Steps
+
+The next guide will look stay in the community detection algorithms with louvain.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/05_louvain.html'>Communities: Louvain</a>]
+endif::[]
+ifdef::env-graphgist[]
+link:{gist}/05_louvain.adoc[Communities: Louvain^]
+endif::[]
