@@ -26,6 +26,6 @@ endif::[]
 
 * https://neo4j.com/graphgists[Graph Gist Examples]
 * https://neo4j.com/docs/stable/cypher-refcard/[Cypher Reference Card]
-* https://neo4j.com/labs/apoc/current/[APOC documentation]
+* https://neo4j.com/labs/apoc/[APOC documentation]
 * https://neo4j.com/docs/cypher-manual/current/[Cypher documentation]
 * https://graphdatabases.com[e-book: Graph Databases (free)]
