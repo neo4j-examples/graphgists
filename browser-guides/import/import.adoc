@@ -14,6 +14,7 @@ ifdef::env-guide[]
 . pass:a[<a play-topic='{guides}/01_load_csv.html'>Cypher and LOAD CSV</a>]
 . pass:a[<a play-topic='{guides}/02_apoc.html'>Cypher and APOC</a>]
 . pass:a[<a play-topic='{guides}/03_procedures.html'>Procedures</a>]
+endif::[]
 
 ifdef::env-graphgist[]
 . link:{gist}/01_load_csv.adoc[Cypher and LOAD CSV^]
