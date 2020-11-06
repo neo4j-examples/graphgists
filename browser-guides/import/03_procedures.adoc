@@ -1,0 +1,204 @@
+= Neo4j import: Custom procedures
+:author: Mark Needham
+:description: Learn how to use 3 methods for importing data into Neo4j
+:img: https://s3.amazonaws.com/guides.neo4j.com/import/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/import
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:tags: import, data, load, custom-procedures, user-defined, procedures
+:neo4j-version: 3.5
+:icons: font
+
+== Procedures
+
+In this next section, we'll get some practice writing custom procedures.
+You'll need to have Java installed on your machine for this exercise.
+
+== OpenStreetMap
+
+OpenStreetMap provides https://wiki.openstreetmap.org/wiki/Downloading_data[several different to export data^], including the Overpass API which allows us to specify the coordinates of a bounded box that we would like to download.
+
+e.g. https://overpass-api.de/api/xapi_meta?*[bbox=11.54,48.14,11.543,48.145]
+
+If we open that URI, we will see something like this:
+
+```
+<osm version="0.6" generator="Overpass API">
+<note>The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.</note>
+<meta osm_base="2017-10-09T14:59:02Z"/>
+  <node id="398692" lat="48.1452196" lon="11.5414971" version="20" timestamp="2015-10-15T10:53:28Z" changeset="34651972" uid="2290263" user="soemisch">
+    <tag k="tmc" v="DE:35375"/>
+  </node>
+  <way id="4098001" version="32" timestamp="2017-03-14T13:25:41Z" changeset="46841025" uid="4642374" user="x_zhao_MENTZ">
+    <nd ref="3487635978"/>
+    <nd ref="3556567926"/>
+    <nd ref="302685400"/>
+  </way>
+</osm>
+```
+
+== Exploring OpenStreetMap with `apoc.load.xml`
+
+We want to create nodes based on the `<node>` elements and connect them together using the `<way>` elements.
+
+In OSM, https://wiki.openstreetmap.org/wiki/Node[a node^] represents "a single point in space defined by its latitude, longitude, and node id."
+
+Let's first try using APOC's `apoc.load.xml` procedure to do this.
+The following query finds the points in a bounded box in Munich:
+
+[source,cypher]
+----
+CALL apoc.load.xml('https://overpass-api.de/api/xapi_meta?*[bbox=11.54,48.14,11.543,48.145]')
+YIELD value
+UNWIND value["_children"] AS child
+
+WITH child WHERE child["_type"] = "node"
+RETURN child.id AS id, child.lat AS latitude, child.lon AS longitude, child["user"] AS userName
+LIMIT 10
+----
+
+== Importing OpenStreetMap with `apoc.load.xml`
+
+Now let's import those points!
+
+First we'll create a unique constraint on `:Point(id)` so that we don't end up with duplicate points.
+This command will also create an index which will be useful in the next section:
+
+[source,cypher]
+----
+CREATE CONSTRAINT ON (p:Point)
+ASSERT p.id is UNIQUE
+----
+
+== Import the XML data
+
+Run the following query to import the xml data and create the `Users` and `Points` for our data model:
+
+[source,cypher]
+----
+CALL apoc.load.xml('https://overpass-api.de/api/xapi_meta?*[bbox=11.54,48.14,11.543,48.145]')
+YIELD value
+UNWIND value["_children"] AS child
+
+WITH child WHERE child["_type"] = "node"
+WITH child.id AS id, child.lat AS latitude, child.lon AS longitude, child["user"] AS userName
+
+MERGE (point:Point {id: id})
+SET point.latitude = latitude, point.longitude = longitude
+MERGE (user:User {name: userName})
+MERGE (user)-[:EDITED]->(point)
+----
+
+== Verify data in the graph
+
+We can run the following query to check the points were created:
+
+[source,cypher]
+----
+MATCH (point:Point)<-[:EDITED]-(user)
+RETURN point.id, point.latitude, point.longitude, user.name
+LIMIT 25
+----
+
+== Importing OpenStreetMap with `apoc.load.xml`
+
+Next, we want to create a relationship between adjacent points.
+
+Let's first see what the data in the `<way>` elements look like:
+
+[source,cypher]
+----
+CALL apoc.load.xml('https://overpass-api.de/api/xapi_meta?*[bbox=11.54,48.14,11.543,48.145]')
+YIELD value
+UNWIND value["_children"] AS child
+
+WITH child WHERE child["_type"] = "way"
+RETURN child.id AS id, [child in child["_children"] where child["_type"] = "nd"] AS children
+LIMIT 1
+----
+
+We want to create a `CONNECTS` relationship between the adjacent nodes inside a given `way`. For instance, if `children` contained `[1,2,3]` we want to create `(1)-[:CONNECTS]->(2)` and `(2)-[:CONNECTS]->(3)`.
+
+== Importing OpenStreetMap with `apoc.load.xml`
+
+Run the following query to add a `CONNECTS` relationship between adjacent nodes:
+
+[source,cypher]
+----
+CALL apoc.load.xml('https://overpass-api.de/api/xapi_meta?*[bbox=11.54,48.14,11.543,48.145]')
+YIELD value
+UNWIND value["_children"] AS child
+
+WITH child WHERE child["_type"] = "way"
+WITH child.id AS id, [child in child["_children"] where child["_type"] = "nd"] AS children
+UNWIND range(0, size(children) - 2) AS idx
+WITH id, children[idx] as start, children[idx+1] AS end
+MATCH (p1:Point {id: start["ref"]})
+MATCH (p2:Point {id: end["ref"]})
+MERGE (p1)-[:CONNECTS]->(p2)
+----
+
+== Querying OpenStreetMap
+
+Now let's see if we can find a path between two points:
+
+[source,cypher]
+----
+MATCH (p1:Point {id: "3800618341"})
+MATCH (p2:Point {id: "1485915298"})
+MATCH path = shortestpath((p1)-[:CONNECTS*]-(p2))
+RETURN p1, p2, path
+----
+
+Cool! All good so far.
+
+== Custom procedures
+
+We were able to achieve what we wanted with `apoc.load.xml`, but the Cypher we have to write gets more complicated as we get deeper into the XML structure.
+We also had to run two queries to achieve our desired graph structure. It would be nice if we could do everything in one pass.
+
+We've started on the implementation of a procedure that can do just this!
+You can find it on the Neo4j training repository - https://github.com/neo4j-contrib/training/tree/master/import/custom-procedure.
+
+== OSM Import Procedure
+
+Go ahead and clone the repository, then build the procedure by executing the following command:
+
+```
+mvn clean install -DskipTests
+```
+
+We'll then have the following jar in our `target` directory:
+
+```
+$ ls  target/neo4j*.jar
+target/neo4j-procedures-examples-1.0.0-SNAPSHOT.jar
+```
+
+Copy that into your Neo4j `plugins` directory and restart Neo4j.
+
+== Running the OSM Import Procedure
+
+We've already implemented importing nodes which you can try out by executing the following command:
+
+[source, cypher]
+----
+CALL osm.importUri('https://overpass-api.de/api/xapi_meta?*[bbox=11.54,48.14,11.543, 48.145]')
+----
+
+== Exercise: Adding connections to the OSM Import Procedure
+
+Now we need to update our procedure to import the connections as well.
+
+This is where you will need Java installed on your system to give this a try.
+
+== Next steps
+
+Congratulations! You have completed this guide and learned how to use Cypher with LOAD CSV, the APOC library, and custom procedures to import data into Neo4j.
+There are more things you can do with each of these methods, as well as other import methods available, such as the ETL tool, language drivers, Kettle, and command line tools.
+Feel free to check out the resources linked below for more information!
+
+* https://neo4j.com/developer/data-import/[Data Import with Neo4j]
+* https://neo4j.com/docs/cypher-manual/current/[Cypher documentation]
+* https://neo4j.com/labs/apoc/current/[APOC documentation]
+* https://neo4j.com/docs/cypher-manual/current/functions/user-defined/[User-Defined Cypher Functions]
+* https://neo4j.com/developer/cypher/procedures-functions/[Writing custom procedures and functions]

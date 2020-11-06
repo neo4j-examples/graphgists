@@ -1,0 +1,254 @@
+= Neo4j import: APOC library
+:author: Mark Needham
+:description: Learn how to use 3 methods for importing data into Neo4j
+:img: https://s3.amazonaws.com/guides.neo4j.com/import/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/import
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:tags: import, data, load, apoc, procedures, functions, extensions
+:neo4j-version: 3.5
+:icons: font
+
+== APOC: Awesome Procedures on Cypher
+
+If you haven't already, make sure to download the https://github.com/neo4j-contrib/neo4j-apoc-procedures[latest release of APOC^], place it in your `$NEO4J_HOME/plugins` folder, and restart Neo4j.
+
+Or, if you are using Neo4j Desktop, you can go under the plugins tab for the database instance and install the library there.
+
+Once you've done that, run the following query to check it's correctly installed:
+
+[source,cypher]
+----
+CALL dbms.procedures()
+YIELD name WHERE name STARTS WITH "apoc"
+RETURN count(*)
+----
+
+Ok, cool!
+Now we're ready to start using APOC.
+
+_Note_ The https://neo4j.com/labs/apoc/4.1/[APOC documentation^] will be helpful for this section so keep that open in one of your browser tabs.
+
+== Cleaning the database
+
+We are going to practice importing lots of different types of data and cleaning the database after each one.
+
+We can run the following query to delete everything we've imported so far:
+
+[source,cypher]
+----
+// Delete all the things
+CALL apoc.periodic.iterate(
+  'match (n) return n',
+  'detach delete n',
+  { batchSize:500 }
+)
+----
+
+This query uses the `apoc.periodic.iterate` procedure, which makes it easy to batch up big queries.
+In this case, we're deleting all the nodes in the database in batches of 500.
+
+We can save this query in the Neo4j browser by clicking on the star button to the right of the query pane.
+
+== Graph ML
+
+http://graphml.graphdrawing.org/[GraphML^] is an XML-based file format for graphs.
+It consists of a language core to describe the structural properties of a graph and a flexible extension mechanism to add application-specific data.
+
+The https://sonetlab.fbk.eu/data/social_networks_of_wikipedia/[Social Networks of Wikipedia^] paper uses lots of different datasets in this format.
+Let's try to import one of them.
+
+Run the following command:
+
+[source,cypher]
+----
+CALL apoc.import.graphml(
+  "http://sonetlab.fbk.eu/data/social_networks_of_wikipedia/vecwiki_social_network_extraction/vecwiki-20091230-manual-coding.graphml",
+  { batchSize: 5000, readLabels: true }
+)
+----
+
+You should get a `ProcedureRegistrationFailed` exception.
+
+== Graph ML
+
+This is because the security in Neo4j blocks external procedures from running against the database. To fix this, we need to update our config to allow APOC procedures. The `neo4j.conf` needs the following entry:
+
+```
+dbms.security.procedures.unrestricted=apoc.*
+```
+
+Once that is complete, you'll need to restart Neo4j.
+
+Now retry the import command:
+
+[source,cypher]
+----
+CALL apoc.import.graphml(
+  "http://sonetlab.fbk.eu/data/social_networks_of_wikipedia/vecwiki_social_network_extraction/vecwiki-20091230-manual-coding.graphml",
+  { batchSize: 5000, readLabels: true, defaultRelationshipType:'RELATED' }
+)
+----
+
+== Graph ML
+
+This dataset doesn't have any labels on the nodes so let's add some:
+
+[source,cypher]
+----
+MATCH (n)
+WHERE exists(n.username)
+SET n:Person
+----
+
+We can now write a query to find the shortest path between pairs of nodes:
+
+[source,cypher]
+----
+MATCH (p1:Person), (p2:Person) WHERE p1 <> p2
+MATCH path = shortestpath((p1)-[:RELATED*]-(p2))
+WITH path WHERE length(path) > 2
+RETURN [person in nodes(path) | person.username] AS path
+LIMIT 10
+----
+
+== JSON
+
+Next we're going to load a JSON API, but first re-run the 'delete all' query from earlier so that we have a clean database.
+
+[source,cypher]
+----
+CALL apoc.periodic.iterate(
+  'match (n) return n',
+  'detach delete n',
+  { batchSize:500 }
+)
+----
+
+Next, we will import some JSON data from StackOverflow.
+
+== JSON import
+
+StackOverflow has a JSON API which exposes questions, answers, comments, tags, and more. We can run the following query to import the first 100 questions with the `neo4j` tag:
+
+[source,cypher]
+----
+WITH "https://api.stackexchange.com/2.2/search?page=1&pagesize=100&order=asc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS uri
+CALL apoc.load.json(uri)
+YIELD value AS data
+UNWIND data.items as q
+MERGE (question:Question {id:q.question_id})
+  ON CREATE SET question.title = q.title, question.url = q.share_link, question.created = q.creation_date
+SET question.favorites = q.favorite_count, question.updated = q.last_activity_date, question.views = q.view_count,
+    question.upVotes = q.up_vote_count, question.downVotes = q.down_vote_count
+FOREACH (q_owner IN [o in [q.owner] WHERE o.user_id IS NOT NULL] |
+  MERGE (owner:StackOverflowAccount {id:q.owner.user_id}) ON CREATE SET owner.name = q.owner.display_name SET owner:User, owner:StackOverflow
+  MERGE (owner)-[:POSTED]->(question)
+)
+FOREACH (tagName IN q.tags | MERGE (tag:Tag{name:tagName}) SET tag:StackOverflow MERGE (question)-[:TAGGED]->(tag))
+FOREACH (a IN q.answers |
+   MERGE (answer:Answer {id:a.answer_id})
+   SET answer.accepted = a.is_accepted, answer.upVotes = a.up_vote_count, answer.downVotes = a.down_vote_count,
+       answer:Content, answer:StackOverflow
+   MERGE (question)<-[:ANSWERED]-(answer)
+   FOREACH (a_owner IN filter(o IN [a.owner] where o.user_id is not null) |
+     MERGE (answerer:User {id:a_owner.user_id})
+     ON CREATE SET answerer.name = a_owner.display_name
+     SET answerer.reputation = a_owner.reputation, answerer.profileImage = a_owner.profile_image
+     MERGE (answer)<-[:POSTED]-(answerer)
+   )
+)
+----
+
+== JSON
+
+We can now run the following query to find the most popular StackOverflow questions:
+
+[source,cypher]
+----
+MATCH (tag)<-[:TAGGED]-(question:Question)<--(:Answer)<-[:POSTED]-(user)
+RETURN question.title, question.views, COLLECT(DISTINCT tag.name) AS tags
+ORDER BY question.views DESC
+----
+
+== Exercise: JSON
+
+Try changing the query to load a different tag or a different page from the original search term.
+
+If you're not a fan of StackOverflow, try loading data from a different JSON API that you're familiar with.
+
+== Dynamic values
+
+Sometimes, we want to create dynamically-computed node labels and relationship types, as well as any map of properties.
+We can't do this in pure Cypher but the `apoc.create.node` and `apoc.create.relationship` procedures come in handy here.
+
+== Dynamic node labels
+
+First, we will run the following command to create parameters that we'll use in our query:
+
+[source,cypher]
+----
+:param batch: [
+  { labels: ["Person", "Actor"], props: { name:"Alice", age:32 }},
+  { labels: ["Person", "Director"], props: { name:"Bob", age:42 }},
+  { labels: ["Person", "Writer"], props: { name:"John", age:37 }}
+]
+----
+
+Now let's create nodes representing each of the people in the batch:
+
+[source,cypher]
+----
+UNWIND $batch AS row
+call apoc.create.node(row.labels, row.props) YIELD node
+RETURN count(*)
+----
+
+== Exercise: Dynamic relationship-types
+
+Given the following parameter:
+
+[source,cypher]
+----
+:param batch: [
+  { from: "Alice", to: "Bob", type: "FRIEND" },
+  { from: "Bob", to: "John", type: "ENEMY" },
+  { from: "Alice", to: "John", type: "FRIEND" }
+]
+----
+
+Can you write a query that creates the appropriate relationship between each person using the `apoc.create.relationship` procedure?
+
+[source, cypher]
+----
+UNWIND $batch AS row
+
+// lookup nodes
+MATCH (from:Person {...})
+
+// create relationship
+----
+
+== Answer: Dynamic relationship types
+
+[source, cypher]
+----
+UNWIND $batch AS row
+MATCH (from:Person {name: row.from})
+MATCH (to:Person {name: row.to})
+CALL apoc.create.relationship(from, row.type, {}, to) yield rel
+RETURN count(*)
+----
+
+== Next steps
+
+There are lots of other data integration procedures available in APOC - hopefully you can find one that works for you. If not, though, you can write your own and run it in Neo4j.
+
+In the next section, we'll write our own custom import procedure.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/03_procedures.html'>Custom Procedures</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+link:{gist}/03_procedures.adoc[Custom Procedures^]
+endif::[]

@@ -1,0 +1,30 @@
+= Neo4j Import
+:author: Mark Needham
+:description: Learn how to use 3 methods for importing data into Neo4j
+:img: https://s3.amazonaws.com/guides.neo4j.com/import/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/import
+:tags: import, data, load, load-csv, apoc, procedures
+:neo4j-version: 3.5
+
+== Welcome to Neo4j Import
+
+In this set of guides, we will cover three different ways to import data into Neo4j. These are not the only three ways to ingest data for Neo4j, but they are common methods.
+
+ifdef::env-guide[]
+. pass:a[<a play-topic='{guides}/01_load_csv.html'>Cypher and LOAD CSV</a>]
+. pass:a[<a play-topic='{guides}/02_apoc.html'>Cypher and APOC</a>]
+. pass:a[<a play-topic='{guides}/03_procedures.html'>Procedures</a>]
+
+ifdef::env-graphgist[]
+. link:{gist}/01_load_csv.adoc[Cypher and LOAD CSV^]
+. link:{gist}/02_apoc.adoc[Cypher and APOC^]
+. link:{gist}/03_procedures.adoc[Procedures^]
+endif::[]
+
+== Further Resources
+
+* https://neo4j.com/graphgists[Graph Gist Examples]
+* https://neo4j.com/docs/stable/cypher-refcard/[Cypher Reference Card]
+* https://neo4j.com/labs/apoc/current/[APOC documentation]
+* https://neo4j.com/docs/cypher-manual/current/[Cypher documentation]
+* https://graphdatabases.com[e-book: Graph Databases (free)]

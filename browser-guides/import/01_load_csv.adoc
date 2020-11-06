@@ -1,0 +1,205 @@
+= Neo4j import: LOAD CSV in Cypher
+:author: Mark Needham
+:description: Learn how to use 3 methods for importing data into Neo4j
+:img: https://s3.amazonaws.com/guides.neo4j.com/import/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/import
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:tags: import, data, load, load-csv
+:neo4j-version: 3.5
+:icons: font
+
+== Intro to the dataset
+
+Welcome to the first of a set of interactive guides.
+In these guides, we will import a dataset containing the connections between U.S. airports in 2008.
+
+Let's get started!
+
+== Exploring data with `LOAD CSV`
+
+While we are getting started with our dataset, it's much easier to work with a subset of the data so that we can iterate quickly.
+A smaller dataset containing 10,000 connections between U.S. airports lives in `flights_initial.csv`.
+
+We can run the following query to see what data we have to work with:
+
+[source,cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{data-url}flights_initial.csv" AS row
+RETURN row
+LIMIT 5
+----
+
+This query:
+
+* loads the file `flights_initial.csv`
+* iterates over the file, referring to each line as the variable `row`
+* and returns the first 5 lines in the file
+
+If you see an error message that mentions `Couldn't load the external resource` the CSV files haven't been copied to the correct location.
+Grab a trainer for help!
+
+There are lots of different fields in this CSV file.
+
+== Importing flights and airports
+
+Run the following query to create nodes and relationships for the flights
+
+[source,cypher,subs=attributes]
+----
+LOAD CSV WITH HEADERS FROM "{data-url}flights_initial.csv" AS row
+MERGE (origin:Airport {code: row.Origin})
+MERGE (destination:Airport {code: row.Dest})
+WITH row.UniqueCarrier + row.FlightNum + "_" + row.Year + "-" + row.Month + "-" + row.DayofMonth + "_" + row.Origin + "_" + row.Dest AS flightIdentifier, row, origin, destination
+MERGE (flight:Flight { id: flightIdentifier })
+ON CREATE SET flight.date = row.Year + "-" + row.Month + "-" + row.DayofMonth,
+              flight.airline = row.UniqueCarrier, flight.number = row.FlightNum, flight.departure = row.CRSDepTime,
+              flight.arrival = row.CRSArrTime, flight.distance = row.Distance, flight.cancelled = row.Cancelled
+MERGE (flight)-[:ORIGIN]->(origin)
+MERGE (flight)-[:DESTINATION]->(destination)
+----
+
+This query:
+
+* iterates through each row in the file
+* creates nodes with the `Airport` label for the origin and destination airports if they don't already exist
+* creates nodes with the `Flight` label for flights if they don't already exist. We invent our own `flightIdentifier` as there isn't one in the dataset
+* creates an `ORIGIN` relationship between the origin airport and the flight
+* creates a `DESTINATION` relationship between the destination airport and the flight
+
+You'll notice that this query took quite a while to run - we'll look at how to address that in a minute, but first let's talk about property types.
+
+== Coercing values
+
+By default properties will be stored as strings.
+This will cause us some problems when we start querying the data.
+
+What if we want to find all the flights that were longer than 500km?
+We might write the following query:
+
+[source,cypher]
+----
+MATCH (flight:Flight)
+WHERE flight.distance > 500
+RETURN flight
+----
+
+No rows!
+That's maybe surprising since we know there are definitely some flights that meet this criteria.
+
+== Coercing values: Integers
+
+Cypher has functions that allow us to coerce values to other types.
+You can read more about them in the https://neo4j.com/docs/cypher-manual/current/functions/scalar/#query-functions-scalar[scalar functions section] of the https://neo4j.com/docs/cypher-manual/current/[cypher manual^].
+
+We can use the `toInteger` function to convert the `distance` parameter.
+
+[source,cypher]
+----
+MATCH (flight:Flight)
+SET flight.distance = toInteger(flight.distance)
+----
+
+Now let's retry the query:
+
+[source,cypher]
+----
+MATCH (flight:Flight)
+WHERE flight.distance > 500
+RETURN flight
+----
+
+== Coercing values: Booleans
+
+The `cancelled` property hasn't been imported in an optimal way either.
+Ideally, we would like that to be a boolean value, but at the moment, it's stored as `0` or `1`.
+
+There isn't a function to fix this but we can write some Cypher that will do the trick:
+
+[source,cypher]
+----
+MATCH (flight:Flight)
+SET flight.cancelled = CASE WHEN flight.cancelled = "1" THEN true ELSE false END
+----
+
+Now we can write a query to find all the flights that were cancelled:
+
+[source,cypher]
+----
+MATCH (flight:Flight)
+WHERE flight.cancelled
+RETURN flight
+----
+
+== Speeding up the import
+
+Next, we are going to import 40,000 more flights, but first, we need to make our import script quicker.
+
+In our initial `LOAD CSV` command, we do multiple label scans on our `MERGE` clauses to create origins, destinations, and flights.
+
+We can create unique constraints to solve this problem.
+This will have the added benefit of stopping us from accidentally creating duplicate nodes!
+
+[source,cypher]
+----
+CREATE CONSTRAINT ON (a:Airport)
+ASSERT a.code IS UNIQUE
+----
+
+[source,cypher]
+----
+CREATE CONSTRAINT ON (f:Flight)
+ASSERT f.id IS UNIQUE
+----
+
+Run the following commands to check our constraints were created:
+
+[source,cypher]
+----
+:schema
+----
+
+== Import a bigger dataset
+
+Now we are ready to import some more flights.
+We will use the `USING PERIODIC COMMIT` clause so that we don't build up lots of transaction state in memory - by default our query will commit every 1,000 rows.
+
+Run the following command:
+
+[source,cypher,subs=attributes]
+----
+USING PERIODIC COMMIT
+LOAD CSV WITH HEADERS FROM "{csv-url}flights_50k.csv" AS row
+MERGE (origin:Airport {code: row.Origin})
+MERGE (destination:Airport {code: row.Dest})
+WITH row.UniqueCarrier + row.FlightNum + "_" + row.Year + "-" + row.Month + "-" + row.DayofMonth + "_" + row.Origin + "_" + row.Dest AS flightIdentifier, row, origin, destination
+MERGE (flight:Flight { id: flightIdentifier })
+ON CREATE SET flight.date = row.Year + "-" + row.Month + "-" + row.DayofMonth,
+              flight.airline = row.UniqueCarrier, flight.number = row.FlightNum, flight.departure = row.CRSDepTime,
+              flight.arrival = row.CRSArrTime, flight.distance = row.Distance, flight.cancelled = row.Cancelled
+MERGE (flight)-[:ORIGIN]->(origin)
+MERGE (flight)-[:DESTINATION]->(destination)
+----
+
+== Checking our import
+
+We now have 50,000 flights in the database, which we can check by executing the following query:
+
+WARNING: If you don't have enough heap configured, this query will fail, despite the `PERIODIC COMMIT`. That's because of the `Eager` operator that's inserted by the double `MERGE` on the same label-property combination.
+
+[source,cypher]
+----
+MATCH (:Flight)
+RETURN count(*)
+----
+
+== Next step
+
+We can get a lot of data into Neo4j using pure Cypher, but if we want to import data from other sources, then APOC is the best method that covers a wide range of other data import scenarios.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/02_apoc.html'>Cypher and APOC</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+link:{gist}/02_apoc.adoc[Cypher and APOC^]
+endif::[]
