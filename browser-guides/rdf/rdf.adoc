@@ -9,7 +9,7 @@
 
 Each statements in an RDF dataset represents an edge in the graph, but in the LPG, nodes can have internal structure so we can decide what is a property and what is a relationship.
 
-A small set of RDF statements.  Yyou can try to insert them in your favourite triple store (why not rdf4j server? [https://rdf4j.org/documentation/tools/server-workbench/])
+A small set of RDF statements.  You can try to insert them in your favourite triple store (why not rdf4j server? [https://rdf4j.org/documentation/tools/server-workbench/])
 
 ----
 INSERT DATA {
