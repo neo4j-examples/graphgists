@@ -32,7 +32,7 @@ Outline:
 
 ++++
 <div class="col-md-4">
-<img src="https://guides.neo4j.com/ukcompanies/img/datamodel.png" width="100%">
+<img src="https://guides.neo4j.com/ukcompanies/img/ukcompanies_model.png" width="100%">
 </div>
 ++++
 
@@ -43,7 +43,7 @@ Be sure to enable multi-statement query editor in Neo4j Browser, then run:
 [source,cypher]
 ----
 CREATE CONSTRAINT ON (c:Company) ASSERT c.companyNumber IS UNIQUE;
-CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name ) IS NODE KEY;
+CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name) IS NODE KEY;
 CREATE CONSTRAINT ON (p:Property) ASSERT p.titleNumber IS UNIQUE;
 
 LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/PSCAmericans.csv" AS row
@@ -52,7 +52,6 @@ MERGE (p:Person {name: row.`data.name`, birthYear: row.`data.date_of_birth.year`
 ON CREATE SET p.nationality = row.`data.nationality`,
               p.countryOfResidence = row.`data.country_of_residence`
               // TODO: Address
-
 MERGE (p)-[r:HAS_CONTROL]->(c)
 SET r.nature = split(replace(replace(replace(row.`data.natures_of_control`, "[",""),"]",""),  '"', ""), ",")
 RETURN COUNT(*);
@@ -95,7 +94,7 @@ Verify the imported data model by running:
 
 [source,cypher]
 ----
-CALL db.schema();
+CALL db.schema.visualization();
 ----
 
 ++++
@@ -316,7 +315,7 @@ See the link:https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.h
 
 A full-text index can help us make true fuzzy comparisons - taking into account mispellings.
 
-First we must create the full text index:
+First, we must create the full text index:
 
 [source,cypher]
 ----
