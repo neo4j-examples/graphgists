@@ -1,0 +1,514 @@
+= UK Companies Data
+:author: William Lyon
+:description: Walkthrough of importing and querying UK company data
+:img: https://s3.amazonaws.com/guides.neo4j.com/ukcompanies/img
+:tags: cypher, import, apoc, match, geospatial
+:neo4j-version: 3.5
+:icons: font
+
+== UK Companies Data
+
+++++
+<div class="col-md-8">
+++++
+This Neo4j Browser guide will walk you through the process of importing and querying UK company registration, land ownership, and political donation data. We'll learn Cypher along the way!
+
+Be sure to refer to the link:https://neo4j.com/docs/cypher-refcard/current/[Cypher Ref Card^] as you work through the examples.
+
+Outline:
+
+* Data Import
+* Querying With `MATCH`
+* Using Relationships
+* Fuzzy Matches
+* Working With Numbers
+* Dates
+* Location Data
+* Graph Algorithms
+
+++++
+</div>
+++++
+
+++++
+<div class="col-md-4">
+<img src="https://guides.neo4j.com/ukcompanies/img/datamodel.png" width="100%">
+</div>
+++++
+
+== Import
+
+Be sure to enable multi-statement query editor in Neo4j Browser, then run:
+
+[source,cypher]
+----
+CREATE CONSTRAINT ON (c:Company) ASSERT c.companyNumber IS UNIQUE;
+CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name ) IS NODE KEY;
+CREATE CONSTRAINT ON (p:Property) ASSERT p.titleNumber IS UNIQUE;
+
+LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/PSCAmericans.csv" AS row
+MERGE (c:Company {companyNumber: row.company_number})
+MERGE (p:Person {name: row.`data.name`, birthYear: row.`data.date_of_birth.year`, birthMonth: row.`data.date_of_birth.month`})
+ON CREATE SET p.nationality = row.`data.nationality`,
+              p.countryOfResidence = row.`data.country_of_residence`
+              // TODO: Address
+
+MERGE (p)-[r:HAS_CONTROL]->(c)
+SET r.nature = split(replace(replace(replace(row.`data.natures_of_control`, "[",""),"]",""),  '"', ""), ",")
+RETURN COUNT(*);
+
+LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/CompanyDataAmericans.csv" AS row
+MATCH (c:Company {companyNumber: row.` CompanyNumber`})
+SET c.name = row.CompanyName,
+    c.mortgagesOutstanding = toInteger(row.`Mortgages.NumMortOutstanding`),
+    c.incorporationDate = Date(Datetime({epochSeconds: apoc.date.parse(row.IncorporationDate,'s','dd/MM/yyyy')})),
+    c.SIC = row.`SICCode.SicText_1`,
+    c.countryOfOrigin = row.CountryOfOrigin,
+    c.status = row.CompanyStatus,
+    c.category = row.CompanyCategory;
+    
+LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/ElectionDonationsAmericans.csv" AS row
+MATCH (c:Company) WHERE c.companyNumber = row.CompanyRegistrationNumber
+MERGE (p:Recipient {name: row.RegulatedEntityName})
+SET p.entityType = row.RegulatedEntityType
+MERGE (c)-[r:DONATED {ref: row.ECRef}]->(p)
+SET r.date  = Date(Datetime({epochSeconds: apoc.date.parse(row.ReceivedDate,'s','dd/MM/yyyy')})),
+    r.value = toFloat(replace(replace(row.Value, "£", ""), ",", ""));
+    
+LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/LandOwnershipAmericans.csv" AS row
+MATCH (c:Company {companyNumber: row.`Company Registration No. (1)`})
+MERGE (p:Property {titleNumber: row.`Title Number`})
+SET p.address = row.`Property Address`,
+    p.county  = row.County,
+    p.price   = toInteger(row.`Price Paid`),
+    p.district = row.District
+MERGE (c)-[r:OWNS]->(p)
+WITH row, c,r,p WHERE row.`Date Proprietor Added` IS NOT NULL
+SET r.date = Date(Datetime({epochSeconds: apoc.date.parse(row.`Date Proprietor Added`,'s','dd-MM-yyyy')}));
+
+CREATE INDEX ON :Company(incorporationDate);
+----
+
+== Verify Data Import
+
+Verify the imported data model by running: 
+
+[source,cypher]
+----
+CALL db.schema();
+----
+
+++++
+<div class="col-md-3">
+++++
+
+*Person*
+
+* name
+* nationality
+* countryOfResidence
+* birthYear
+* birthMonth
+
+**Relationships**
+
+(:Person)-[:HAS_CONTROL]->(:Company)
+++++
+</div>
+++++
+
+++++
+<div class="col-md-4">
+++++
+
+*Company*
+
+* companyNumber
+* name
+* status
+* SIC
+* countryOfOrigin
+* incorporationDate
+* mortgagesOutstanding
+
+**Relationships**
+
+* (:Company)-[:OWNS]->(:Property)
+* (:Company)-[:DONATED]->(:Recipient)
+
+++++
+</div>
+++++
+
+++++
+<div class="col-md-2">
+++++
+
+*Property*
+
+* titleNumber
+* address
+* county
+* district
+* price
+
+++++
+</div>
+++++
+
+++++
+<div class="col-md-3">
+++++
+
+*Recipient*
+
+* name
+* entityType
+
+++++
+</div>
+++++
+
+== Querying With `MATCH`
+
+Now that we've imported our data, it's time to query it!
+
+In Neo4j, we use the `MATCH` command to query data. The syntax is `MATCH`, followed by a graph pattern. For example:
+
+[source,cypher]
+----
+MATCH (p:Person {name: "Margery Kraus"})
+RETURN p
+----
+
+* The `()` represent a node
+* `:Person` is the node label
+* `{}` indicate properties
+* `{name: ""}`
+* `p` becomes a variable that is bound to pieces of the graph that match the pattern
+* We use `RETURN` to return data and visualize the results
+
+== Querying With `MATCH` - Exercise
+
+Now it's your turn!
+
+* Find the `Person` node with the name `Michael Rubens Bloomberg`
+* Find the `Company` with the name `GRAPHIC PLC`
+
+Remember the basic format for `MATCH`:
+
+[source,cypher]
+----
+MATCH (variable:NodeLabel {property: "value"})
+RETURN variable
+----
+
+== Querying With `MATCH` - Answers
+
+Find the `Person` node with the name `Michael Rubens Bloomberg`
+
+[source,cypher]
+----
+MATCH (p:Person {name: "Michael Rubens Bloomberg"})
+RETURN p
+----
+
+Find the `Company` with the name `GRAPHIC PLC`
+
+[source,cypher]
+----
+MATCH (c:Company {name: "GRAPHIC PLC"})
+RETURN c
+----
+
+== Using Relationships
+
+Nodes are connected by relationships. We can define more complex graph patterns that include relationships in our `MATCH` statements using square brackets `[]` to define the relationship. For example:
+
+[source,cypher]
+----
+MATCH (p:Person {name: "Margery Kraus"})-[:HAS_CONTROL]->(c:Company)
+RETURN p, c
+----
+
+* Note the `-[:HAS_CONTROL]->` pattern
+
+== Using Relationships - Exercise
+
+* Can you find the companies connected to Michael Rubens Bloomberg?
+* Do these companies connected to Michael Ruben Bloomberg own any properties?
+* Did these companies connected to Michael Ruben Bloomberg make any political donations?
+
+== Using Relationships - Answers
+
+Companies connected to Michael Rubens Bloomberg?
+
+[source,cypher]
+----
+MATCH (p:Person {name: "Michael Rubens Bloomberg"})-[:HAS_CONTROL]->(c:Company)
+RETURN p, c
+----
+
+Do these companies own any properties?
+
+[source,cypher]
+----
+MATCH (p:Person {name: "Michael Rubens Bloomberg"})-[:HAS_CONTROL]->(c:Company)-[:OWNS]->(pr:Property)
+RETURN p, c, pr
+----
+
+Did these companies make any political donations?
+
+[source,cypher]
+----
+MATCH (p:Person {name: "Michael Rubens Bloomberg"})-[:HAS_CONTROL]->(c:Company)-[:DONATED]->(r:Recipient)
+RETURN p, c, r
+----
+
+== Fuzzy Matches
+
+We've seen how to do exact comparisons, but what about "fuzzy" matches? For example, what if we didn't know Michael Bloomberg's middle name? Or wanted to take slight misspellings into account?
+
+We have a few options for non-exact matches:
+
+* The `CONTAINS` string comparison operator
+* Regular expressions
+* True fuzzy match with a full text index
+
+== Fuzzy Matches - `CONTAINS`
+
+The `CONTAINS` string comparison operator can be used to match on strings that contain sub-strings.
+
+To take advantage of `CONTAINS`, we need to introduce the `WHERE` clause. We can use any boolean expression in a `WHERE` clause to filter matches. For example:
+
+[source,cypher]
+----
+MATCH (p:Person)
+WHERE p.name CONTAINS "Bloomberg"
+RETURN p
+----
+
+== Fuzzy Matches - Regular Expression
+
+We can also use regular expressions.
+
+This is equivilent to using a `CONTAINS`:
+
+[source,cypher]
+----
+MATCH (p:Person)
+WHERE p.name =~ ".*Bloomberg.*"
+RETURN p
+----
+
+We can also do case-insensitive:
+
+[source,cypher]
+----
+MATCH (c:Company)
+WHERE c.name =~ "(?i)graphic.*"
+RETURN c
+----
+
+See the link:https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[Regular Expression docs^] for more examples.
+
+== Fuzzy Matches - Full Text Index
+
+A full-text index can help us make true fuzzy comparisons - taking into account mispellings.
+
+First we must create the full text index:
+
+[source,cypher]
+----
+CALL db.index.fulltext.createNodeIndex("nameIndex", ["Person"], ["name"])
+----
+
+Then we can query it:
+
+[source,cypher]
+----
+CALL db.index.fulltext.queryNodes("nameIndex", "Peterson~")
+----
+
+Note the `~` in the name. This indicates we should match on slight misspellings of our search term. Read more about the query syntax for fuzzy matching link:https://lucene.apache.org/core/2_9_4/queryparsersyntax.html#Fuzzy%20Searches[here^].
+
+== Fuzzy Matches - Exercise
+
+1) Contains
+
+Find Abigail Johnson and any companies she is connected to. Hint: The data might contain title prefixing names (Mr, Mrs, Ms, etc), so we'll need to take that intro account.
+
+2) Regular expression
+
+We want to find all properties in London; however, we notice that the `address` property on the `Property` nodes has both "London" and "LONDON". Write a query using a regular expression to find all `Property` nodes in London.
+
+== Fuzzy Matches - Answers
+
+1) Contains
+
+[source,cypher]
+----
+MATCH (p:Person)-[:HAS_CONTROL]->(c:Company)
+WHERE p.name CONTAINS "Abigail Johnson"
+RETURN p,c
+----
+
+2) Regular expression
+
+[source,cypher]
+----
+MATCH (c:Company)
+WHERE c.name =~ "(?i).*london.*"
+RETURN c
+----
+
+== Working With Numbers
+
+Storing property values as numbers is useful for answering questions like:
+
+Show me all political donations between 1,000 and 10,000 pounds
+
+[source,cypher]
+----
+MATCH (c:Company)-[d:DONATED]->(r:Recipient)
+WHERE 1000 < d.value < 10000
+RETURN c,d,r
+----
+**Note that here we are accessing a property on a relationship!**
+
+Show me all properties in London with a value over 10 million pounds that are owned by a company controlled by an American:
+
+[source,cypher]
+----
+MATCH path=(prop:Property)<-[:OWNS]-(:Company)<-[:HAS_CONTROL]-(per:Person)
+WHERE prop.price > 10000000 AND prop.address =~ "(?i).*London.*" 
+    AND per.nationality = "American"
+RETURN path
+----
+
+For a given individual, what is the total amount of political donations made by companies they control?
+
+[source,cypher]
+----
+MATCH (p:Person {name: "Ms Abigail Johnson"})-[:HAS_CONTROL]->(c:Company)-[d:DONATED]->(:Recipient)
+RETURN sum(d.value) AS totalDonations, p.name AS person, c.name AS company
+----
+**Here we perform an aggregation, summing the `value` property of all `DONATED` relationships matched in our pattern. Read more about aggregation functions in Cypher link:https://neo4j.com/docs/cypher-manual/current/functions/aggregating/[here^].**
+
+== Working With Numbers - Exercise
+
+* Find the total value of campaign donations made by companies controlled by Michael Bloomberg.
+* What parties were those donations made to? How much in total to each party?
+* Of the companies connected to Bloomberg, which made the most campaign donations?
+
+== Working With Numbers - Answers
+
+Find the total value of campaign donations made by companies controlled by Michael Bloomberg.
+
+[source,cypher]
+----
+//Find the total value of campaign donations made by companies controlled by Michael Bloomberg.
+
+// First be sure to find all Michael Bloombergs in the data
+MATCH (p:Person)
+WHERE p.name =~  "(?i).*Michael.*Bloomberg.*"
+// Find all companies connected to Bloomberg and donations
+MATCH (p)-[:HAS_CONTROL]->(c:Company)-[r:DONATED]->(party:Recipient)
+// Aggregate the value property of all donations from these companies
+RETURN sum(r.value) AS total
+----
+
+What parties were those donations made to? How much in total to each party?
+
+[source,cypher]
+----
+MATCH (p:Person)
+WHERE p.name =~  "(?i).*Michael.*Bloomberg.*"
+MATCH (p)-[:HAS_CONTROL]->(c:Company)-[r:DONATED]->(party:Recipient)
+// When we add party.name to the RETURN clause we group our sum aggregation by party.name
+RETURN party.name, sum(r.value) AS total
+ORDER BY total DESC
+----
+
+Of the companies connected to Bloomberg, which made the most campaign donations?
+
+[source,cypher]
+----
+MATCH (p:Person)
+WHERE p.name =~  "(?i).*Michael.*Bloomberg.*"
+MATCH (p)-[:HAS_CONTROL]->(c:Company)-[r:DONATED]->(party:Recipient)
+RETURN c.name, sum(r.value) AS total
+ORDER BY total DESC
+----
+
+== Dates 
+
+Dates are treated as a special type in Neo4j and have their own functions in Cypher.
+
+For example, to construct a Date:
+
+[source,cypher]
+----
+RETURN date("2019-03-06")
+----
+
+We can filter for events in a date range like this:
+
+[source,cypher]
+----
+MATCH (c:Company)
+WHERE date("2017-01-01") < c.incorporationDate < date("2017-01-15")
+RETURN c
+----
+
+== Dates - Exercise
+
+* Find all companies created after Jan 1, 2016 that made a campaign donation.
+
+== Dates - Answer
+
+[source,cypher]
+----
+MATCH (c:Company)-[r:DONATED]->(party:Recipient)
+WHERE Date("2016-01-01") < c.incorporationDate
+RETURN c
+----
+
+== Location Data
+
+The source data has addresses. If we are able to convert these addresses to longitude/latitude, we could search for properties that are close together, within some range of a point, or polygon, or create link:https://www.lyonwj.com/2017/11/28/geocoding-paradise-papers-neo4j-spatial-visualization/[interactive geographic data visualizations.^]
+
+Fortunately, we can accomplish this with use of Neo4j's link:https://neo4j-contrib.github.io/neo4j-apoc-procedures/#spatial[geocoding procedures.^]
+
+[source,cypher]
+----
+CALL apoc.spatial.geocodeOnce("6 Anchorage Terrace, Durham (DH1 3DL)") YIELD location, latitude, longitude
+----
+
+We can update the `Property` nodes with a new property `location` that is a Point type:
+
+[source,cypher]
+----
+MATCH (p:Property) WITH p LIMIT 1
+CALL apoc.spatial.geocodeOnce(p.address) YIELD location, latitude, longitude, description
+SET p.location = Point({latitude: latitude, longitude: longitude})
+RETURN p
+----
+**Note: you'll need to have write access to the database**
+
+== Location Data - Search
+
+Find properties in the dataset within 10km of Neo4j's London office:
+
+[source,cypher]
+----
+MATCH path=(p:Property)<-[:OWNS]-(:Company)<-[:HAS_CONTROL]-(:Person)
+WHERE distance(p.location, Point({latitude:51.5122338, longitude:-0.1180369})) < 10000
+RETURN path
+----
+
+== Location Data - Exercise
+
+== Open Ended Exercise
+
+Let's say you are researching Stephen A. Schwarzman, the CEO of the Blackstone group. What can you find about him in the data?
