@@ -1,0 +1,541 @@
+= Importing linked life science databases into Neo4j 
+:author: Simon Jupp
+:description: Analyze drug repurposing data by importing and querying with Neo4j
+:img: https://s3.amazonaws.com/guides.neo4j.com/life-science-import/img
+:tags: life-science, import, rdf, cypher, load-csv, apoc
+:neo4j-version: 3.5
+
+== Use Case: Drug the Genome
+ 
+Many drugs that are used to treat one disease may offer benefits in the treatment of other diseases. This kind of drug repurposing can be done by looking at known protein targets for approved drugs and looking into the underlying biological mechanism for other disease associations. ( http://stm.sciencemag.org/content/9/383/eaag1166.full[An organized way to drug the genome]). 
+ 
+There’s a lot of openly available data about gene-disease and drug-target associations, but it is distributed in a variety of databases with different access modes. By integrating data from multiple sources we can begin to ask questions of the data that might reveal connections that could lead to the design of new targeted therapeutics.  
+ 
+*In this tutorial* we will build a simple graph by importing data from a number of life science databases. 
+ 
+We will show how the Neo4j data import mechanism can be used to import data from public APIs, in particular APIs that support the W3C SPARQL protocol. We will use Cypher to query the data and explore potentially interesting connections in the area of drug repurposing. 
+ 
+ 
+== Our Data Model
+ 
+Our data model is a simplified view of how a number of biological entities are connected. In this model we *link drugs to disease* through *known indications*, along with information about known biological *targets (proteins)* for those *drugs*. 
+ 
+Proteins are linked through to the genes that encode them and variants (SNPs) are linked to their associated genes. Finally SNPs are linked to diseases through associations derived from Genome Wide Association Studies (GWAS). 
+ 
+The Experimental Factor Ontology (EFO) is used to provide a classification of disease.  
+ 
+image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-science-import-datamodel.jpg[]
+
+ 
+== Data Sources
+ 
+[opts=header]
+|===
+| Link | Database | Homepage | Access formats
+| Gene -> Protein | Ensembl | http://www.ensembl.org | RDF
+| SNP -> Gene | GWAS catalog | http://www.ebi.ac.uk/gwas | RDF
+| SNP -> Disease | GWAS catalog | http://www.ebi.ac.uk/gwas | CSV
+| Disease -> Disease | Experimental Factor Ontology  | http://www.ebi.ac.uk/efo | RDF
+| Drug -> Protein | ChEMBL | https://www.ebi.ac.uk/chembl | RDF
+| Drug -> Disease | ChEMBL | https://www.ebi.ac.uk/chembl | RDF
+|===
+ 
+== Import Process
+ 
+1. Load data from sources as CSV, XML, or JSON and visualize from Cypher.
+2. Create Indexes and Constraints needed
+3. Load data and turn into graph structures
+ 
+== Query for gene and proteins with the Ensembl SPARQL endpoint
+ 
+Ensembl is multi-species database of genomic features available at http://ensembl.org. Ensembl provides a number of access modes to the data including a SPARQL endpoint that allows you to query an RDF graph of the data at http://www.ebi.ac.uk/rdf/services/sparql. 
+ 
+We can query Ensembl for all human genes, their transcripts and protein products. The graph depicted below shows how genes are linked to proteins through transcripts in the Ensembl RDF graph. 
+ 
+image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-sciences-import-model-gene.jpg[]
+
+We can construct a simple SPARQL query to get all the gene, transcript and proteins from the human subgraph in Ensembl as follows. The relationships are defined using a relationships from an ontology that describes sequence features. As all resources in RDF are identified by URI, we can define some namespace prefixes as part of the query to ease readability. Try executing the following query by copying into the query box at http://www.ebi.ac.uk/rdf/services/sparql. 
+ 
+ 
+.Example Query 1
+----
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+SELECT ?gene ?transcript ?protein
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+WHERE {
+ # Ensembl genes are linked to Ensembl proteins via transcript 
+?transcript obo:SO_transcribed_from ?gene .
+?transcript obo:SO_translates_to ?protein .
+}  LIMIT 50
+----
+ 
+== Query Protein cross-references (xrefs)
+ 
+The previous query returned URIs for each resource in the graph. There are multiple possible identifiers for genes and proteins depending on which database you want to use. Ensembl contains cross-references to these identifiers, so we can extend the previous query to find the corresponding Entrez database identifier for the genes and the UniProt database identifier for the protein. The graph depicted below shows how we can get from an Ensembl gene to a UniProt identifier as a plain string literal. 
+ 
+This example illustrates one of the key differences between an RDF graph and the Neo4j property graph. In RDF, everything is a triple including relationships to values. 
+ 
+image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-sciences-import-model-attribute.jpg[]
+
+Try executing the following query at http://www.ebi.ac.uk/rdf/services/sparql. 
+ 
+.Example Query 2
+----
+PREFIX sio: <http://semanticscience.org/resource/>
+PREFIX identifiers: <http://identifiers.org/>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+ 
+SELECT DISTINCT ?protein ?uniprotId
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+WHERE {
+# Ensembl proteins are cross referenced (xref) to identifiers.org URIs
+?protein rdfs:seeAlso ?xref .
+?xref a identifiers:uniprot .
+ 
+# get the UniProt accession for the xref
+?xref sio:SIO_000671 [ sio:SIO_000300 ?uniprotId]
+}  LIMIT 50
+----
+ 
+== Query Ensembl to get Gene/Protein data
+ 
+We can now combine these queries to get all human genes and their corresponding protein, and get the gene ids in *Entrez format* and the protein id in UniProt format. Try executing the following query at http://www.ebi.ac.uk/rdf/services/sparql. 
+ 
+.Example Query 3
+----
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX sio: <http://semanticscience.org/resource/>
+PREFIX identifiers: <http://identifiers.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+ 
+SELECT DISTINCT ?geneId ?geneLabel ?proteinId
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+FROM <http://rdf.ebi.ac.uk/dataset/cco>
+{
+ 
+# Ensembl genes are linked to Ensembl proteins via transcript 
+?transcript obo:SO_transcribed_from ?gene .
+?transcript obo:SO_translates_to ?protein .
+ 
+# Ensembl proteins are cross referenced (xref) to identifiers.org URIs
+?protein rdfs:seeAlso ?xref .
+?xref a identifiers:uniprot .
+ 
+# get the UniProt accession for the xref
+?xref sio:SIO_000671 [ sio:SIO_000300 ?proteinId] .
+ 
+# we also want the NCBI gene id instead of Ensembl
+?gene rdfs:seeAlso ?entrez .
+?entrez a identifiers:ncbigene .
+?entrez sio:SIO_000671 [ sio:SIO_000300 ?geneId ] .
+ 
+# Get labels for the gene and protein
+?gene rdfs:label ?geneLabel .
+}  LIMIT 50
+----
+ 
+== Create indexes for Genes and Proteins
+ 
+Before we load the data we can define some indexes on Gene id and Protein id. This will speed up loading and querying on the id property. By using a UNIQUE constraint we ensure we don't load any duplicate genes or proteins as we import the data. 
+
+[source,cypher]
+----
+CREATE CONSTRAINT ON (g:Gene) ASSERT g.id IS UNIQUE
+----
+ 
+[source,cypher]
+----
+CREATE CONSTRAINT ON (p:Protein) ASSERT p.id IS UNIQUE
+----
+ 
+== From SPARQL query results into Neo4j
+ 
+SPARQL supports a range of formats for the query results including XML, JSON and CSV. We can use the Neo4j load from CSV command to send a query to a SPARQL endpoint and import the results. 
+ 
+[source,cypher]
+----
+WITH "
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+SELECT ?gene ?transcript ?protein
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+WHERE {
+ # Ensembl genes are linked to Ensembl proteins via transcript 
+?transcript obo:SO_transcribed_from ?gene .
+?transcript obo:SO_translates_to ?protein .
+}" as query
+LOAD CSV WITH HEADERS FROM "https://www.ebi.ac.uk/rdf/services/servlet/query?query="
++apoc.text.urlencode(query)+"&format=CSV&limit=25&offset=0" AS line 
+WITH line
+RETURN line.gene, line.transcript, line.protein
+----
+ 
+Now we have access to the data from the SPARQL endpoint, we can import the full set of human genes and proteins into our Neo graph. 
+ 
+[source,cypher]
+----
+USING PERIODIC COMMIT 10000
+LOAD CSV WITH HEADERS FROM 'https://www.ebi.ac.uk/rdf/services/servlet/query?query='
++apoc.text.urlencode('
+ 
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX sio: <http://semanticscience.org/resource/>
+PREFIX identifiers: <http://identifiers.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+ 
+SELECT DISTINCT ?geneId ?geneLabel ?proteinId
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+FROM <http://rdf.ebi.ac.uk/dataset/cco>
+{
+ 
+# Ensembl genes are linked to Ensembl proteins via transcript 
+?transcript obo:SO_transcribed_from ?gene .
+?transcript obo:SO_translates_to ?protein .
+ 
+# Ensembl proteins are cross referenced (xref) to identifiers.org URIs
+?protein rdfs:seeAlso ?xref .
+?xref a identifiers:uniprot .
+ 
+# get the UniProt accession for the xref
+?xref sio:SIO_000671 [ sio:SIO_000300 ?proteinId] .
+ 
+# we also want the NCBI gene id instead of Ensembl
+?gene rdfs:seeAlso ?entrez .
+?entrez a identifiers:ncbigene .
+?entrez sio:SIO_000671 [ sio:SIO_000300 ?geneId ] .
+ 
+# Get labels for the gene and protein
+?gene rdfs:label ?geneLabel .
+}
+ 
+')+'&format=CSV' AS line 
+WITH line
+MERGE (g:Gene { id: line.geneId })
+SET g.label = line.geneLabel 
+MERGE (p:Protein {id : line.proteinId })
+WITH g,p
+MERGE (g)-[:ENCODES]->(p)
+----
+ 
+== Query Gene  and  Proteins 
+ 
+Let's look at our Meta-Model:
+ 
+[source,cypher]
+----
+call db.schema();
+----
+ 
+How many genes and proteins were loaded? 
+ 
+[source,cypher]
+----
+MATCH (n:Gene) RETURN count (n)
+----
+ 
+[source,cypher]
+----
+MATCH (n:Protein) RETURN count (n)
+----
+ 
+Get proteins for DAPL1 gene (Entrez id 92196)
+ 
+[source,cypher]
+----
+MATCH (g:Gene)-[:ENCODES]->(p:Protein) WHERE g.id = '92196' return p.id
+----
+ 
+== Get SNP disease data from GWAS catalog 
+ 
+SNPs represent variants in the genome that can be associated to disease through GWAS studies. We will load SNP to disease associations from the EMBL-EBI/NHGRI GWAS catalog (http://www.ebi.ac.uk/gwas). The SNPs have been mapped to a gene, or nearest gene in the GWAS data export. The GWAS data is already available for direct download in a tab-delimited format, so we can load this directly into Neo4j using the LOAD CSV command. 
+ 
+First, we will create indexes for SNPs and Disease terms
+ 
+[source,cypher]
+----
+CREATE CONSTRAINT ON (s:SNP) ASSERT s.id IS UNIQUE
+----
+ 
+[source,cypher]
+----
+CREATE CONSTRAINT ON (t:Disease) ASSERT t.id IS UNIQUE
+----
+ 
+[source,cypher]
+----
+USING PERIODIC COMMIT 10000
+LOAD CSV WITH HEADERS FROM "https://www.ebi.ac.uk/gwas/api/search/downloads/alternative"  AS line FIELDTERMINATOR '\t' WITH line
+WITH line.SNPS as snps,  line.SNP_GENE_IDS as genes, line.MAPPED_TRAIT_URI as trait_uri, line.MAPPED_TRAIT as trait_label, line.CONTEXT as context, line.`P-VALUE` as pvalue
+WHERE snps is not null and genes is not null and trait_uri is not null and trait_label is not null
+MERGE (s:SNP {id : snps})
+MERGE (g:Gene {id : genes})
+MERGE (t:Disease {id : trait_uri})
+WITH s, g, t, trait_label, context, pvalue
+MERGE (s)-[:VARIANT_IN]->(g)
+MERGE (s)-[assoc:ASSOCIATED_WITH]->(t)
+SET t.label =  trait_label
+SET assoc.context =  context
+SET assoc.pvalue =  pvalue
+----
+ 
+== Query SNP disease 
+ 
+Which disease are associated with variants in the  gene (entrez id '4214')? 
+ 
+[source,cypher]
+----
+MATCH (d:Disease)<-[:ASSOCIATED_WITH]-(s:SNP)-[:VARIANT_IN]->(g:Gene) 
+WHERE g.id = '4214'
+RETURN d,s, g
+----
+ 
+== Loading a disease ontology for richer queries 
+ 
+Ontologies are a type of controlled vocabulary that are used to standardise the way we describe data. In this case will use an ontology of diseases to integrate diseases data from multiple sources. The ontology is organised as a directed-acyclic graph, that gives us a way to query for groups of diseases by type, such as “all cancers”. Ontologies are typically published in the W3C Web Ontology Language (OWL), which is a dedicated RDF vocabulary for describing ontologies. We can load the Experimental Factor Ontology (EFO) using SPARQL queries from the Ontology Lookup Service SPARQL endpoint. 
+ 
+This query gets all terms in  EFO along with parent-child relationships specified using the rdfs:subClassOf relationship. As this is RDF, and the terms are identified with URIs, we also want to get the labels for each terms. 
+ 
+[source,cypher]
+----
+USING PERIODIC COMMIT 10000
+LOAD CSV WITH HEADERS FROM "https://www.ebi.ac.uk/rdf/services/servlet/query?query="+apoc.text.urlencode(
+'
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+ 
+SELECT ?child ?childLabel ?parent ?parentLabel
+FROM <http://rdf.ebi.ac.uk/dataset/efo>
+WHERE {
+?child rdfs:subClassOf ?parent .
+?child rdfs:label ?childLabel .
+?parent rdfs:label ?parentLabel .
+}
+')+"&format=CSV" AS line
+WITH line
+MERGE (c:Disease {id : line.child}) ON CREATE SET c.label =  line.childLabel
+MERGE (p:Disease {id : line.parent}) SET p.label =  line.parentLabel
+MERGE (c)-[:CHILD_OF]->(p)
+----
+ 
+== Get subtypes of cancer from the disease ontology
+ 
+=== Get direct subtypes of cancer
+ 
+[source,cypher]
+----
+MATCH (d:Disease)-[:CHILD_OF]->(cancer:Disease {id : 'http://www.ebi.ac.uk/efo/EFO_0000311'})
+RETURN d.label
+----
+ 
+=== Get all subtypes in the cancer classification 
+ 
+[source,cypher]
+----
+MATCH (d:Disease)-[:CHILD_OF*]->(cancer:Disease {id : 'http://www.ebi.ac.uk/efo/EFO_0000311'})
+RETURN distinct d.label
+----
+ 
+=== Query for all Genes with SNPs associated to any type of cancer
+ 
+[source,cypher]
+----
+MATCH (cancers:Disease)-[:CHILD_OF*]->(cancer:Disease {id : 'http://www.ebi.ac.uk/efo/EFO_0000311'})
+MATCH (cancers)<-[:ASSOCIATED_WITH]-(s:SNP)-[:VARIANT_IN]->(g:Gene) 
+RETURN g.id, g.label, cancers.label
+----
+ 
+== Get drugs that target proteins from ChEMBL
+ 
+The ChEMBL database provides data on bioactive drug-like small molecules. We can query ChEMBL find curated mechanisms of actions for these molecules that includes data on biological targets, such as proteins. ChEMBL also includes disease indication data for these small molecules that is extracted from a variety of sources including clinical trials. The ChEMBL RDF schema is very rich, but we can simplify this to simpler graph of drugs with links to protein targets and drugs indicated in disease.  ChEMBL already provides UniProt identifiers for proteins and EFO identifiers for disease, so the data can be easily integrated into our existing Neo4j graph. 
+ 
+Again we need a new index for Drugs. 
+ 
+[source,cypher]
+----
+CREATE CONSTRAINT ON (d:Drug) ASSERT d.id IS UNIQUE
+----
+ 
+[source,cypher]
+----
+USING PERIODIC COMMIT 10000
+LOAD CSV WITH HEADERS FROM "https://www.ebi.ac.uk/rdf/services/servlet/query?query="+apoc.text.urlencode(
+'
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX cco: <http://rdf.ebi.ac.uk/terms/chembl#>
+ 
+SELECT DISTINCT ?moleculeId ?moleculeLabel ?efoClass ?uniprot ?proteinId
+FROM <http://rdf.ebi.ac.uk/dataset/chembl>
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+WHERE {
+ ?indication cco:hasMolecule ?molecule . 
+ ?indication cco:hasEFO ?efoClass . 
+ ?molecule rdfs:label ?moleculeLabel .
+ ?molecule cco:chemblId ?moleculeId .
+ ?molecule cco:hasMechanism ?mechanism .
+ ?mechanism cco:hasTarget ?target .
+ ?target cco:hasTargetComponent ?targetcmpt .
+ ?targetcmpt cco:targetCmptXref ?uniprot .
+ ?uniprot a cco:UniprotRef . 
+ ?uniprot dc:identifier ?proteinId 
+}
+')+"&format=CSV" AS line 
+WITH line
+MERGE (m:Drug {id : line.moleculeId})
+ON CREATE SET m.label =  line.moleculeLabel
+MERGE (d:Disease {id : line.efoClass})
+MERGE (p:Protein {id : line.proteinId })
+MERGE (m)-[:ASSOCIATED_WITH]->(d)
+MERGE (m)-[:TARGETS]->(p)
+----
+ 
+== Review the model
+
+At this point we have all the data loaded and we can review our model 
+
+[source,cypher]
+----
+call db.schema();
+----
+
+image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-science-import-datamodel.jpg[]
+ 
+== Querying across datasets
+
+We can now look for genes that have an association to a disease from GWAS and have proteins that are targets for drugs indicated in the same disease. 
+ 
+[source,cypher]
+----
+MATCH (disease:Disease)<-[:ASSOCIATED_WITH]-(s:SNP)-[:VARIANT_IN]->(gene:Gene)
+
+MATCH (disease)<-[:ASSOCIATED_WITH]-(drug:Drug)
+
+MATCH (drug)-[:TARGETS]->(:Protein)<-[:ENCODES]-(gene)
+
+RETURN gene.label, disease.label, collect(distinct drug.label)
+----
+ 
+== Drug repurposing example 
+
+Drugs that are used for one disease may be suitable for treating other diseases that are assoicated to the same gene. We can query our graph to find approved drugs that have a known indication to one disease and target proteins associated to other diseases.  
+ 
+[source,cypher]
+----
+MATCH (disease:Disease)<-[:ASSOCIATED_WITH]-(s:SNP)-[:VARIANT_IN]->(gene:Gene)
+
+MATCH (drug)-[:TARGETS]->(:Protein)<-[:ENCODES]-(gene)
+
+MATCH (disease_indicated)<-[:ASSOCIATED_WITH]-(drug:Drug)
+
+WHERE disease <> disease_indicated
+
+RETURN  collect(distinct drug.label), 
+        disease_indicated.label as known_indication, 
+        disease.label as other_disease_association, 
+        gene.label
+----
+ 
+== Querying the ontology to reduce the search space
+
+The previous query looked for all disease associations. We can use the ontology to restrict the query to only search for specific types of releated diseases. For instance, we can look for drugs indicated for epilepsy, such as ‘CARBAMAZEPINE’, and see what other types of 'neurological disorders' have been associated to the same drug target. 
+ 
+[source,cypher]
+----
+MATCH (disease:Disease { id : 'http://www.ebi.ac.uk/efo/EFO_0000474'}) 
+
+MATCH (disease)<-[:ASSOCIATED_WITH]-(s:SNP)-[:VARIANT_IN]->(gene:Gene)-[:ENCODES]->(:Protein)<-[:TARGETS]-(drug:Drug)
+
+MATCH (drug)-[:ASSOCIATED_WITH]->(disease2:Disease)-[:CHILD_OF*]->(Disease { id : 'http://www.ebi.ac.uk/efo/EFO_0000618'}) 
+
+RETURN collect(distinct drug.label), disease.label as indicated_disease, disease2.label as associated_from_gwas, gene.label
+----
+ 
+ 
+== Repurposing cancer drugs
+
+For drugs indicated in one types of cancer, find the targets and associations to other types of cancer. 
+
+[source,cypher]
+----
+MATCH (disease)-[CHILD_OF*]->(:Disease { id : 'http://www.ebi.ac.uk/efo/EFO_0000311'})
+ 
+MATCH (disease)<-[:ASSOCIATED_WITH]-(s:SNP)-[:VARIANT_IN]->(gene:Gene)-[:ENCODES]->(:Protein)<-[:TARGETS]-(drug:Drug)
+ 
+MATCH (drug)-[:ASSOCIATED_WITH]->(disease2:Disease)-[:CHILD_OF*]->(:Disease { id : 'http://www.ebi.ac.uk/efo/EFO_0000311'})
+ 
+RETURN collect(distinct drug.label), disease.label as indicated_disease, disease2.label as associated_from_gwas, gene.label order by gene.label
+----
+
+== Load JSON
+ 
+We're using the same database but just JSON as another output format.
+The procedure `apoc.load.json` will load from that URL and return a nested structure that we can reach into and extract individual fields or sub-documents from.
+ 
+Future versions of `apoc.load.json` support json-path expressions to directly select sub-structures on load.
+ 
+[source,cypher]
+----
+WITH "
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+SELECT ?gene ?transcript ?protein
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+WHERE {
+?transcript obo:SO_transcribed_from ?gene .
+?transcript obo:SO_translates_to ?protein .
+}" as query
+WITH "https://www.ebi.ac.uk/rdf/services/servlet/query?query="
++apoc.text.urlencode(query)+"&format=JSON&limit=10&offset=0" as url
+ 
+CALL apoc.load.json(url) yield value
+RETURN value, keys(value), value.head, value.results;
+----
+ 
+[source,cypher]
+----
+WITH "
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+SELECT ?gene ?transcript ?protein
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+WHERE {
+?transcript obo:SO_transcribed_from ?gene .
+?transcript obo:SO_translates_to ?protein .
+}" as query
+WITH "https://www.ebi.ac.uk/rdf/services/servlet/query?query="
++apoc.text.urlencode(query)+"&format=JSON&limit=10&offset=0" as url
+ 
+CALL apoc.load.json(url) yield value
+UNWIND value.results.bindings as row
+RETURN row.gene.value as gene, row.transcript.value as transcript, row.protein.value as protein;
+----
+ 
+ 
+== Load XML
+ 
+We're using the same database but just XML as another output format for demonstration purposes.
+The procedure `apoc.load.xmlSimple` will load from that URL and return a nested structure that contains xml-elements with type, attributes and nested elements (children) that we can reach into and extract .
+ 
+Future versions of `apoc.load.xml` will also support xpath expressions to directly select sub-structures on load.
+ 
+[source,cypher]
+----
+WITH "
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+SELECT ?gene ?transcript ?protein
+FROM <http://rdf.ebi.ac.uk/dataset/homo_sapiens>
+WHERE {
+?transcript obo:SO_transcribed_from ?gene .
+?transcript obo:SO_translates_to ?protein .
+}" as query
+ 
+WITH "https://www.ebi.ac.uk/rdf/services/servlet/query?query="
++apoc.text.urlencode(query)+"&format=XML&limit=10&offset=0" as url
+ 
+CALL apoc.load.xmlSimple(url) yield value
+RETURN value, value._type, value._head, value._results;
+----
+ 
