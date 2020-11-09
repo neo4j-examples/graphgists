@@ -1,0 +1,378 @@
+= Graph Databases, RDF and Linked Data
+:author: Jesus Barrasa
+:description: Use Neo4j to import and inspect RDF triple data
+:img: https://s3.amazonaws.com/guides.neo4j.com/rdf/img
+:tags: rdf, triples, neosemantics, import
+:neo4j-version: 3.5
+
+== RDF vs LPG: The data models
+
+Each statements in an RDF dataset represents an edge in the graph, but in the LPG, nodes can have internal structure so we can decide what is a property and what is a relationship.
+
+A small set of RDF statements.  Yyou can try to insert them in your favourite triple store (why not rdf4j server? [https://rdf4j.org/documentation/tools/server-workbench/])
+
+----
+INSERT DATA {
+<http://g.co/kg/m/0567wt> <http://schema.org/name> "Sketches of Spain" .
+<http://g.co/kg/m/0567wt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/MusicAlbum> .
+<http://g.co/kg/m/0567wt> <http://schema.org/description> "Album by Miles Davis" .
+ <http://g.co/kg/m/0567wt> <http://schema.org/genre> "Jazz" .
+<http://g.co/kg/m/0567wt> <http://schema.googleapis.com/detailedDescription> _:genid1 .
+_:genid1 <http://schema.org/license> "https://en.wikipedia.org/wiki/Wikipedia:Creative_Commons_Attribution-ShareAlike_3.0_License" .
+_:genid1 <http://schema.org/url> "http://en.wikipedia.org/wiki/Sketches_of_Spain".
+_:genid1 <http://schema.org/articleBody> "...between November 1959 and March 1960 at the Columbia 30th Street Studio in NY City" .
+<http://g.co/kg/m/0567wt> <http://schema.org/award> <http://g.co/kg/m/018xpp> .
+<http://g.co/kg/m/018xpp> <http://schema.org/name> "Grammy Hall of Fame" .  
+<http://g.co/kg/m/0567wt> <http://schema.org/byArtist> <http://g.co/kg/m/053yx> .
+<http://g.co/kg/m/053yx> <http://schema.org/name> "Miles Davis" .  
+<http://g.co/kg/m/0567wt> <http://schema.org/producer> <http://g.co/kg/m/01v1m8b> .
+<http://g.co/kg/m/01v1m8b> <http://schema.org/name> "Teo Macero" .
+<http://g.co/kg/m/0567wt> <http://schema.org/producer> <http://g.co/kg/m/02wvrn5> .
+<http://g.co/kg/m/02wvrn5> <http://schema.org/name> "Irving Townsend" . 
+}
+----
+
+The same information this time expressed as a Property Graph in Cypher
+
+[source,cypher]
+----
+CREATE (sos:MusicAlbum { name: "Sketches of Spain", 
+              description: "Album by Miles Davis", 
+              genre: "Jazz"})
+
+CREATE (dd:DetailedDescription { license: "https://en.wikipedia.org/wiki/Wikipedia:Creative_Commons_Attribution-ShareAlike_3.0_License", 
+                        articleBody: "...between November 1959 and March 1960 at the Columbia 30th Street Studio in NY City"})
+
+CREATE (sos)-[:goog_detailedDescription]->(dd)
+
+CREATE (sos)-[:award]-> (:Award { name: "Grammy Hall of Fame" })  
+CREATE (sos)-[:byArtist]->(:Person { name: "Miles Davis" })   
+CREATE (sos)-[:producer]->(:Person { name: "Teo Macero" })
+CREATE (sos)-[:producer]->(:Person { name: "Irving Townsend" })
+----
+
+
+== RDF vs LPG: SPARQL and Cypher queries
+
+
+=== Querying the RDF graph with SPARQL
+
+Let's get the name of the artists that have had albums produced by Irving Townsend.
+
+Here's what the SPARQL query would look like:
+
+----
+prefix schema: <http://schema.org/> 
+
+SELECT DISTINCT ?artistname
+WHERE {
+     ?prod schema:name "Irving Townsend" .
+     ?musalb schema:producer ?prod .
+     ?musalb schema:byArtist ?artist .
+     ?artist schema:name ?artistname .
+}
+----
+
+=== Querying the Property Graph with Cypher
+
+And here's the equivalent query this time using Cypher:
+
+[source,cypher]
+----
+MATCH (prod)<-[:producer]-(album)-[:byArtist]->(artist)
+WHERE prod.name = "Irving Townsend"
+RETURN artist.name
+----
+
+== RDF vs LPG: SPARQL and Cypher updates
+
+=== Updating an RDF graph with SPARQL
+
+We've seen how to insert triples in an RDF store with INSERT DATA but what about updates? Let's try to upper case the names of all producers:
+
+Note that in this particular case we are identifying producers not by type but by the fact they are linked to an album through the "producer" relationship.
+
+----
+PREFIX sc: <http://schema.org/>
+DELETE { ?prod sc:name ?name }
+INSERT { ?prod sc:name ?newValue }
+WHERE
+  { 
+    ?prod sc:name ?name .
+    ?musalb sc:producer ?prod .
+
+     BIND (UCASE(?name) AS ?newValue)
+  }
+----
+
+=== Updating a Property Graph in Neo4j with Cypher
+
+The same update query this time with Cypher:
+
+[source,cypher]
+----
+MATCH (p)<-[:producer]-()
+SET p.name = toUpper(p.name)
+----
+
+== RDF vs LPG: Differences in the models #1 
+
+=== Every relationship in Neo4j has a type and is uniquely identified
+
+=== Multiple relationships of the same type between two nodes in a Property Graph
+
+[source,cypher]
+----
+CREATE (d {name: "Dan"})-[:LIKES]->(a {name: "Ann"})
+CREATE (d)-[:LIKES]->(a)
+CREATE (d)-[:LIKES]->(a)
+----
+
+When we query it...
+
+[source,cypher]
+----
+MATCH (d {name: "Dan"})-[l:LIKES]->(a {name: "Ann"})
+RETURN COUNT(l)
+----
+... we get three individual relationship of type 'LIKES'.
+
+This is because each relationship in a Property Graph is uniquely identified.
+
+==== Multiple relationships of the same type between two nodes in RDF
+
+----
+prefix sc: <http://schema.org/> 
+INSERT DATA {
+ <http://dan> sc:name "Dan" .
+ <http://ann> sc:name "Ann" . 
+ <http://dan> sc:likes <http://ann> .
+ <http://dan> sc:likes <http://ann> .
+ <http://dan> sc:likes <http://ann> .
+}
+----
+
+But when we query it...
+
+----
+PREFIX sc: <http://schema.org/>
+SELECT (COUNT(?x) AS ?count)
+where {
+<http://dan> sc:likes ?x .
+  FILTER (?x = <http://ann>)    
+}
+----
+
+This is because relationship of the same type in RDF repressent exactly the same statement (triple). If we want to have multiple we need to use reification.
+
+== RDF vs LPG: Differences in the models #2 
+
+=== Since they are uniquely identified, relationships in a Property Graph can be qualified (have properties)
+
+=== In a Property Graph...
+
+Properties in relationships are a natural thing
+
+[source,cypher]
+----
+CREATE ( {name: "NYC"})-[:CONNECTION { distanceKm : 4100, costUSD: 300}]->( {name: "SFO"})
+----
+
+And we can query them easily...
+
+[source,cypher]
+----
+MATCH ( {name: "NYC"})-[c:CONNECTION]->( {name: "SFO"}) 
+RETURN c.costUSD, c.distanceKm
+----
+
+=== In RDF...
+
+A similar approach would not work. 
+  
+----
+prefix sc: <http://schema.org/> 
+INSERT DATA {
+ <http://nyc> sc:name "NYC" .
+ <http://sfo> sc:name "SFO" . 
+ <http://nyc> sc:connection <http://sfo> .
+ sc:connection sc:distanceKm 4100
+}
+----
+We can think that adding a triple with the distance would do the job... but we would be actually adding the distance property to the relationship type, not to this particular instance.
+
+----
+prefix sc: <http://schema.org/> 
+SELECT ?distanceKm {
+ ?nyc sc:name "NYC" .
+ ?sfo sc:name "SFO" . 
+ ?nyc ?p ?sfo .
+  filter(?p = sc:connection)
+ ?p sc:distanceKm ?distanceKm
+}
+----
+
+So when we query it, it will look fine when there is only one instance... but the moment we add more instances of the same relationship things will go wrong.
+
+----
+prefix sc: <http://schema.org/> 
+INSERT DATA {
+ <http://nyc> sc:name "NYC" .
+ <http://lhr> sc:name "LHR" . 
+ <http://nyc> sc:connection <http://lhr> .
+ sc:connection sc:distanceKm 5600
+}
+----
+
+A possible alternative in RDF: Modeling workaround with intermediate nodes
+
+----
+prefix sc: <http://schema.org/> 
+INSERT DATA {
+ <http://nyc> sc:name "NYC" .
+ <http://sfo> sc:name "SFO" . 
+ <http://nyc-sfo> sc:from <http://nyc> . 
+ <http://nyc-sfo> sc:to <http://sfo> . 
+ <http://nyc-sfo> sc:distanceKm 4100 .
+ <http://nyc-sfo> sc:costUSD 300 .  
+}
+----
+
+== RDF vs LPG: Differences in the models #2
+
+=== Multivalued properties
+
+=== Multivalued properties are stored as arrays in a Property Graph
+
+[source,Cypher]
+----
+CREATE (s:Album { name: "Sketches of Spain", 
+                  genre: [ "Jazz","Orchestral Jazz" ] } )
+
+----
+
+Which can be queried and returned as an array...
+
+[source,Cypher]
+----
+MATCH (a:Album) 
+WHERE a.name= "Sketches of Spain"
+RETURN a.genre
+----
+
+...or as individual  results
+
+[source,Cypher]
+----
+MATCH (a:Album) WHERE a.name =
+"Sketches of Spain"
+UNWIND a.genre as genre
+RETURN genre
+----
+
+
+=== Multivalued properties are simple independent statements (triples) in RDF
+
+Nothing special needed, they are two separate triples
+----
+prefix schema: <http://schema.org/> 
+INSERT DATA {
+  <http://g.co/kg/m/0567wt> schema:name "Sketches of Spain" .
+  <http://g.co/kg/m/0567wt> schema:genre "Jazz" .
+  <http://g.co/kg/m/0567wt> schema:genre "Orchestral Jazz" .
+  }
+----
+
+That can be queried and will return multiple different bindings
+
+----
+prefix schema: <http://schema.org/> 
+SELECT ?genre {
+  ?album schema:name "Sketches of Spain" .
+  ?album schema:genre ?genre .
+  }
+----
+
+== Integration #1 : Loading RDF data into Neo4j 
+
+=== Querying a SPARQL endpoint and importing via LOAD CSV
+
+Data lives in a triple store that offers a SPARQL endpoint
+
+A popular (although messsy) public SPARQL endpoint is dbpedia: http://dbpedia.org/sparql
+
+This is a SPARQL query that returns Gene Hackman's movies: 
+
+----
+prefix dbpedia-owl: <http://dbpedia.org/ontology/> 
+SELECT ?movie ?title ?dir ?name
+WHERE {
+  ?movie dbpedia-owl:starring ?actor .
+  ?actor rdfs:label "Gene Hackman"@en .
+  ?movie rdfs:label ?title .
+  ?movie dbpedia-owl:director ?dir .
+  ?dir rdfs:label ?name .
+  FILTER LANGMATCHES(LANG(?title), "EN")
+  FILTER LANGMATCHES(LANG(?name),  "EN")
+}
+----
+
+We can explore the dataset directly with LOAD CSV
+
+[source,cypher]
+----
+WITH "http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=prefix+dbpedia-owl%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fontology%2F%3E+%0D%0A%0D%0ASELECT+%3Fmovie+%3Ftitle+%3Fdir+%3Fname%0D%0AWHERE+%7B%0D%0A++%3Fmovie+dbpedia-owl%3Astarring+%5B+rdfs%3Alabel+%22Gene+Hackman%22%40en+%5D%3B%0D%0A+++++++++rdfs%3Alabel+%3Ftitle%3B%0D%0A+++++++++dbpedia-owl%3Adirector+%3Fdir+.%0D%0A++%3Fdir+rdfs%3Alabel+%3Fname+.%0D%0A++FILTER+LANGMATCHES%28LANG%28%3Ftitle%29%2C+%22EN%22%29%0D%0A++FILTER+LANGMATCHES%28LANG%28%3Fname%29%2C++%22EN%22%29%0D%0A%7D&format=text%2Fcsv&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on" AS url
+
+LOAD CSV WITH HEADERS FROM url AS row
+RETURN row
+----
+
+And if the data looks good, we can complete the query to create nodes and rels in Neo4j...
+
+[source,cypher]
+----
+WITH "http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=prefix+dbpedia-owl%3A+%3Chttp%3A%2F%2Fdbpedia.org%2Fontology%2F%3E+%0D%0A%0D%0ASELECT+%3Fmovie+%3Ftitle+%3Fdir+%3Fname%0D%0AWHERE+%7B%0D%0A++%3Fmovie+dbpedia-owl%3Astarring+%5B+rdfs%3Alabel+%22Gene+Hackman%22%40en+%5D%3B%0D%0A+++++++++rdfs%3Alabel+%3Ftitle%3B%0D%0A+++++++++dbpedia-owl%3Adirector+%3Fdir+.%0D%0A++%3Fdir+rdfs%3Alabel+%3Fname+.%0D%0A++FILTER+LANGMATCHES%28LANG%28%3Ftitle%29%2C+%22EN%22%29%0D%0A++FILTER+LANGMATCHES%28LANG%28%3Fname%29%2C++%22EN%22%29%0D%0A%7D&format=text%2Fcsv&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on" AS url
+
+LOAD CSV WITH HEADERS FROM url AS row
+MERGE (m:Movie { id: row.movie, title: row.title })
+MERGE (d:Director { id: row.dir, name : row.name })
+MERGE (m)-[db:DIRECTED_BY]->(d)
+RETURN m, db, d
+----
+
+
+== Integration #2 : Loading RDF data into Neo4j 
+
+=== Importing RDF via neosemantics (n10s)
+
+DESCRIBE queries in RDF return triples
+
+----
+DESCRIBE <http://dbpedia.org/resource/Air_Jamaica>
+----
+
+We can use this in Cypher with the help of n10s
+
+
+[source,cypher]
+----
+call n10s.rdf.import.fetch("http://dbpedia.org/data/Air_Jamaica.ttl","Turtle")
+----
+
+One of the things Air Jamaica is connected to... 
+
+[source,cypher]
+----
+MATCH (aj:Resource { uri: "http://dbpedia.org/resource/Air_Jamaica" }),
+(aj)<-[r:ns2__subsidiary]-(what) 
+RETURN what.uri
+----
+
+...is Caribbean Airlines
+
+And we can now load the triples related to Caribbean Airlines in a similar way.
+
+[source,cypher]
+----
+call n10s.rdf.import.fetch("http://dbpedia.org/data/Caribbean_Airlines.ttl","Turtle")
+----
