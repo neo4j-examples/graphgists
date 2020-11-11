@@ -23,7 +23,7 @@ Proteins are linked through to the genes that encode them and variants (SNPs) ar
 
 The Experimental Factor Ontology (EFO) is used to provide a classification of disease.  
 
-image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-science-import-datamodel.jpg[]
+image::{img}/life-science-import-datamodel.jpg[]
 
 == Data Sources
 
@@ -50,7 +50,7 @@ Ensembl is multi-species database of genomic features available at https://uswes
 
 We can query Ensembl for all human genes, their transcripts, and protein products. The graph depicted below shows how genes are linked to proteins through transcripts in the Ensembl RDF graph. 
 
-image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-sciences-import-model-gene.jpg[]
+image::{img}/life-sciences-import-model-gene.jpg[]
 
 We can construct a simple SPARQL query to get all the gene, transcript and proteins from the human subgraph in Ensembl as follows. The relationships are defined using a relationships from an ontology that describes sequence features. As all resources in RDF are identified by URI, we can define some namespace prefixes as part of the query to ease readability. Try executing the following query by copying into the query box at https://www.ebi.ac.uk/rdf/services/sparql. 
 
@@ -72,7 +72,7 @@ The previous query returned URIs for each resource in the graph. There are multi
 
 This example illustrates one of the key differences between an RDF graph and the Neo4j property graph. In RDF, everything is a triple including relationships to values. 
 
-image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-sciences-import-model-attribute.jpg[]
+image::{img}/life-sciences-import-model-attribute.jpg[]
 
 Try executing the following query at http://www.ebi.ac.uk/rdf/services/sparql. 
 
@@ -395,7 +395,7 @@ At this point, we have all the data loaded and we can review our model
 CALL db.schema.visualization();
 ----
 
-image::https://raw.githubusercontent.com/simonjupp/importing-lifesci-data-into-neo4j/master/life-science-import-datamodel.jpg[]
+image::{img}/life-science-import-datamodel.jpg[]
 
 == Querying across datasets
 

@@ -1,0 +1,107 @@
+= Restaurant Recommendations
+:author: Neo4j
+:description: Understand and build a small recommendation engine
+:img: https://s3.amazonaws.com/guides.neo4j.com/restaurant_recommendation/img
+:tags: recommendation, graph-search, introduction
+:neo4j-version: 3.5
+:icons: font
+
+== Restaurant Recommendations: Introduction
+
+image::{img}/restaurant_recommendation_model.png[height=300,float=right]
+
+We want to demonstrate how easy it is to model a domain as a graph and answer questions in almost-natural language.
+
+Graph-based search and discovery is prominent a use case for graph databases like https://neo4j.com[Neo4j].
+
+Here, we use a domain of restaurants that serve cuisines and are located in a city.
+
+The domain diagram was created with the http://www.apcjones.com/arrows/[Arrows tool].
+
+== Setup: Creating Friends, Restaurants, Cities, and Cuisines
+
+We will create a small example graph of people with cuisines they like and the restaurants serving those cuisines.
+Our people are in the same social circle (friend relationships), so we can create recommendations of cuisines and restaurants others will like based on their social connections and their preferences.
+
+[source,cypher]
+----
+CREATE (philip:Person {name:"Philip"})-[:IS_FRIEND_OF]->(emil:Person {name:"Emil"}),
+       (philip)-[:IS_FRIEND_OF]->(michael:Person {name:"Michael"}),
+       (philip)-[:IS_FRIEND_OF]->(andreas:Person {name:"Andreas"})
+CREATE (sushi:Cuisine {name:"Sushi"}), (nyc:City {name:"New York"}),
+       (iSushi:Restaurant {name:"iSushi"})-[:SERVES]->(sushi),(iSushi)-[:LOCATED_IN]->(nyc),
+       (michael)-[:LIKES]->(iSushi),
+       (andreas)-[:LIKES]->(iSushi),
+       (zam:Restaurant {name:"Zushi Zam"})-[:SERVES]->(sushi),(zam)-[:LOCATED_IN]->(nyc),
+       (andreas)-[:LIKES]->(zam)
+----
+
+=== Philip's Friends
+
+First, let's some of our graph data and find who is friends with Philip.
+
+[source,cypher]
+----
+MATCH (philip:Person {name:'Philip'})-[:IS_FRIEND_OF]-(person)
+RETURN person.name
+----
+
+We should see 3 friends of Philip in our graph - Andreas, Michael, and Emil.
+
+== Restaurants in NYC and their cusines
+
+Now let's look at restaurants and the cities where they are located with the cuisines they serve.
+
+[source,cypher]
+----
+MATCH (nyc:City {name:'New York'})<-[:LOCATED_IN]-(restaurant)-[:SERVES]->(cuisine)
+RETURN nyc, restaurant, cuisine
+----
+
+This query should show us nodes and relationships for the `City` of New York, 2 restaurants `LOCATED_IN` that city, and that each restaurant `SERVES` the `Cuisine` of sushi.
+
+== Graph Search Recommendation
+
+image::{img}/sushi_restaurants_nyc.png[height=300,float=right]
+
+Now that we have an idea what our data looks like, we can start recommending things based on the relationships connecting our people, location, cuisines, and restaurants.
+
+We want to make a recommendation for Philip by answering the following question:
+
+""
+Find Sushi Restaurants in New York that Philip's friends like.
+""
+
+== Recommendation criteria
+
+To answer this question, we need to find our starting point - _Philip_ needs the recommendation, so his node is where we start our search in the graph.
+Now we need to determine which parts of the graph to search using the following criteria from the question:
+
+* Find _Philip_ and his friends
+* Find _Restaurants_ that are located in _New York_
+* Find _Restaurants_ that serve the cuisine _sushi_
+* Find _Restaurants_ that _Philip's friends_ like
+
+== Recommendation query
+
+With those criteria, we construct this query:
+
+[source,cypher]
+----
+MATCH (philip:Person {name: 'Philip'}),
+      (philip)-[:IS_FRIEND_OF]-(friend),
+      (restaurant:Restaurant)-[:LOCATED_IN]->(:City {name: 'New York'}),
+      (restaurant)-[:SERVES]->(:Cuisine {name: 'Sushi'}),
+      (friend)-[:LIKES]->(restaurant)
+RETURN restaurant.name as restaurantName, collect(friend.name) AS recommendedBy, count(*) AS numberOfRecommendations
+ORDER BY numberOfRecommendations DESC
+----
+
+This tells us that 2 of Philip's friends recommend iSushi restaurant for sushi, and 1 of his friends recommends Zushi Zam restaurant for sushi.
+
+== More on recommendations
+
+Larger graphs and deeper relationship paths can add complexity and power to recommendation engines. This example shows the beginning steps and logic for building these systems using the relationships in the network to recommend products, hobbies, services, similarities, and more.
+
+* https://neo4j.com/use-cases/real-time-recommendation-engine/[Use case: Recommendations Engine]
+* https://neo4j.com/developer/cypher/guide-build-a-recommendation-engine/[Tutorial: Building Recommendation Engine]
