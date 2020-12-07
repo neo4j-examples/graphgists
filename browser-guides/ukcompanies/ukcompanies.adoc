@@ -30,11 +30,7 @@ Outline:
 </div>
 ++++
 
-++++
-<div class="col-md-4">
-<img src="https://guides.neo4j.com/ukcompanies/img/ukcompanies_model.png" width="100%">
-</div>
-++++
+image::{img}/ukcompanies_model.png[]
 
 == Import
 
@@ -291,7 +287,7 @@ RETURN p
 
 We can also use regular expressions.
 
-This is equivilent to using a `CONTAINS`:
+This is equivalent to using a `CONTAINS`:
 
 [source,cypher]
 ----
