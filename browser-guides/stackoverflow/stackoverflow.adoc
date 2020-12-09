@@ -52,11 +52,11 @@ The response looks like this:
    "creation_date": 1522116996,
    "question_id": 49503383,
    "share_link": "https://stackoverflow.com/q/49503383",
-   "body_markdown": "I have two kinds of nodes in my database:...
+   "body_markdown": "I have two kinds of nodes in my database:..."
 ----
 
 Which we can load into Neo4j and deconstruct in Cypher to create a
-Graph.
+graph.
 
 == Graph Model
 
@@ -72,7 +72,7 @@ image:{img}/stackoverflow-model.jpg[so-model.jpg,width=600]
 
 == Import
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 WITH "https://api.stackexchange.com/2.2/questions?pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
 CALL apoc.load.json(url) YIELD value
@@ -97,7 +97,7 @@ FOREACH (a IN q.answers |
 
 Create indexes / constraints (ensure multistatement option is enabled with a checked box in Neo4j Browser settings):
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 CREATE constraint on (q:Question) assert q.id is unique;
 CREATE constraint on (t:Tag) assert t.name is unique;
@@ -108,7 +108,7 @@ CREATE constraint on (u:User) assert u.id is unique;
 
 Importing a larger amount of data:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 UNWIND range(1,10) as page
 WITH "https://api.stackexchange.com/2.2/questions?page="+page+"&pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
@@ -134,7 +134,7 @@ FOREACH (a IN q.answers |
 
 Labels in the graph and counts for each label:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (n)
 RETURN labels(n) as label, count(*);
@@ -142,7 +142,7 @@ RETURN labels(n) as label, count(*);
 
 Top Tags:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH ()-[:TAGGED]->(t:Tag)
 RETURN t.name,count(*) as posts order by posts desc limit 5;
@@ -152,7 +152,7 @@ RETURN t.name,count(*) as posts order by posts desc limit 5;
 
 Top users asking questions:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (u:User)-[:ASKED]->()
 RETURN u.display_name, count(*) as posts
@@ -161,7 +161,7 @@ ORDER by posts desc limit 10;
 
 Top users answering:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (u:User)-[:PROVIDED]->()
 RETURN u.display_name, count(*) as posts
@@ -170,7 +170,7 @@ ORDER by posts desc limit 10;
 
 Top days for questions:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (q:Question)
 RETURN apoc.date.format(q.creation_date,'s','EE') as day, count(*) as freq
@@ -179,7 +179,7 @@ ORDER BY freq desc;
 
 Top times for questions (GMT?):
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (q:Question)
 RETURN apoc.date.format(q.creation_date,'s','HH') as hour, count(*) as freq
@@ -188,7 +188,7 @@ ORDER BY freq desc LIMIT 7;
 
 Top tags per user:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (u:User)-[:PROVIDED]->()-[:ANSWERED]->()-[:TAGGED]->(t:Tag)
 WHERE u.display_name = "cybersam"
@@ -197,7 +197,7 @@ RETURN t.name,count(*) as posts order by posts desc limit 10;
 
 Shortest path between users:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH path = allShortestPaths(
      (u:User {display_name:"alexanoid"})-[*]-(me:User {display_name:"InverseFalcon"}))
@@ -208,7 +208,7 @@ RETURN path;
 
 Tags for unanswered questions:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (q:Question)-[:TAGGED]->(t:Tag)
 WHERE not t.name IN ['neo4j','cypher'] and not (q)<-[:ANSWERED]-()
@@ -218,7 +218,7 @@ ORDER BY posts desc LIMIT 10;
 
 Days for unanswered questions:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (q:Question)
 WITH apoc.date.format(q.creation_date,'s','EE') as day, count(*) as posts, sum(case when not (q)<-[:ANSWERED]-() then 1 else 0 end) as answered
@@ -230,7 +230,7 @@ ORDER BY percentage desc LIMIT 10
 
 Tag correlations:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (t1:Tag)<-[:TAGGED]-()-[:TAGGED]->(t2:Tag)
 WHERE id(t1) < id(t2) and t1.name <> 'neo4j' and t2.name <> 'neo4j'
@@ -242,7 +242,7 @@ ORDER BY freq desc LIMIT 10;
 
 User engagement over time:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (u:User)-[:PROVIDED]->()-[:ANSWERED]->(q:Question)-[:TAGGED]->(t:Tag)
 WHERE u.display_name = "InverseFalcon"
@@ -250,7 +250,7 @@ RETURN apoc.date.format(q.creation_date,'s','yyyy-MM') as month, count(distinct 
 ORDER BY month asc
 ----
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (u:User)-[:PROVIDED]->()-[:ANSWERED]->(q:Question)-[:TAGGED]->(t:Tag)
 WHERE u.display_name = "Bruno Peres"
@@ -262,7 +262,7 @@ ORDER BY month asc
 
 Project tags via co-occurrence:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (t1:Tag)<-[:TAGGED]-()-[:TAGGED]->(t2:Tag)
 WHERE id(t1) < id(t2) and t1.name <> 'neo4j' and t2.name <> 'neo4j'
