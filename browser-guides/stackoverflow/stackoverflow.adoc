@@ -1,0 +1,271 @@
+== StackOverflow
+:author: Neo4j
+:description: Explore Neo4j-related questions, answers, tags, and more with StackOverflow's public data
+:img: https://s3.amazonaws.com/guides.neo4j.com/stackoverflow/img
+:tags: import, recommendation, graph-search
+:neo4j-version: 3.5
+:icons: font
+
+image:{img}/stackoverflow-logo.png[so-logo]
+
+https://stackoverflow.com[Stackoverflow] is the question and answer site for software developers.
+
+The https://stackoverflow.com/tags/neo4j[Neo4j tag] alone has more than 15.000 questions and answers.
+
+You can participate and contribute yourself by answering Neo4j related questions.
+
+We wrote about the stackoverflow API before:
+
+* https://neo4j.com/blog/import-10m-stack-overflow-questions/[Importing 10M Stackoverflow Questions]
+* https://neo4j.com/blog/bulk-data-import-neo4j-3-0/[Easy Data Import into Neo4j]
+
+== Look at JSON
+
+image:{img}/stackexchange-logo.png[se-logo]
+
+StackExchange has an API at api.stackexchange.com that allows querying for questions, users, tags.
+
+Here we use the query API by tag.
+
+`api.stackexchange.com/2.2/questions?page=1&pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow`
+
+The response looks like this:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+{"items": [
+  {"tags": ["neo4j"],
+   "owner": {
+     "reputation": 105,
+     "user_id": 6566172,
+     "user_type": "registered",
+     "accept_rate": 53,
+     "display_name": "scroobius",
+     "link": "https://stackoverflow.com/users/6566172/scroobius"
+   },
+   "is_answered": false,
+   "view_count": 6,
+   "favorite_count": 0,
+   "down_vote_count": 0,
+   "up_vote_count": 0,
+   "last_activity_date": 1522116996,
+   "creation_date": 1522116996,
+   "question_id": 49503383,
+   "share_link": "https://stackoverflow.com/q/49503383",
+   "body_markdown": "I have two kinds of nodes in my database:...
+----
+
+Which we can load into Neo4j and deconstruct in Cypher to create a
+Graph.
+
+== Graph Model
+
+image:{img}/stackoverflow-model.jpg[so-model.jpg,width=600]
+
+....
+(:User)-[:ASKED]->(:Question)
+(:Question)-[:TAGGED]->(:Tag)
+
+(:User)-[:PROVIDED]->(:Answer)
+(:Answer)-[:ANSWERED]->(:Question)
+....
+
+== Import
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH "https://api.stackexchange.com/2.2/questions?pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
+CALL apoc.load.json(url) YIELD value
+
+UNWIND value.items AS q
+
+MERGE (question:Question {id:q.question_id}) ON CREATE
+  SET question.title = q.title, question.share_link = q.share_link, question.favorite_count = q.favorite_count, question.creation_date = q.creation_date
+
+MERGE (owner:User {id:q.owner.user_id}) ON CREATE SET owner.display_name = q.owner.display_name
+MERGE (owner)-[:ASKED]->(question)
+
+FOREACH (tagName IN q.tags | MERGE (tag:Tag {name:tagName}) MERGE (question)-[:TAGGED]->(tag))
+FOREACH (a IN q.answers |
+   MERGE (question)<-[:ANSWERED]-(answer:Answer {id:a.answer_id})
+   MERGE (answerer:User {id:a.owner.user_id}) ON CREATE SET answerer.display_name = a.owner.display_name
+   MERGE (answer)<-[:PROVIDED]-(answerer)
+)
+----
+
+== Indexes and Constraints
+
+Create indexes / constraints (ensure multistatement option is enabled with a checked box in Neo4j Browser settings):
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CREATE constraint on (q:Question) assert q.id is unique;
+CREATE constraint on (t:Tag) assert t.name is unique;
+CREATE constraint on (u:User) assert u.id is unique;
+----
+
+== Larger Import (10 pages)
+
+Importing a larger amount of data:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+UNWIND range(1,10) as page
+WITH "https://api.stackexchange.com/2.2/questions?page="+page+"&pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
+CALL apoc.load.json(url) YIELD value
+
+UNWIND value.items AS q
+
+MERGE (question:Question {id:q.question_id}) ON CREATE
+  SET question.title = q.title, question.share_link = q.share_link, question.favorite_count = q.favorite_count, question.creation_date = q.creation_date
+
+MERGE (owner:User {id:coalesce(q.owner.user_id,'deleted')}) ON CREATE SET owner.display_name = q.owner.display_name
+MERGE (owner)-[:ASKED]->(question)
+
+FOREACH (tagName IN q.tags | MERGE (tag:Tag {name:tagName}) MERGE (question)-[:TAGGED]->(tag))
+FOREACH (a IN q.answers |
+   MERGE (question)<-[:ANSWERED]-(answer:Answer {id:a.answer_id})
+   MERGE (answerer:User {id:coalesce(a.owner.user_id,'deleted')}) ON CREATE SET answerer.display_name = a.owner.display_name
+   MERGE (answer)<-[:PROVIDED]-(answerer)
+)
+----
+
+== Statistics
+
+Labels in the graph and counts for each label:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (n)
+RETURN labels(n) as label, count(*);
+----
+
+Top Tags:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH ()-[:TAGGED]->(t:Tag)
+RETURN t.name,count(*) as posts order by posts desc limit 5;
+----
+
+== The Top 10 Stack Overflow Users
+
+Top users asking questions:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (u:User)-[:ASKED]->()
+RETURN u.display_name, count(*) as posts
+ORDER by posts desc limit 10;
+----
+
+Top users answering:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (u:User)-[:PROVIDED]->()
+RETURN u.display_name, count(*) as posts
+ORDER by posts desc limit 10;
+----
+
+Top days for questions:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (q:Question)
+RETURN apoc.date.format(q.creation_date,'s','EE') as day, count(*) as freq
+ORDER BY freq desc;
+----
+
+Top times for questions (GMT?):
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (q:Question)
+RETURN apoc.date.format(q.creation_date,'s','HH') as hour, count(*) as freq
+ORDER BY freq desc LIMIT 7;
+----
+
+Top tags per user:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (u:User)-[:PROVIDED]->()-[:ANSWERED]->()-[:TAGGED]->(t:Tag)
+WHERE u.display_name = "cybersam"
+RETURN t.name,count(*) as posts order by posts desc limit 10;
+----
+
+Shortest path between users:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH path = allShortestPaths(
+     (u:User {display_name:"alexanoid"})-[*]-(me:User {display_name:"InverseFalcon"}))
+RETURN path;
+----
+
+== Unanswered Questions
+
+Tags for unanswered questions:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (q:Question)-[:TAGGED]->(t:Tag)
+WHERE not t.name IN ['neo4j','cypher'] and not (q)<-[:ANSWERED]-()
+RETURN t.name, count(*) as posts
+ORDER BY posts desc LIMIT 10;
+----
+
+Days for unanswered questions:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (q:Question)
+WITH apoc.date.format(q.creation_date,'s','EE') as day, count(*) as posts, sum(case when not (q)<-[:ANSWERED]-() then 1 else 0 end) as answered
+RETURN day, posts, answered, 100*answered/posts as percentage
+ORDER BY percentage desc LIMIT 10
+----
+
+== Correlation
+
+Tag correlations:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t1:Tag)<-[:TAGGED]-()-[:TAGGED]->(t2:Tag)
+WHERE id(t1) < id(t2) and t1.name <> 'neo4j' and t2.name <> 'neo4j'
+RETURN t1.name, t2.name,count(*) as freq
+ORDER BY freq desc LIMIT 10;
+----
+
+== Engagement
+
+User engagement over time:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (u:User)-[:PROVIDED]->()-[:ANSWERED]->(q:Question)-[:TAGGED]->(t:Tag)
+WHERE u.display_name = "InverseFalcon"
+RETURN apoc.date.format(q.creation_date,'s','yyyy-MM') as month, count(distinct q) as count, collect(distinct t.name) as tags
+ORDER BY month asc
+----
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (u:User)-[:PROVIDED]->()-[:ANSWERED]->(q:Question)-[:TAGGED]->(t:Tag)
+WHERE u.display_name = "Bruno Peres"
+RETURN apoc.date.format(q.creation_date,'s','yyyy-MM') as month, count(distinct q) as count, collect(distinct t.name) as tags
+ORDER BY month asc
+----
+
+== Virtual Graphs
+
+Project tags via co-occurrence:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t1:Tag)<-[:TAGGED]-()-[:TAGGED]->(t2:Tag)
+WHERE id(t1) < id(t2) and t1.name <> 'neo4j' and t2.name <> 'neo4j'
+WITH t1, t2,count(*) as freq  where freq > 3
+RETURN t1,t2, apoc.create.vRelationship(t1,'OCCURRED',{freq:freq},t2) as rel
+----
