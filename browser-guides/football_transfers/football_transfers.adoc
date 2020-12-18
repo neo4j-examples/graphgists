@@ -1,0 +1,514 @@
+== Analysing football transfers with Neo4j
+:author: Mark Needham
+:description: Import, clean, and analyze football transfer data with Neo4j
+:img: https://s3.amazonaws.com/guides.neo4j.com/football_transfers/img
+:tags: sports, cypher, apoc, load-csv, data-analysis
+:neo4j-version: 3.5
+:icons: font
+
+image:{img}/transfermarkt.png[transfermarkt]
+
+In this guide, we’ll look at how we can import and analyse football
+transfers using Neo4j.
+
+== The model
+
+This is the transfers graph model that we’re going to work our way
+towards:
+
+[.image]#image:{img}/footballtransfer-model.png[footballtransfer-model]#
+
+== Looking at the Data
+
+We’ve written a bunch of transfers into a CSV file, so let’s have a quick look at the first few rows. Run the following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+LOAD CSV WITH HEADERS FROM url AS row
+RETURN row
+LIMIT 5
+----
+
+This query returns the first five rows of the CSV file.
+
+== Importing the data: Constraints
+
+Before we import anything, we’ll create some constraints to make sure we don’t insert duplicate records into the database.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CREATE CONSTRAINT ON (player:Player)
+ASSERT player.id IS UNIQUE;
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CREATE CONSTRAINT ON (club:Club)
+ASSERT club.id IS UNIQUE;
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CREATE CONSTRAINT ON (transfer:Transfer)
+ASSERT transfer.id IS UNIQUE;
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CREATE CONSTRAINT ON (country:Country)
+ASSERT country.name IS UNIQUE;
+----
+
+Let’s check they all got created:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL db.constraints()
+----
+
+Looks good. Let’s get the data imported.
+
+== Importing the data: Players
+
+First we’ll import the players. Run the following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+USING PERIODIC COMMIT
+LOAD CSV WITH HEADERS FROM 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS row
+MERGE (player:Player {id: row.playerUri})
+ON CREATE SET player.name =  row.playerName, player.position = row.playerPosition
+----
+
+Let’s check that the players imported correctly. Run the following
+query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (player:Player)
+RETURN player
+LIMIT 25
+----
+
+Looks good!
+
+== Importing the data: Player Countries
+
+Next we’ll import the countries that those players represent. Run the
+following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+LOAD CSV WITH HEADERS FROM url AS row
+WITH row WHERE row.playerNationality <> ''
+WITH DISTINCT row.playerNationality AS nationality
+MERGE (country:Country {name: nationality })
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+USING PERIODIC COMMIT
+LOAD CSV WITH HEADERS FROM 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS row
+WITH row WHERE row.playerNationality <> ''
+MATCH (player:Player {id: row.playerUri})
+MATCH (country:Country {name: row.playerNationality })
+MERGE (player)-[:PLAYS_FOR]->(country)
+----
+
+== Importing the data: Clubs
+
+Next up, we’ll import the clubs. The way the data is structured for clubs is quite interesting. We have buying and selling clubs so the easiest approach is to write two import queries, one for each:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+LOAD CSV WITH HEADERS FROM url AS row
+
+WITH row where row.sellerClubUri <> ''
+MERGE (club:Club {id: row.sellerClubUri})
+ON CREATE SET club.name = row.sellerClubName
+MERGE (country:Country {name: row.sellerClubCountry})
+MERGE (club)-[:PART_OF]->(country)
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+LOAD CSV WITH HEADERS FROM url AS row
+WITH row where row.buyerClubUri <> ''
+MERGE (club:Club {id: row.buyerClubUri})
+ON CREATE SET club.name = row.buyerClubName
+MERGE (country:Country {name: row.buyerClubCountry})
+MERGE (club)-[:PART_OF]->(country)
+----
+
+It’s a bit annoying that we have to write two queries to do this. Maybe there’s another way…​
+
+== Importing the data: Clubs II
+
+Indeed there is! Our good friend `+UNWIND+` can help us out here:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+LOAD CSV WITH HEADERS FROM url AS row
+UNWIND [
+  {uri: row.sellerClubUri, name: row.sellerClubName, country: row.sellerClubCountry},
+  {uri: row.buyerClubUri,  name: row.buyerClubName,  country: row.buyerClubCountry}
+] AS club
+WITH club WHERE club.uri <> ''
+WITH DISTINCT club
+MERGE (c:Club {id: club.uri})
+ON CREATE SET c.name = club.name
+MERGE (country:Country {name: club.country })
+MERGE (c)-[:PART_OF]->(country)
+----
+
+== Importing the data: Transfers
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+USING PERIODIC COMMIT
+LOAD CSV WITH HEADERS FROM 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS row
+MATCH (player:Player {id: row.playerUri})
+MATCH (source:Club {id: row.sellerClubUri})
+MATCH (destination:Club {id: row.buyerClubUri})
+MERGE (t:Transfer {id: row.transferUri})
+ON CREATE SET t.season = row.season,
+              t.fee = row.transferFee,
+              t.timestamp = toInteger(row.timestamp)
+MERGE (t)-[ofPlayer:OF_PLAYER]->(player) SET ofPlayer.age = row.playerAge
+MERGE (t)-[:FROM_CLUB]->(source)
+MERGE (t)-[:TO_CLUB]->(destination);
+----
+
+Now it’s time to clean up the transfer fees so that we can compare
+different transfers more easily.
+
+== Cleaning the data: Transfer fees
+
+Let’s have a look what transfer fees look like at the moment. Run the following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (transfer:Transfer)
+RETURN transfer.fee, COUNT(*) AS occurrences
+ORDER BY occurrences DESC
+LIMIT 100
+----
+
+There’s lots of different values here, but it looks like if the value is "?" or "-" then we don’t have any idea what the transfer fee actually was.
+
+Let’s see if there are any valid transfers with those values. Run the following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)
+WHERE t.fee contains "?" or t.fee  contains "-"
+RETURN t.fee, count(*)
+----
+
+Doesn’t look like it! Let’s exclude those transfers:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)
+WHERE t.fee contains "?" or t.fee  contains "-"
+REMOVE t:Transfer
+SET t:TransferWithoutFee
+----
+
+== Tagging the loan transfers
+
+There are some transfers in our dataset where a player is only
+temporarily transferred between teams. This is a good time to make use of a 2nd label. Let’s add the label `+Loan+` to those transfers:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)
+WHERE t.fee STARTS WITH 'Loan'
+SET t:Loan
+----
+
+== Cleaning the data: Transfer fees
+
+Now what we’ve got left are all values that we can translate into a numeric value.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (transfer:Transfer)
+RETURN transfer.fee, COUNT(*) AS occurrences
+ORDER BY occurrences DESC
+LIMIT 100
+----
+
+Let’s add a new property that has a numeric value for each transfer fee.
+Run the following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)
+WITH t, replace(replace(replace(replace(t.fee, "k", ""), "m", ""), "Loan fee:", ""), "£", "") AS rawNumeric
+WITH t,
+CASE
+ WHEN t.fee ENDS WITH "k" THEN toFloat(apoc.number.exact.mul(trim(rawNumeric),"1000"))
+ WHEN trim(t.fee) IN ["Free transfer", "ablösefrei ", "gratuito", "free", "free transfer", "Ablösefrei", "transfervrij", "ablöserei", "Free Transfer", "Libre", "gratutito", "ablsöefrei", "ablösefrei", "ablösefei", "abösefrei", "Loan", "draft", "Swap deal", "trade", "ablösefrei", "ablösefreei", "Free", "ablosefrei", "Draft", "Trade", "Libre para traspaso", "bez odstępnego", "ablossefrei", "Bez odstępnego", "Gratuito", "ablödefrei", "Bonservissiz", "ablösfrei", "ablõsefrei", "ablösefre", "custo zero", "ablösefrei!", "ablösefreo", "svincolato", "Ablösfrei", "livre", "libre", "Leihe", "abolsfrei", "ablösefrai", "ablösefreil", "abllösefrei", "abölsefrei", "ablöserfrei", "abklösefrei", "ablöaefrei", "Ablosefrei", "Nessuno", "ablösesfrei", "Free Tranfer", "abblösefrei", "Spielertausch", "ablösebrei", "abslösefrei", "spielertausch", "a", "ablöseferi", "ablöserfei", "Tausch"] THEN 0
+ WHEN NOT(exists(t.fee)) THEN 0
+ WHEN rawNumeric = '' THEN 0
+ WHEN t.fee ENDS WITH "m" THEN toFloat(apoc.number.exact.mul(trim(rawNumeric),"1000000"))
+ ELSE toFloat(trim(rawNumeric))
+END AS numericFee
+SET t.numericFee = numericFee
+----
+
+There are still a few transfers left which have annoying values so let’s exclude those from the dataset:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)
+WHERE not exists(t.numericFee)
+REMOVE t:Transfer
+SET t:TransferWithoutFee
+----
+
+== Cleaning the data: Floating point numbers
+
+You might have noticed that we’re using the APOC function `+apoc.number.exact.mul+` to multiply transfer fees, but why can’t we just do that calculation in pure Cypher?
+
+Floating point fun!
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH "8.37" as rawNumeric
+RETURN toFloat(rawNumeric) * 1000000 AS numeric
+----
+
+We’d expect to get back `+8370000+` but we didn’t! Let’s try that same calculation with the APOC function:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH "8.37" as rawNumeric
+RETURN apoc.number.exact.mul(rawNumeric,"1000000") AS apocConversion
+----
+
+That works but it’s still a String, so we need to convert it back to a numeric value:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH "8.37" as rawNumeric
+RETURN toFloat(apoc.number.exact.mul(rawNumeric,"1000000")) AS apocConversion
+----
+
+Now we’re ready to query the graph.
+
+== The top transfers
+
+We’ll start by finding the most expensive transfers.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (transfer:Transfer)-[:OF_PLAYER]->(player),
+      (from)<-[:FROM_CLUB]-(transfer)-[:TO_CLUB]->(to)
+RETURN player.name, from.name, to.name, transfer.numericFee
+ORDER BY transfer.numericFee DESC
+LIMIT 10
+----
+
+== Transfers from teams
+
+Now let’s narrow in and find the transfers involving a specific team:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (from:Club)<-[:FROM_CLUB]-(transfer:Transfer)-[:TO_CLUB]->(to:Club),
+      (transfer)-[:OF_PLAYER]->(player)
+WHERE from.name = "FC Barcelona"
+RETURN player.name, to.name, transfer.numericFee, transfer.season
+ORDER BY transfer.numericFee DESC
+----
+
+== Brexit means Brexit
+
+In these days of Brexit, we can write a query that finds transfers of English players between English teams:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (to:Club)<-[:TO_CLUB]-(t:Transfer)-[:FROM_CLUB]-(from:Club),
+      (t)-[:OF_PLAYER]->(player:Player)-[:PLAYS_FOR]->(country),
+      (to)-[:PART_OF]->(country:Country)<-[:PART_OF]-(from)
+WHERE country.name = "England"
+RETURN player.name, from.name, to.name, t.numericFee, t.season
+ORDER BY t.numericFee DESC
+LIMIT 10
+----
+
+We could also easily change the country and look at transfers in other countries as well.
+
+== Players with the biggest transfer footprint
+
+We can also write an aggregate query to find the players that have had the most money spent on them:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)-[:OF_PLAYER]->(p:Player)
+WITH p, sum(t.numericFee) as moneyTrace, COUNT(*) AS numberOfTransfers
+RETURN p.name, apoc.number.format(moneyTrace), numberOfTransfers
+ORDER BY moneyTrace desc
+LIMIT 10
+----
+
+== Adjacent transfers
+
+So far, our queries haven’t been particularly graphy. We’ve done a few queries that had multiple joins, but we haven’t really used the power of the graph yet.
+
+One way we can do that is by introducing `+NEXT+` relationships between adjacent transfers involving individual players. Run the following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (p:Player)<-[:OF_PLAYER]-(transfer)
+WHERE transfer.numericFee > 0
+
+WITH p, transfer
+ORDER BY p.name, transfer.timestamp
+
+WITH p, collect(transfer) AS transfers
+WHERE size(transfers) > 1
+UNWIND range(0, size(transfers)-2) AS idx
+
+WITH transfers[idx] AS t1, transfers[idx+1] AS t2
+MERGE (t1)-[:NEXT]->(t2)
+----
+
+== Most profit made
+
+We can now write a query to see which club made the most profit on a player:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (p:Player)<-[:OF_PLAYER]-(t1)-[:NEXT]->(t2),
+      (initial)<-[:FROM_CLUB]-(t1)-[:TO_CLUB]->(club1)<-[:FROM_CLUB]-(t2)-[:TO_CLUB]->(club2)
+WHERE none(t in [t1, t2] where t:Loan)
+RETURN p.name as player, club1.name AS profitMaker , initial.name as buysFrom, club2.name AS sellsTo, t2.numericFee - t1.numericFee as profit, (t2.timestamp - t1.timestamp) / 60 / 60 / 24 AS daysAtClub
+ORDER BY profit DESC
+----
+
+== Profit per day
+
+We can then go even further and work out how much profit was made for each day that a player was owned by a club:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (p:Player)<-[:OF_PLAYER]-(t1)-[:NEXT]->(t2),
+      (club0)<-[:FROM_CLUB]-(t1)-[:TO_CLUB]->(club1)<-[:FROM_CLUB]-(t2)-[:TO_CLUB]->(club2)
+WHERE none(t in [t1, t2] where t:Loan)
+WITH p, club1.name AS profitMaker, club0.name AS buysFrom, club2.name AS sellsTo, t2.numericFee - t1.numericFee as profit, (t2.timestamp - t1.timestamp) / 60 / 60 / 24 AS daysAtClub
+RETURN p.name AS player, profitMaker, buysFrom, sellsTo, profit, daysAtClub, profit / daysAtClub AS profitPerDay
+ORDER BY profitPerDay DESC
+----
+
+Which shows us some pretty strange-looking transfers!
+https://www.transfermarkt.co.uk/andrea-bertolacci/profil/spieler/99227[Andrea Bertolacci] seems to have been transferred twice in consecutive days at a massive profit. Presumably these transfers were all organised beforehand?
+
+== Loop transfers
+
+We can also find players who have returned to the club that initially sold them. Run the following query:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (p:Player)<-[:OF_PLAYER]-(t:Transfer)
+MATCH path = (t)-[:NEXT*]->(t2)
+MATCH (t)-[:FROM_CLUB]->(club)<-[:TO_CLUB]-(t2)
+WHERE none(t in [t, t2] where t:Loan)
+WITH p, t.numericFee - t2.numericFee AS profit, [transfer in nodes(path) | [(from)<-[:FROM_CLUB]-(transfer)-[:TO_CLUB]->(to) | from.name + "->" + to.name][0]] AS transfers, path
+RETURN p.name, apoc.number.format(profit), transfers, (nodes(path)[-1].timestamp - nodes(path)[0].timestamp) / 60 / 60 / 24 AS days
+ORDER BY profit DESC
+----
+
+== Money flow
+
+What was the money flow between clubs in a particular season?
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)
+WITH DISTINCT t.season AS season
+MATCH (seller)<-[:FROM_CLUB]-(t:Transfer)-[:TO_CLUB]->(buyer)
+WHERE t.season = season AND t.numericFee > 0
+WITH season, seller, buyer, sum(t.numericFee) AS cash_flow, count(t) AS player_count
+RETURN buyer, cash_flow, player_count, season, seller
+ORDER BY cash_flow DESC
+LIMIT 10
+----
+
+Let’s persist this in the graph so that we don’t need to recalculate it each time:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (t:Transfer)
+WITH DISTINCT t.season AS season
+MATCH (seller)<-[:FROM_CLUB]-(t:Transfer)-[:TO_CLUB]->(buyer)
+WHERE t.season = season AND t.numericFee > 0
+WITH season, seller, buyer, sum(t.numericFee) AS cash_flow, count(t) AS player_count
+MERGE (buyer)-[:CASH_FLOW {total: cash_flow, playerCount: player_count, season: season}]->(seller)
+----
+
+== Who received money from Real Madrid in 2010/2011?
+
+This new relationship type allows us to find out where the cash was
+flowing in a particular season - e.g. we can see who Real Madrid bought players from in 2010/2011.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH path = (buyer:Club)-[:CASH_FLOW]->(seller:Club)
+WHERE buyer.name = "Real Madrid" AND all(f in relationships(path) WHERE f.season="2010/2011")
+RETURN *
+----
+
+== Largest sums of money transferred
+
+We can write a query to find out which clubs participated in the biggest transfers of money:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (buyer:Club)-[f:CASH_FLOW]->(seller:Club)
+RETURN f.season AS season, buyer.name AS buyer, seller.name AS seller, f.total AS amount, f.playerCount AS playersTransferred
+ORDER BY amount DESC limit 10
+----
+
+It’s surprising to see Man City/Monaco in there, who was transferred between those two teams?
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (from:Club)<-[:FROM_CLUB]-(transfer:Transfer)-[:TO_CLUB]->(to:Club),
+      (transfer)-[:OF_PLAYER]->(player)
+WHERE from.name = "Monaco" AND to.name = "Man City"
+RETURN player.name, to.name, transfer.numericFee, transfer.season
+ORDER BY transfer.numericFee DESC
+----
+
+== Largest sums in a specific season
+
+We can also drill down to a specific season and only look at the cash flows for that season:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (buyer:Club)-[f:CASH_FLOW]->(seller:Club)
+WHERE f.season = "2016/2017"
+RETURN f.season AS season, buyer.name AS buyer, seller.name AS seller, f.total AS amount, f.playerCount AS playersTransferred
+ORDER BY amount DESC limit 10
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (from:Club)<-[:FROM_CLUB]-(transfer:Transfer)-[:TO_CLUB]->(to:Club),
+      (transfer)-[:OF_PLAYER]->(player)
+WHERE from.name = "Valencia CF" AND to.name = "FC Barcelona"  AND transfer.season = "2016/2017"
+RETURN player.name, to.name, transfer.numericFee, transfer.season
+ORDER BY transfer.numericFee DESC
+----
+
+== The End
+
+image::{img}/bugs-bunny-the-end.jpg[bugs-bunny-the-end]

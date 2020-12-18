@@ -1,0 +1,263 @@
+= Graph of codes - Exploration
+:author: Iryna Feuerstein
+:description: Guide of linking norms of german law with legal documents.
+:img: https://s3.amazonaws.com/guides.neo4j.com/javaland/img
+:tags: laws, legal, german, legal-documents, refactor, pagerank, algorithms, path
+:neo4j-version: 3.5
+:icons: font
+
+== Schema
+
+image::{img}/schema.png[schema.png]
+
+[source,cypher]
+----
+call db.schema();
+----
+
+=== Graph model of the legal norms
+
+[source,cypher]
+----
+match (c:Code)-[:HAS_SECTION]->(s:Section)-[:HAS_PARAGRAPH]->(p:Paragraph),
+    (s)-[:HAS_FOOTNOTE]->(f:Footnote)
+    return c,s,p,f limit 4
+----
+
+There exist different versions of same norms.
+
+[source,cypher]
+----
+match (c1:Code)-[:HAS_SECTION]->(s1:Section),
+	  (c2:Code)-[:HAS_SECTION]->(s2:Section),
+      (c1)-[:HAS_VARIATION]->(c2)
+      return c1,c2,s1,s2 limit 4
+----
+
+== Schema
+
+=== Graph model of the documents
+
+image::{img}/schema_documents.png[]
+
+[source,cypher]
+----
+match (d:Document)-[:CREATED_AT]->(c:Court),
+      (d)-[:DEALS_WITH]->(l:LegalField)
+      return d,c,l limit 3
+----
+
+=== Graph model of the norm occurrences
+
+[source,cypher]
+----
+match p = (d:Document)-[:HAS_OCCURRENCE]->(o:Occurrence)<-[:OCCURS_IN]-(norm)-[*1..2]-(c:Code)
+    return p limit 1
+----
+
+== Which paragraph pairs are used most frequently in the same documents?
+
+=== Example of two paragraph occurrences in the same document
+
+[source, cypher]
+----
+match p = (c1:Code)-[:HAS_SECTION]->(s1:Section)-[:HAS_PARAGRAPH]->(p1:Paragraph)-[:OCCURS_IN]->(o1:Occurrence)<-[:HAS_OCCURRENCE]-
+    (d:Document)-[:HAS_OCCURRENCE]->(o2:Occurrence)<-[:OCCURS_IN]-(p2:Paragraph)<-[:HAS_PARAGRAPH]-(s2:Section)<-[:HAS_SECTION]-(c2:Code)
+    return p limit 1
+----
+
+== Which paragraph pairs are used most frequently in the same documents?
+
+=== Query: first attempt
+
+[source, cypher]
+----
+match (p1:Paragraph)-[*2]-(d:Document)-[*2]-(p2:Paragraph)
+    where id(p1) < id(p2)
+    return p1.paragraphNumber,
+           p2.paragraphNumber,
+           count(d)
+    order by count(d) desc limit 10
+----
+
+=== Below query retrieves also relationships to sections and codes, limits the relationship types to OCCURS_IN and HAS_OCCURRENCE and formats the output
+
+[source, cypher]
+----
+match (c1:Code)-[:HAS_SECTION]->(s1:Section)-[:HAS_PARAGRAPH]->(p1:Paragraph)-[:OCCURS_IN|HAS_OCCURRENCE*2]-
+    (d:Document)-[:OCCURS_IN|HAS_OCCURRENCE*2]-(p2:Paragraph)<-[:HAS_PARAGRAPH]-(s2:Section)<-[:HAS_SECTION]-(c2:Code)
+    where id(p1) < id(p2)
+return s1.sectionType + s1.sectionNumber + ' Abs. ' + p1.paragraphNumber + ' ' + c1.forensicAbbreviation as first,
+       s2.sectionType + s2.sectionNumber + ' Abs. ' + p2.paragraphNumber + ' ' + c2.forensicAbbreviation as second,
+       count(d) as frequency
+       order by frequency desc limit 10
+----
+
+== Which paragraph pairs are used most frequently in the same documents?
+
+=== Query optimisation by explicitly describing the path
+
+[source, cypher]
+----
+match (c1:Code)-[:HAS_SECTION]->(s1:Section)-[:HAS_PARAGRAPH]->(p1:Paragraph)-[:OCCURS_IN]->(o1:Occurrence)<-[:HAS_OCCURRENCE]-
+    (d:Document)-[:HAS_OCCURRENCE]->(o2:Occurrence)<-[:OCCURS_IN]-(p2:Paragraph)<-[:HAS_PARAGRAPH]-(s2:Section)<-[:HAS_SECTION]-(c2:Code)
+    where id(p1) < id(p2)
+return s1.sectionType + s1.sectionNumber + ' Abs. ' + p1.paragraphNumber + ' ' + c1.forensicAbbreviation as first,
+       s2.sectionType + s2.sectionNumber + ' Abs. ' + p2.paragraphNumber + ' ' + c2.forensicAbbreviation as second,
+       count(d) as frequency
+       order by frequency desc limit 10
+----
+
+== Which sections are mentioned most frequently together?
+
+=== Which properties of the Occurrence-Nodes could be used?
+
+[source, cypher]
+----
+MATCH (n:Occurrence) RETURN properties(n) limit 1
+----
+
+=== Query: first attempt
+
+[source, cypher]
+----
+match (c1:Code)-[:HAS_SECTION]->(s1:Section)-[:OCCURS_IN]->(o1:Occurrence)<-[:HAS_OCCURRENCE]-
+    (d:Document)-[:HAS_OCCURRENCE]->(o2:Occurrence)<-[:OCCURS_IN]-(s2:Section)<-[:HAS_SECTION]-(c2:Code)
+    where toInteger(o2.at) - toInteger(o1.at) = 1
+return
+    s1.sectionType + s1.sectionNumber + ' ' + c1.forensicAbbreviation as norm1,
+    s2.sectionType + s2.sectionNumber + ' ' + c2.forensicAbbreviation as norm2,
+    count(d) as frequency
+    order by frequency desc limit 10
+----
+
+== Refactoring the graph
+
+=== Why do we need the intermediate Occurrence node?
+
+==== Let's eliminate it!
+
+[source,cypher]
+----
+match (p:Paragraph)-[:OCCURS_IN]->(o:Occurrence)<-[:HAS_OCCURRENCE]-(d:Document)
+    create (p)-[m:MENTIONED_IN]->(d)
+    set m.offset = o.at
+    set m.documentPart = o.occurredIn
+    set m.mentionSpan = o.fullMatch
+    detach delete o
+----
+
+[source,cypher]
+----
+match (s:Section)-[:OCCURS_IN]->(o:Occurrence)<-[:HAS_OCCURRENCE]-(d:Document)
+    create (s)-[m:MENTIONED_IN]->(d)
+    set m.offset = o.at
+    set m.documentPart = o.occurredIn
+    set m.mentionSpan = o.fullMatch
+    detach delete o
+----
+
+== Which sections are mentioned most frequently together?
+
+=== Query using the new relationship between norms and documents
+[source,cypher]
+----
+match (c1:Code)-[:HAS_SECTION]->(s1:Section)-[m1:MENTIONED_IN]->(d:Document)
+      <-[m2:MENTIONED_IN]-(s2:Section)<-[:HAS_SECTION]-(c2:Code)
+    where toInteger(m2.offset) - toInteger(m1.offset) = 1
+    return
+        s1.sectionType + s1.sectionNumber + ' ' + c1.forensicAbbreviation as norm1,
+        s2.sectionType + s2.sectionNumber + ' ' + c2.forensicAbbreviation as norm2,
+        count(d) as frequency
+        order by frequency desc limit 10
+----
+
+== What about mentions of multiple norms?
+
+=== Graph model
+
+[source, cypher]
+----
+match p = (c1:Code)-[:HAS_SECTION]->(s1:Section)-[m1:MENTIONED_IN]->(d:Document)
+          <-[m2:MENTIONED_IN]-(s2:Section)<-[:HAS_SECTION]-(c2:Code)
+    where toInteger(m1.offset) - toInteger(m2.offset) = 1
+    return p limit 1
+----
+
+=== Extending the graph model
+
+[source, cypher]
+----
+match (first)-[m1:MENTIONED_IN]->(d:Document)<-[m2:MENTIONED_IN]-(second)
+    where toInteger(m2.offset) - toInteger(m1.offset) = 1
+    create (first)-[r:NEXT]->(second)
+        set r.startingPoint = m1.offset
+        set r.endPoint = m2.offset
+----
+
+== What about mentions of multiple norms?
+
+=== Query & Answer
+
+[source, cypher]
+----
+match (s1:Section)-[r1:NEXT]->(s2:Section)-[r2:NEXT]->(s3:Section)
+    where r1.endPoint = r2.startingPoint
+    match (s1)<-[:HAS_SECTION]-(c1:Code)
+    match (s2)<-[:HAS_SECTION]-(c2:Code)
+    match (s3)<-[:HAS_SECTION]-(c3:Code)
+return s1.sectionType + s1.sectionNumber + ' ' + c1.forensicAbbreviation  as first,
+    s2.sectionType + s2.sectionNumber + ' ' + c2.forensicAbbreviation  as second,
+    s3.sectionType + s3.sectionNumber + ' ' + c3.forensicAbbreviation  as third,
+    count(s1) as frequency
+    order by frequency desc limit 10
+----
+
+=== Variable path length
+
+[source, cypher]
+----
+match p = (:Section)-[:NEXT*1..3]->(:Section)
+    where all(idx in range(0, size(relationships(p))-2)
+        where relationships(p)[idx].endPoint = relationships(p)[idx+1].startingPoint)
+return extract(x in nodes(p) | x.sectionType + x.sectionNumber), length(p)
+    order by length(p) desc limit 3
+----
+
+== Find central norms (what ever central means)
+
+=== PageRank
+
+[source, cypher]
+----
+call algo.pageRank.stream('Section', 'NEXT', {iterations: 5})
+    yield node, score
+    match (node)<-[:HAS_SECTION]-(c:Code)
+    return node.sectionType + node.sectionNumber + " " + c.forensicAbbreviation as norm, score
+    order by score desc limit 10;
+----
+
+== Find similiar documents to a given one
+
+=== Graph model
+
+image::https://github.com/IraRe/graph-of-codes/raw/master/images/document_common_attributes.png[]
+
+[source, cypher]
+----
+match (d1:Document)-[:CREATED_AT]->(c:Court)<-[:CREATED_AT]-(d2:Document),
+	  (d1)-[:DEALS_WITH]->(l:LegalField)<-[:DEALS_WITH]-(d2),
+      (d1)-[:MAKES_USE_OF]->(s:Section)<-[:MAKES_USE_OF]-(d2),
+      (d1)<-[:MENTIONED_IN]-(v)-[:MENTIONED_IN]->(d2)
+	return d1,d2,c,l,s,v limit 1
+----
+
+=== Query & Answer
+
+[source, cypher]
+----
+match path = (doc:Document {docketNumber: '324 O 217/17'})-[*..4]-(relatedDoc:Document)
+    where id(doc) < id(relatedDoc)
+return relatedDoc.exam, relatedDoc.docketNumber, count(path)
+    order by count(path) desc limit 5
+----
