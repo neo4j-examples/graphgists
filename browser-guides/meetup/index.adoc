@@ -1,0 +1,35 @@
+= Analyzing Meetup Data with Neo4j
+:author: Neo4j Devrel
+:description: Analyze API data from Meetup.com with Neo4j
+:img: https://s3.amazonaws.com/guides.neo4j.com/meetup/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/meetup
+:tags: cypher, data-analysis, similarity, import, load-csv
+:neo4j-version: 3.5
+:icons: font
+
+== Import and Analyze data from Meetup.com API
+
+image::{img}/meetup.png[float=right]
+
+In this guide, we will call the Meetup API that provides data for meetup groups, topics, members, events, and more to import the data set to Neo4j.
+Once imported, we can explore the data as a graph using the Cypher query language to retrieve and discover insights and interesting details.
+
+Table of Contents:
+
+ifdef::env-guide[]
+. pass:a[<a play-topic='{guides}/01_meetup_import.html'>Data import</a>]
+. pass:a[<a play-topic='{guides}/02_data_analysis.html'>Data Analysis</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+. link:{gist}/01_data_import.adoc[Data import^]
+. link:{gist}/02_data_analysis.adoc[Data analysis^]
+endif::[]
+
+== Further Resources
+
+* https://neo4j.com/graphgists[Graph Gist Examples]
+* https://neo4j.com/docs/cypher-refcard/current/[Cypher Reference Card]
+* https://neo4j.com/docs/cypher-manual/current/[Cypher Manual]
+* https://neo4j.com/developer/cypher/resources/[Cypher Resources]
+* https://graphdatabases.com[e-book: Graph Databases (free)]

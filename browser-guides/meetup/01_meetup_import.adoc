@@ -1,0 +1,205 @@
+= Data import
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:img: https://s3.amazonaws.com/guides.neo4j.com/meetup/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/meetup
+:icons: font
+:neo4j-version: 3.5
+
+== Import data from Meetup API
+
+First, we need to import the data from the Meetup API.
+Many of the endpoints provided by Meetup.com are restricted and require an account and credentials, but for this guide, we will only query the open endpoint for event RSVPs.
+
+For additional data or analysis, you can create a free account and import from many other endpoints, as outlined in the https://www.meetup.com/meetup_api/docs/[Meetup API documentation^].
+
+== Setup: Indexes and Constraints
+
+To help speed up performance of queries and ensure unique entities, let's go ahead and set up some constraints and indexes.
+
+NOTE: Ensure the `Enable multi statement query editor` setting is checked under `Settings` in Neo4j Browser.
+
+[source,cypher]
+----
+CREATE INDEX FOR (m:Member) ON (m.id);
+
+CREATE INDEX FOR (e:Event) ON (e.id);
+CREATE INDEX FOR (e:Event) ON (e.time);
+CREATE INDEX FOR (e:Event) ON (e.location);
+
+CREATE INDEX FOR (g:Group) ON (g.id);
+CREATE INDEX FOR (g:Group) ON (g.name);
+CREATE INDEX FOR (g:Group) ON (g.location);
+
+CREATE INDEX FOR (v:Venue) ON (v.id);
+CREATE INDEX FOR (v:Venue) ON (v.location);
+CREATE INDEX FOR (r:RSVP) ON (r.id);
+CREATE INDEX FOR (t:Topic) ON (t.name);
+CREATE INDEX FOR (t:Topic) ON (t.urlkey);
+
+CREATE INDEX FOR (c:City) ON (c.name);
+CREATE INDEX FOR (c:City) ON (c.location);
+CREATE INDEX FOR (c:City) ON (c.population);
+
+CREATE INDEX FOR (o:Country) ON (o.iso2);
+CREATE INDEX FOR (o:Country) ON (o.name);
+
+CREATE CONSTRAINT ON (t:Topic) ASSERT t.id IS UNIQUE;
+----
+
+== Import data
+
+Now we can import the data with the statement below.
+It creates group, member, event, venue, rsvp, and topic entities in our graph.
+
+The query will take a few minutes to complete, as it is retrieving 100 entities from the API and creating all of the relations at once.
+
+NOTE: each time this query is run, it may yield different results. The query is not filtering a specific set of RSVP data, so it will retrieve whatever is provided by the API.
+
+[source, cypher]
+----
+WITH 'https://stream.meetup.com/2/rsvps' as url
+CALL apoc.load.json(url) YIELD value
+WITH value LIMIT 100
+WITH value.venue as venueData, value.member as memberData, value.event as eventData, value.group.group_topics as topics, value as data, apoc.map.removeKeys(value.group, ['group_topics']) as groupData
+
+MERGE (member:Member { id: memberData.member_id })
+   ON CREATE SET member.name = memberData.member_name, member.photo = memberData.photo
+
+MERGE (event:Event { id: eventData.event_id })
+   ON CREATE SET event.name = eventData.event_name, event.time = datetime({ epochMillis: coalesce(eventData.time, 0) }), event.url = eventData.event_url
+
+MERGE (group:Group { id: groupData.group_id })
+   ON CREATE SET group.name = groupData.group_name, group.city = groupData.group_city, group.country = groupData.group_country, group.state = groupData.group_state, group.location = point({latitude: groupData.group_lat, longitude: groupData.group_lon}), group.urlname = groupData.group_urlname
+
+MERGE (venue:Venue { id: coalesce(venueData.venue_id, randomUUID()) })
+   ON CREATE SET venue.name = venueData.venue_name, venue.location = point({latitude: venueData.lat, longitude: venueData.lon})
+
+CREATE (rsvp:RSVP {id: coalesce(data.rsvp_id, randomUUID()), guests: coalesce(data.guests, 0), mtime: datetime({ epochMillis: coalesce(data.mtime, 0) }), response: data.response, visibility: data.visibility})
+MERGE (rsvp)-[:MEMBER]->(member)
+MERGE (rsvp)-[:EVENT]->(event)
+MERGE (rsvp)-[:GROUP]->(group)
+
+MERGE (member)-[:RSVP]->(event)
+MERGE (event)<-[:HELD]-(group)
+MERGE (event)-[:LOCATED_AT]->(venue)
+
+WITH  group, topics
+UNWIND topics as tp
+MERGE (t:Topic { urlkey: tp.urlkey })
+   ON CREATE SET t.name = tp.topic_name
+MERGE (group)-[:TOPIC]->(t);
+----
+
+== Verify data import
+
+We should have a small data set in our graph database for us to query and explore now!
+Before we dive into exploration, though, let us take a look at our data model of the data that is there.
+
+[source,cypher]
+----
+//what does our data model look like?
+CALL db.schema.visualization();
+----
+
+== Improvements?
+
+Hm, it might be nice to have location (country/city) separated for our meetup groups so that we can easily query for groups in a certain area.
+Let's see if we can fix that by importing all countries and cities in the world.
+
+== Import World Cities/Countries
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS 
+FROM '{data-url}/worldcities.csv' AS line
+
+MERGE (country:Country {name: coalesce(line.country, '')})
+ SET iso2: coalesce(line.iso2, ''), iso3: coalesce(line.iso3, '') 
+
+MERGE (c:City {name: coalesce(line.city, '')})
+ SET id: coalesce(line.id, ''), asciiName: coalesce(line.city_ascii, ''), adminName: coalesce(line.admin_name, ''), capital: coalesce(line.capital, ''), location: point({latitude: toFloat(coalesce(line.lat, '0.0')), longitude: toFloat(coalesce(line.lng, '0.0'))}), population: coalesce(toInteger(coalesce(line.population, 0)), 0)
+
+MERGE (c)-[:IN]->(country);
+----
+
+== Verify City/Country import
+
+We can verify our last import with a quick query searching for the city of `London`.
+
+[source,cypher]
+----
+MATCH (c:City {name: 'London'})-[r:IN]-(o:Country)
+RETURN c, r, o
+----
+
+A few results should come back. It looks like that United Kingdom city also shares a name with cities in a couple of different states in the United States, as well as a city in Canada.
+
+Now we need to tie those locations back to our meetup groups!
+
+== Add relationships between locations, meetup groups, and events
+
+[source,cypher]
+----
+//link groups and locations
+MATCH (g:Group)
+WITH toUpper(g.country) as iso2, g
+MATCH (c:Country {iso2: iso2})
+MERGE (g)-[r:IN]->(c)
+RETURN count(r);
+----
+
+[source,cypher]
+----
+//link venues and cities
+CALL apoc.periodic.iterate("MATCH (c:City) RETURN c.location as loc, c",
+"WITH loc, c, 24140.2 as FifteenMilesInMeters
+ MATCH (v:Venue)
+ WHERE distance(v.location, c.location) < FifteenMilesInMeters
+ MERGE (v)-[r:NEAR]->(c)", { batchSize: 500 })
+YIELD batches, total
+RETURN batches, total;
+----
+
+== Import check
+
+Now that we have all of that data, let's take a look at our data model again, then run a few summary queries to understand what all we have.
+
+[source,cypher]
+----
+CALL db.schema.visualization();
+----
+
+== Data summary queries
+
+[source,cypher]
+----
+//How many meetup groups are in our dataset?
+MATCH (n:Group) RETURN count(n);
+----
+
+[source,cypher]
+----
+//find some cities with events
+MATCH (c:City)-[n:NEAR]-(v:Venue)-[l:LOCATED_AT]-(e:Event)
+RETURN * LIMIT 20;
+----
+
+[source,cypher]
+----
+//find some upcoming events
+MATCH (e:Event)-[l:LOCATED_AT]-(v:Venue)-[n:NEAR]-(c:City)
+WHERE e.time > datetime()
+RETURN * LIMIT 20;
+----
+
+== Next
+
+In the next section, we are going to explore our data more thoroughly using queries.
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/02_data_analysis.html'>Data Analysis</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+link:{gist}/02_data_analysis.adoc[Data Analysis^]
+endif::[]
