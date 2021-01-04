@@ -11,21 +11,29 @@
 The Neo4j Graph Data Science (GDS) library contains a set of graph algorithms exposed through Cypher procedures.
 Graph algorithms provide insights into the graph structure and elements, for example, by computing centrality and similarity scores and detecting communities.
 
-This guide follows the ordinary workflow for running the product tier algorithms: PageRank, Label Propagation, Weakly Connected Components, Louvain, and Node Similarity. We will cover the following concepts:
+This guide follows the ordinary workflow for running the product tier algorithms: PageRank, Label Propagation, Louvain, and Betweenness Centrality. We will cover the following concepts:
 
-* Create a graph and manage created graphs.
+* Create a graph and import the data.
 * Configure the algorithm to suit your needs and the data.
 
 image::{img}/graph-data-science.jpg[float=right]
 
 ifdef::env-guide[]
-. pass:a[<a play-topic='{guides}/01_eda.html'>Exploratory Data Analysis</a>]
-. pass:a[<a play-topic='{guides}/02_applied_graph_algorithms.html'>Applied Graph Algorithms</a>]
+. pass:a[<a play-topic='{guides}/01_data_import.html'>Data and Import</a>]
+. pass:a[<a play-topic='{guides}/02_analysis_algo.html'>Data Exploration</a>]
+. pass:a[<a play-topic='{guides}/03_pagerank.html'>Page Rank</a>]
+. pass:a[<a play-topic='{guides}/04_label_propagation.html'>Label Propagation</a>]
+. pass:a[<a play-topic='{guides}/05_louvain.html'>Louvain</a>]
+. pass:a[<a play-topic='{guides}/06_betweenness.html'>Betweenness Centrality</a>]
 endif::[]
 
 ifdef::env-graphgist[]
-. link:{gist}/01_eda.adoc[Exploratory Data Analysis^]
-. link:{gist}/02_applied_graph_algorithms.adoc[Applied Graph Algorithms^]
+. link:{gist}/01_data_import.adoc[Data and Import^]
+. link:{gist}/02_analysis_algo.adoc[Data Exploration^]
+. link:{gist}/03_pagerank.adoc[Page Rank^]
+. link:{gist}/04_label_propagation.adoc[Label Propagation^]
+. link:{gist}/05_louvain.adoc[Louvain^]
+. link:{gist}/06_betweenness.adoc[Betweenness Centrality^]
 endif::[]
 
 == Further Resources
