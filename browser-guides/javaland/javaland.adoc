@@ -241,7 +241,7 @@ call algo.pageRank.stream('Section', 'NEXT', {iterations: 5})
 
 === Graph model
 
-image::https://github.com/IraRe/graph-of-codes/raw/master/images/document_common_attributes.png[]
+image::{img}/document_common_attributes.png[]
 
 [source, cypher]
 ----

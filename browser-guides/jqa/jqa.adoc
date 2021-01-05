@@ -5,9 +5,9 @@
 :tags: jqassistant, tools, reporting
 :neo4j-version: 3.5
 
-image:{img}/jqassistant.png[jqa,width=400]
-
 == Introduction
+
+image:{img}/jqassistant.png[jqa,width=400]
 
 jQAssistant is a QA tool that allows the definition and validation of project-specific rules on a structural level. It is built upon the Neo4j graph database and can easily be plugged into the build process to automate detection of constraint violations and generate reports about user-defined concepts and metrics.
 

@@ -6,7 +6,7 @@
 :neo4j-version: 3.5
 :icons: font
 
-image:{img}/stackoverflow-logo.png[so-logo]
+image:{img}/stackoverflow-logo.png[so-logo,width=400,float=right]
 
 https://stackoverflow.com[Stackoverflow] is the question and answer site for software developers.
 
@@ -21,7 +21,7 @@ We wrote about the stackoverflow API before:
 
 == Look at JSON
 
-image:{img}/stackexchange-logo.png[se-logo]
+image:{img}/stackexchange-logo.png[se-logo,width=400,float=right]
 
 StackExchange has an API at api.stackexchange.com that allows querying for questions, users, tags.
 
@@ -60,7 +60,7 @@ graph.
 
 == Graph Model
 
-image:{img}/stackoverflow-model.jpg[so-model.jpg,width=600]
+image:{img}/stackoverflow-model.jpg[so-model.jpg,width=400,float=right]
 
 ....
 (:User)-[:ASKED]->(:Question)
@@ -176,6 +176,8 @@ MATCH (q:Question)
 RETURN apoc.date.format(q.creation_date,'s','EE') as day, count(*) as freq
 ORDER BY freq desc;
 ----
+
+== The Top 10 Stack Overflow Users
 
 Top times for questions (GMT?):
 

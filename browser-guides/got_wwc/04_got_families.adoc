@@ -1,6 +1,6 @@
 = Game of Thrones: Families
 :csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import
-:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:img: https://s3.amazonaws.com/guides.neo4j.com/got_wwc/img
 :icons: font
 :neo4j-version: 3.5
 

@@ -1,6 +1,6 @@
 = Intro to Neo4j and Cypher
 :csv-url: https://raw.githubusercontent.com/neo4j-meetups/modeling-worked-example/master/data/
-:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:img: https://s3.amazonaws.com/guides.neo4j.com/got_wwc/img
 :guides: https://guides.neo4j.com/got_wwc
 :icons: font
 :neo4j-version: 3.5
@@ -85,7 +85,7 @@ Oh no! We've now got two Aryas!
 
 == Constraints
 
-image::{img}slides.jpg[]
+image::{img}/slides.jpg[]
 
 == Constraints
 
@@ -157,7 +157,7 @@ RETURN character
 Now it's your turn!
 We need to create nodes to represent `House Stark` and `Winter is Coming`.
 
-image::{img}nodes.png[]
+image::{img}/nodes.png[]
 
 == Answer: Create some more nodes
 

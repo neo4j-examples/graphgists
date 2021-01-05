@@ -1,0 +1,34 @@
+= An Intro to Neo4j with Game of Thrones
+:author: Mark Needham
+:description: Learn Cypher and explore the Game of Thrones world
+:img: https://s3.amazonaws.com/guides.neo4j.com/got_wwc/img
+:guides: https://guides.neo4j.com/got_wwc
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/got_wwc
+:tags: browser-guide, intro, cypher, load-csv, aggregation
+:neo4j-version: 3.5
+
+== Welcome to An Intro to Neo4j with Game of Thrones
+
+image::{img}/nodes.png[float=right,width=400]
+
+ifdef::env-guide[]
+. pass:a[<a play-topic='{guides}/01_intro.html'>Intro to Cypher</a>]
+. pass:a[<a play-topic='{guides}/02_got.html'>Game of Thrones: Characters and Episodes</a>]
+. pass:a[<a play-topic='{guides}/03_got_houses.html'>Game of Thrones: Houses</a>]
+. pass:a[<a play-topic='{guides}/04_got_families.html'>Game of Thrones: Family Ties</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+. link:{gist}/01_intro.adoc[Intro to Cypher^]
+. link:{gist}/02_got.adoc[Game of Thrones: Characters and Episodes^]
+. link:{gist}/03_got_houses.adoc[Game of Thrones: Houses^]
+. link:{gist}/04_got_families.adoc[Game of Thrones: Family Ties^]
+endif::[]
+
+== Further Resources
+
+* https://neo4j.com/graphgists[GraphGist Examples^]
+* https://neo4j.com/docs/cypher-refcard/current/[Cypher Reference Card^]
+* https://neo4j.com/docs/cypher-manual/current/[Neo4j Cypher Manual^]
+* https://neo4j.com/developer/cypher-resources/[Cypher Resources^]
+* https://graphdatabases.com[Free e-book: Graph Databases^]

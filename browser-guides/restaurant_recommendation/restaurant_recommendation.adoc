@@ -36,7 +36,7 @@ CREATE (sushi:Cuisine {name:"Sushi"}), (nyc:City {name:"New York"}),
        (andreas)-[:LIKES]->(zam)
 ----
 
-=== Philip's Friends
+== Setup: Philip's Friends
 
 First, let's some of our graph data and find who is friends with Philip.
 

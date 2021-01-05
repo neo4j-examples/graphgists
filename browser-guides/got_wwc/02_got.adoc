@@ -1,6 +1,6 @@
 = Game of Thrones: Characters and Episodes
 :csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import
-:img: https://s3.amazonaws.com/guides.neo4j.com/img/
+:img: https://s3.amazonaws.com/guides.neo4j.com/got_wwc/img
 :guides: https://guides.neo4j.com/got_wwc
 :icons: font
 :neo4j-version: 3.5
@@ -11,7 +11,7 @@ Now that you've got a bit of practice with the Cypher syntax it's time to work w
 
 For this section it's best to start with a blank slate but first a quick overview about deleting graph data.
 
-image::{img}slides.jpg[]
+image::{img}/slides.jpg[]
 
 == Delete all the things
 
@@ -39,7 +39,7 @@ Now we're ready to explore the Game of Thrones dataset.
 
 We're going to be using the `LOAD CSV` command in Cypher so first look at the slides for a brief introduction.
 
-image::{img}slides.jpg[]
+image::{img}/slides.jpg[]
 
 == LOAD CSV - Exploring the data
 
@@ -207,7 +207,7 @@ ORDER BY appearances DESC
 
 Look at the slides for a quick explanation of this query:
 
-image::{img}slides.jpg[]
+image::{img}/slides.jpg[]
 
 == Exercise
 

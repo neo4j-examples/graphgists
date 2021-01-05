@@ -16,7 +16,7 @@ For additional data or analysis, you can create a free account and import from m
 
 To help speed up performance of queries and ensure unique entities, let's go ahead and set up some constraints and indexes.
 
-NOTE: Ensure the `Enable multi statement query editor` setting is checked under `Settings` in Neo4j Browser.
+*Note:* Ensure the `Enable multi statement query editor` setting is checked under `Settings` in Neo4j Browser.
 
 [source,cypher]
 ----
@@ -53,7 +53,7 @@ It creates group, member, event, venue, rsvp, and topic entities in our graph.
 
 The query will take a few minutes to complete, as it is retrieving 100 entities from the API and creating all of the relations at once.
 
-NOTE: each time this query is run, it may yield different results. The query is not filtering a specific set of RSVP data, so it will retrieve whatever is provided by the API.
+*Note:* Each time this query is run, it may yield different results. The query is not filtering a specific set of RSVP data, so it will retrieve whatever is provided by the API.
 
 [source, cypher]
 ----

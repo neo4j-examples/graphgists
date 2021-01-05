@@ -1,6 +1,7 @@
-== Installing Awesome Procedures (apoc)
+= Installing Awesome Procedures (apoc)
+:author: Neo4j Engineering
 
-=== APOC library installation
+== APOC library installation
 
 https://twitter.com/mesirii[Michael Hunger] has created the
 https://github.com/neo4j-contrib/neo4j-apoc-procedures[apoc] library which contains lots of useful procedures that we can use in our Neo4j applications.

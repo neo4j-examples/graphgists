@@ -1,4 +1,4 @@
-== Data Exploration
+= Data Exploration
 :author: Neo4j Engineering
 :description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
 :img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img

@@ -1,10 +1,14 @@
-== Analysing football transfers with Neo4j
+= Analysing football transfers with Neo4j
 :author: Mark Needham
 :description: Import, clean, and analyze football transfer data with Neo4j
 :img: https://s3.amazonaws.com/guides.neo4j.com/football_transfers/img
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:backup-data: https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com
 :tags: sports, cypher, apoc, load-csv, data-analysis
 :neo4j-version: 3.5
 :icons: font
+
+== Analysing football transfers with Neo4j
 
 image:{img}/transfermarkt.png[transfermarkt]
 
@@ -24,7 +28,7 @@ We’ve written a bunch of transfers into a CSV file, so let’s have a quick lo
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
 RETURN row
 LIMIT 5
@@ -38,27 +42,25 @@ Before we import anything, we’ll create some constraints to make sure we don�
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-CREATE CONSTRAINT ON (player:Player)
-ASSERT player.id IS UNIQUE;
+CREATE CONSTRAINT ON (player:Player) ASSERT player.id IS UNIQUE;
 ----
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-CREATE CONSTRAINT ON (club:Club)
-ASSERT club.id IS UNIQUE;
+CREATE CONSTRAINT ON (club:Club) ASSERT club.id IS UNIQUE;
 ----
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-CREATE CONSTRAINT ON (transfer:Transfer)
-ASSERT transfer.id IS UNIQUE;
+CREATE CONSTRAINT ON (transfer:Transfer) ASSERT transfer.id IS UNIQUE;
 ----
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-CREATE CONSTRAINT ON (country:Country)
-ASSERT country.name IS UNIQUE;
+CREATE CONSTRAINT ON (country:Country) ASSERT country.name IS UNIQUE;
 ----
+
+== Verify constraints
 
 Let’s check they all got created:
 
@@ -76,7 +78,7 @@ First we’ll import the players. Run the following query:
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 USING PERIODIC COMMIT
-LOAD CSV WITH HEADERS FROM 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS row
+LOAD CSV WITH HEADERS FROM '{data-url}/transfers-all.csv' AS row
 MERGE (player:Player {id: row.playerUri})
 ON CREATE SET player.name =  row.playerName, player.position = row.playerPosition
 ----
@@ -95,12 +97,11 @@ Looks good!
 
 == Importing the data: Player Countries
 
-Next we’ll import the countries that those players represent. Run the
-following query:
+Next we’ll import the countries that those players represent. Run the following queries:
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
 WITH row WHERE row.playerNationality <> ''
 WITH DISTINCT row.playerNationality AS nationality
@@ -110,7 +111,7 @@ MERGE (country:Country {name: nationality })
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 USING PERIODIC COMMIT
-LOAD CSV WITH HEADERS FROM 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS row
+LOAD CSV WITH HEADERS FROM '{data-url}/transfers-all.csv' AS row
 WITH row WHERE row.playerNationality <> ''
 MATCH (player:Player {id: row.playerUri})
 MATCH (country:Country {name: row.playerNationality })
@@ -123,9 +124,8 @@ Next up, we’ll import the clubs. The way the data is structured for clubs is q
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
-
 WITH row where row.sellerClubUri <> ''
 MERGE (club:Club {id: row.sellerClubUri})
 ON CREATE SET club.name = row.sellerClubName
@@ -135,7 +135,7 @@ MERGE (club)-[:PART_OF]->(country)
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
 WITH row where row.buyerClubUri <> ''
 MERGE (club:Club {id: row.buyerClubUri})
@@ -152,7 +152,7 @@ Indeed there is! Our good friend `+UNWIND+` can help us out here:
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-WITH 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS url
+WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
 UNWIND [
   {uri: row.sellerClubUri, name: row.sellerClubName, country: row.sellerClubCountry},
@@ -171,7 +171,7 @@ MERGE (c)-[:PART_OF]->(country)
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 USING PERIODIC COMMIT
-LOAD CSV WITH HEADERS FROM 'https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com/transfers-all.csv' AS row
+LOAD CSV WITH HEADERS FROM '{data-url}/transfers-all.csv' AS row
 MATCH (player:Player {id: row.playerUri})
 MATCH (source:Club {id: row.sellerClubUri})
 MATCH (destination:Club {id: row.buyerClubUri})
@@ -200,6 +200,8 @@ LIMIT 100
 ----
 
 There’s lots of different values here, but it looks like if the value is "?" or "-" then we don’t have any idea what the transfer fee actually was.
+
+== Cleaning the data: Transfer fees
 
 Let’s see if there are any valid transfers with those values. Run the following query:
 
@@ -244,6 +246,8 @@ ORDER BY occurrences DESC
 LIMIT 100
 ----
 
+== Cleaning the data: Transfer fees
+
 Let’s add a new property that has a numeric value for each transfer fee.
 Run the following query:
 
@@ -263,6 +267,8 @@ END AS numericFee
 SET t.numericFee = numericFee
 ----
 
+== Cleaning the data: Transfer fees
+
 There are still a few transfers left which have annoying values so let’s exclude those from the dataset:
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
@@ -276,7 +282,6 @@ SET t:TransferWithoutFee
 == Cleaning the data: Floating point numbers
 
 You might have noticed that we’re using the APOC function `+apoc.number.exact.mul+` to multiply transfer fees, but why can’t we just do that calculation in pure Cypher?
-
 Floating point fun!
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]

@@ -11,7 +11,7 @@ We can dig deeper into our graph to gain insights using the relationships betwee
 
 First, let's see which cities have the most events.
 
-Remember: We imported random data from api, so there may be varying results.
+*Remember:* We imported random data from api, so there may be varying results.
 
 [source,cypher]
 ----
@@ -37,6 +37,8 @@ RETURN *;
 MATCH (t:Topic)-[r:TOPIC]-(g:Group)
 RETURN t.name, count(g) as count ORDER BY count DESC
 ----
+
+== Analysis: Topics
 
 === Find which users attend the most Meetups in a random topic
 
@@ -71,6 +73,8 @@ MATCH (g:Group)
 WHERE (timestamp() - g.created) / 1000 / 3600 / 24 / 365 >= 1
 RETURN count(g)
 ----
+
+== Analysis: Groups
 
 === Find groups with 'Neo4j' or 'Data' in their name.
 
@@ -113,6 +117,8 @@ ORDER BY events desc
 LIMIT 10;
 ----
 
+== Analysis: Events
+
 === Find meetups a random venue has hosted?
 
 [source,cypher]
@@ -136,8 +142,7 @@ LIMIT 10;
 MATCH (v:Venue)
 WHERE v.name IS NOT NULL
 WITH collect(v) as venues
-WITH apoc.coll.randomItem(venues) as v1,
-     apoc.coll.randomItem(venues) as v2
+WITH apoc.coll.randomItem(venues) as v1, apoc.coll.randomItem(venues) as v2
 MATCH p=shortestPath((v1)-[*]-(v2))
 RETURN p;
 ----
@@ -148,11 +153,12 @@ RETURN p;
 ----
 MATCH (t:Topic)
 WITH collect(t) as topics
-WITH apoc.coll.randomItem(topics) as t1,
-     apoc.coll.randomItem(topics) as t2
+WITH apoc.coll.randomItem(topics) as t1, apoc.coll.randomItem(topics) as t2
 MATCH p=shortestPath((t1)-[*]-(t2))
 RETURN p;
 ----
+
+== Analysis: Shortest paths
 
 === Shortest path among 3 random members
 
@@ -160,9 +166,7 @@ RETURN p;
 ----
 MATCH (m:Member)
 WITH collect(m) as members
-WITH apoc.coll.randomItem(members) as m1,
-     apoc.coll.randomItem(members) as m2,
-     apoc.coll.randomItem(members) as m3
+WITH apoc.coll.randomItem(members) as m1, apoc.coll.randomItem(members) as m2, apoc.coll.randomItem(members) as m3
 MATCH p1=shortestPath((m1)-[*]-(m2)),
       p2=shortestPath((m2)-[*]-(m3)),
       p3=shortestPath((m1)-[*]-(m3))
@@ -177,23 +181,20 @@ RETURN p1, p2, p3;
 ----
 WITH point({ latitude: 37.5407246, longitude: -77.4360481 }) as RichmondVA, 32186.9 as TenMiles   /* 10 mi expressed in meters */
 MATCH (v:Venue)<-[:LOCATED_AT]-(e:Event)-[:HELD]-(g:Group) 
-WHERE 
-   distance(v.location, RichmondVA) < TenMiles AND
-   e.time > datetime()
+WHERE distance(v.location, RichmondVA) < TenMiles AND e.time > datetime()
 RETURN g.name as GroupName, e.name as EventName, e.time as When, v.name as Venue limit 10;
 ----
+
+== Analysis: Find events in area
 
 === Find events within distance of random location
 
 [source,cypher]
 ----
-WITH 
-  rand() * 90 * (CASE WHEN rand() <= 0.5 THEN 1 ELSE -1 END) as randLat,
-  rand() * 90 * (CASE WHEN rand() <= 0.5 THEN 1 ELSE -1 END) as randLon
+WITH rand() * 90 * (CASE WHEN rand() <= 0.5 THEN 1 ELSE -1 END) as randLat, rand() * 90 * (CASE WHEN rand() <= 0.5 THEN 1 ELSE -1 END) as randLon
 WITH point({ latitude: randLat, longitude: randLon }) as randomLocation
 MATCH (v:Venue)-[:NEAR]->(city:City)-[:IN]->(c:Country)
-RETURN 
-    city.name as City, 
+RETURN city.name as City, 
     c.name as Country, 
     v.name as Venue, 
     v.location as VenueLocation, 
@@ -203,13 +204,13 @@ ORDER BY distance(v.location, randomLocation) ASC
 LIMIT 1;
 ----
 
+== Analysis: Find events in area
+
 === Find upcoming dance events in Manhattan
 
 [source,cypher]
 ----
-WITH 
-   point({ latitude: 40.758896, longitude: -73.985130 }) as TimesSquareManhattan,
-   32186.9 as TenMiles
+WITH point({ latitude: 40.758896, longitude: -73.985130 }) as TimesSquareManhattan, 32186.9 as TenMiles
 MATCH (v:Venue)<-[:LOCATED_AT]-(e:Event),
       (e)-[:HELD]-(g:Group),
       (g)-[:TOPIC]->(t:Topic),
@@ -219,8 +220,7 @@ WHERE e.time >= datetime("2018-09-06T00:00:00Z") AND
       distance(v.location, TimesSquareManhattan) < TenMiles AND
       v.name is not null AND
       t.name =~ '(?i).*dancing.*'
-RETURN 
-    g.name as GroupName, 
+RETURN g.name as GroupName, 
     collect(distinct t.name) as topics, 
     e.name as EventName, 
     count(r) as RSVPs, 

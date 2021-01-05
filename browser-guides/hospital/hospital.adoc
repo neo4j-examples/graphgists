@@ -1,7 +1,7 @@
 = Working with Hierarchical Trees in Neo4j
 :author: Tomaz Bratanic
 :description: Approach hierarchical tree structures in Neo4j by querying and exploring a hospital data set
-:img: https://s3.amazonaws.com/guides.neo4j.com/contrib/img
+:img: https://s3.amazonaws.com/guides.neo4j.com/hospital/img
 :tags: hierarchy, trees, parent-child, hospital, load-csv, apoc
 :neo4j-version: 3.5
 
@@ -154,6 +154,8 @@ RETURN distinct(length(path)) as length,
        count(distinct(h)) as numberOfHospitals
 ----
 
+== Data Validation
+
 === Validation #3
 
 Check how many labels each node has.
@@ -186,6 +188,8 @@ MATCH (h:Hospital)-[:IS_IN*3..3]->(city)
 RETURN city.name as city,count(h) as NumberOfHospitals 
 ORDER BY NumberOfHospitals DESC LIMIT 15
 ----
+
+== Queries
 
 === Top 10 states by rating
 

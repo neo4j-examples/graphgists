@@ -2,11 +2,15 @@
 :author: William Lyon
 :description: Walkthrough of importing and querying UK company data
 :img: https://s3.amazonaws.com/guides.neo4j.com/ukcompanies/img
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:backup-data: https://guides.neo4j.com/ukcompanies/data
 :tags: cypher, import, apoc, match, geospatial
 :neo4j-version: 3.5
 :icons: font
 
 == UK Companies Data
+
+image::{img}/ukcompanies_model.png[width=400,float=right]
 
 ++++
 <div class="col-md-8">
@@ -30,8 +34,6 @@ Outline:
 </div>
 ++++
 
-image::{img}/ukcompanies_model.png[]
-
 == Import
 
 Be sure to enable multi-statement query editor in Neo4j Browser, then run:
@@ -42,17 +44,16 @@ CREATE CONSTRAINT ON (c:Company) ASSERT c.companyNumber IS UNIQUE;
 CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name) IS NODE KEY;
 CREATE CONSTRAINT ON (p:Property) ASSERT p.titleNumber IS UNIQUE;
 
-LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/PSCAmericans.csv" AS row
+LOAD CSV WITH HEADERS FROM '{data-url}/PSCAmericans.csv' AS row
 MERGE (c:Company {companyNumber: row.company_number})
 MERGE (p:Person {name: row.`data.name`, birthYear: row.`data.date_of_birth.year`, birthMonth: row.`data.date_of_birth.month`})
 ON CREATE SET p.nationality = row.`data.nationality`,
               p.countryOfResidence = row.`data.country_of_residence`
-              // TODO: Address
 MERGE (p)-[r:HAS_CONTROL]->(c)
 SET r.nature = split(replace(replace(replace(row.`data.natures_of_control`, "[",""),"]",""),  '"', ""), ",")
 RETURN COUNT(*);
 
-LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/CompanyDataAmericans.csv" AS row
+LOAD CSV WITH HEADERS FROM '{data-url}/CompanyDataAmericans.csv' AS row
 MATCH (c:Company {companyNumber: row.` CompanyNumber`})
 SET c.name = row.CompanyName,
     c.mortgagesOutstanding = toInteger(row.`Mortgages.NumMortOutstanding`),
@@ -62,15 +63,15 @@ SET c.name = row.CompanyName,
     c.status = row.CompanyStatus,
     c.category = row.CompanyCategory;
     
-LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/ElectionDonationsAmericans.csv" AS row
+LOAD CSV WITH HEADERS FROM '{data-url}/ElectionDonationsAmericans.csv' AS row
 MATCH (c:Company) WHERE c.companyNumber = row.CompanyRegistrationNumber
 MERGE (p:Recipient {name: row.RegulatedEntityName})
 SET p.entityType = row.RegulatedEntityType
 MERGE (c)-[r:DONATED {ref: row.ECRef}]->(p)
-SET r.date  = Date(Datetime({epochSeconds: apoc.date.parse(row.ReceivedDate,'s','dd/MM/yyyy')})),
+SET r.date  = date(datetime({epochSeconds: apoc.date.parse(row.ReceivedDate,'s','dd/MM/yyyy')})),
     r.value = toFloat(replace(replace(row.Value, "£", ""), ",", ""));
     
-LOAD CSV WITH HEADERS FROM "https://guides.neo4j.com/ukcompanies/data/LandOwnershipAmericans.csv" AS row
+LOAD CSV WITH HEADERS FROM '{data-url}/LandOwnershipAmericans.csv' AS row
 MATCH (c:Company {companyNumber: row.`Company Registration No. (1)`})
 MERGE (p:Property {titleNumber: row.`Title Number`})
 SET p.address = row.`Property Address`,
@@ -79,7 +80,7 @@ SET p.address = row.`Property Address`,
     p.district = row.District
 MERGE (c)-[r:OWNS]->(p)
 WITH row, c,r,p WHERE row.`Date Proprietor Added` IS NOT NULL
-SET r.date = Date(Datetime({epochSeconds: apoc.date.parse(row.`Date Proprietor Added`,'s','dd-MM-yyyy')}));
+SET r.date = date(datetime({epochSeconds: apoc.date.parse(row.`Date Proprietor Added`,'s','dd-MM-yyyy')}));
 
 CREATE INDEX ON :Company(incorporationDate);
 ----
@@ -98,7 +99,6 @@ CALL db.schema.visualization();
 ++++
 
 *Person*
-
 * name
 * nationality
 * countryOfResidence
@@ -106,7 +106,6 @@ CALL db.schema.visualization();
 * birthMonth
 
 **Relationships**
-
 (:Person)-[:HAS_CONTROL]->(:Company)
 ++++
 </div>
@@ -117,7 +116,6 @@ CALL db.schema.visualization();
 ++++
 
 *Company*
-
 * companyNumber
 * name
 * status
@@ -127,7 +125,6 @@ CALL db.schema.visualization();
 * mortgagesOutstanding
 
 **Relationships**
-
 * (:Company)-[:OWNS]->(:Property)
 * (:Company)-[:DONATED]->(:Recipient)
 
@@ -140,7 +137,6 @@ CALL db.schema.visualization();
 ++++
 
 *Property*
-
 * titleNumber
 * address
 * county
@@ -156,7 +152,6 @@ CALL db.schema.visualization();
 ++++
 
 *Recipient*
-
 * name
 * entityType
 
@@ -172,14 +167,14 @@ In Neo4j, we use the `MATCH` command to query data. The syntax is `MATCH`, follo
 
 [source,cypher]
 ----
-MATCH (p:Person {name: "Margery Kraus"})
+MATCH (p:Person {name: 'Margery Kraus'})
 RETURN p
 ----
 
 * The `()` represent a node
 * `:Person` is the node label
 * `{}` indicate properties
-* `{name: ""}`
+* `{name: ''}`
 * `p` becomes a variable that is bound to pieces of the graph that match the pattern
 * We use `RETURN` to return data and visualize the results
 
@@ -194,7 +189,7 @@ Remember the basic format for `MATCH`:
 
 [source,cypher]
 ----
-MATCH (variable:NodeLabel {property: "value"})
+MATCH (variable:NodeLabel {property: 'value'})
 RETURN variable
 ----
 
@@ -204,7 +199,7 @@ Find the `Person` node with the name `Michael Rubens Bloomberg`
 
 [source,cypher]
 ----
-MATCH (p:Person {name: "Michael Rubens Bloomberg"})
+MATCH (p:Person {name: 'Michael Rubens Bloomberg'})
 RETURN p
 ----
 
@@ -212,7 +207,7 @@ Find the `Company` with the name `GRAPHIC PLC`
 
 [source,cypher]
 ----
-MATCH (c:Company {name: "GRAPHIC PLC"})
+MATCH (c:Company {name: 'GRAPHIC PLC'})
 RETURN c
 ----
 
@@ -222,7 +217,7 @@ Nodes are connected by relationships. We can define more complex graph patterns 
 
 [source,cypher]
 ----
-MATCH (p:Person {name: "Margery Kraus"})-[:HAS_CONTROL]->(c:Company)
+MATCH (p:Person {name: 'Margery Kraus'})-[:HAS_CONTROL]->(c:Company)
 RETURN p, c
 ----
 
@@ -240,7 +235,7 @@ Companies connected to Michael Rubens Bloomberg?
 
 [source,cypher]
 ----
-MATCH (p:Person {name: "Michael Rubens Bloomberg"})-[:HAS_CONTROL]->(c:Company)
+MATCH (p:Person {name: 'Michael Rubens Bloomberg'})-[:HAS_CONTROL]->(c:Company)
 RETURN p, c
 ----
 
@@ -248,7 +243,7 @@ Do these companies own any properties?
 
 [source,cypher]
 ----
-MATCH (p:Person {name: "Michael Rubens Bloomberg"})-[:HAS_CONTROL]->(c:Company)-[:OWNS]->(pr:Property)
+MATCH (p:Person {name: 'Michael Rubens Bloomberg'})-[:HAS_CONTROL]->(c:Company)-[:OWNS]->(pr:Property)
 RETURN p, c, pr
 ----
 
@@ -256,7 +251,7 @@ Did these companies make any political donations?
 
 [source,cypher]
 ----
-MATCH (p:Person {name: "Michael Rubens Bloomberg"})-[:HAS_CONTROL]->(c:Company)-[:DONATED]->(r:Recipient)
+MATCH (p:Person {name: 'Michael Rubens Bloomberg'})-[:HAS_CONTROL]->(c:Company)-[:DONATED]->(r:Recipient)
 RETURN p, c, r
 ----
 
@@ -279,7 +274,7 @@ To take advantage of `CONTAINS`, we need to introduce the `WHERE` clause. We can
 [source,cypher]
 ----
 MATCH (p:Person)
-WHERE p.name CONTAINS "Bloomberg"
+WHERE p.name CONTAINS 'Bloomberg'
 RETURN p
 ----
 
@@ -344,7 +339,7 @@ We want to find all properties in London; however, we notice that the `address` 
 [source,cypher]
 ----
 MATCH (p:Person)-[:HAS_CONTROL]->(c:Company)
-WHERE p.name CONTAINS "Abigail Johnson"
+WHERE p.name CONTAINS 'Abigail Johnson'
 RETURN p,c
 ----
 
@@ -377,7 +372,7 @@ Show me all properties in London with a value over 10 million pounds that are ow
 ----
 MATCH path=(prop:Property)<-[:OWNS]-(:Company)<-[:HAS_CONTROL]-(per:Person)
 WHERE prop.price > 10000000 AND prop.address =~ "(?i).*London.*" 
-    AND per.nationality = "American"
+    AND per.nationality = 'American'
 RETURN path
 ----
 
@@ -385,7 +380,7 @@ For a given individual, what is the total amount of political donations made by 
 
 [source,cypher]
 ----
-MATCH (p:Person {name: "Ms Abigail Johnson"})-[:HAS_CONTROL]->(c:Company)-[d:DONATED]->(:Recipient)
+MATCH (p:Person {name: 'Ms Abigail Johnson'})-[:HAS_CONTROL]->(c:Company)-[d:DONATED]->(:Recipient)
 RETURN sum(d.value) AS totalDonations, p.name AS person, c.name AS company
 ----
 **Here we perform an aggregation, summing the `value` property of all `DONATED` relationships matched in our pattern. Read more about aggregation functions in Cypher link:https://neo4j.com/docs/cypher-manual/current/functions/aggregating/[here^].**
@@ -440,11 +435,11 @@ ORDER BY total DESC
 
 Dates are treated as a special type in Neo4j and have their own functions in Cypher.
 
-For example, to construct a Date:
+For example, to construct a date:
 
 [source,cypher]
 ----
-RETURN date("2019-03-06")
+RETURN date('2019-03-06')
 ----
 
 We can filter for events in a date range like this:
@@ -452,7 +447,7 @@ We can filter for events in a date range like this:
 [source,cypher]
 ----
 MATCH (c:Company)
-WHERE date("2017-01-01") < c.incorporationDate < date("2017-01-15")
+WHERE date('2017-01-01') < c.incorporationDate < date('2017-01-15')
 RETURN c
 ----
 
@@ -465,7 +460,7 @@ RETURN c
 [source,cypher]
 ----
 MATCH (c:Company)-[r:DONATED]->(party:Recipient)
-WHERE Date("2016-01-01") < c.incorporationDate
+WHERE date('2016-01-01') < c.incorporationDate
 RETURN c
 ----
 
@@ -501,8 +496,6 @@ MATCH path=(p:Property)<-[:OWNS]-(:Company)<-[:HAS_CONTROL]-(:Person)
 WHERE distance(p.location, Point({latitude:51.5122338, longitude:-0.1180369})) < 10000
 RETURN path
 ----
-
-== Location Data - Exercise
 
 == Open Ended Exercise
 
