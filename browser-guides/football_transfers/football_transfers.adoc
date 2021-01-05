@@ -19,7 +19,7 @@ transfers using Neo4j.
 This is the transfers graph model that we’re going to work our way
 towards:
 
-[.image]#image:{img}/footballtransfer-model.png[footballtransfer-model,width=500]#
+[.image]#image:{img}/footballtransfer-model.png[footballtransfer-model,width=700]#
 
 == Looking at the Data
 
