@@ -2,8 +2,7 @@
 :author: Mark Needham
 :description: Import, clean, and analyze football transfer data with Neo4j
 :img: https://s3.amazonaws.com/guides.neo4j.com/football_transfers/img
-:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
-:backup-data: https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com
+:data-url: https://s3-eu-west-1.amazonaws.com/football-transfers.neo4j.com
 :tags: sports, cypher, apoc, load-csv, data-analysis
 :neo4j-version: 3.5
 :icons: font
@@ -20,13 +19,13 @@ transfers using Neo4j.
 This is the transfers graph model that we’re going to work our way
 towards:
 
-[.image]#image:{img}/footballtransfer-model.png[footballtransfer-model]#
+[.image]#image:{img}/footballtransfer-model.png[footballtransfer-model,width=500]#
 
 == Looking at the Data
 
 We’ve written a bunch of transfers into a CSV file, so let’s have a quick look at the first few rows. Run the following query:
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
@@ -75,7 +74,7 @@ Looks good. Let’s get the data imported.
 
 First we’ll import the players. Run the following query:
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 USING PERIODIC COMMIT
 LOAD CSV WITH HEADERS FROM '{data-url}/transfers-all.csv' AS row
@@ -99,7 +98,7 @@ Looks good!
 
 Next we’ll import the countries that those players represent. Run the following queries:
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
@@ -108,7 +107,7 @@ WITH DISTINCT row.playerNationality AS nationality
 MERGE (country:Country {name: nationality })
 ----
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 USING PERIODIC COMMIT
 LOAD CSV WITH HEADERS FROM '{data-url}/transfers-all.csv' AS row
@@ -122,7 +121,7 @@ MERGE (player)-[:PLAYS_FOR]->(country)
 
 Next up, we’ll import the clubs. The way the data is structured for clubs is quite interesting. We have buying and selling clubs so the easiest approach is to write two import queries, one for each:
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
@@ -133,7 +132,7 @@ MERGE (country:Country {name: row.sellerClubCountry})
 MERGE (club)-[:PART_OF]->(country)
 ----
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
@@ -150,7 +149,7 @@ It’s a bit annoying that we have to write two queries to do this. Maybe there�
 
 Indeed there is! Our good friend `+UNWIND+` can help us out here:
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 WITH '{data-url}/transfers-all.csv' AS url
 LOAD CSV WITH HEADERS FROM url AS row
@@ -168,7 +167,7 @@ MERGE (c)-[:PART_OF]->(country)
 
 == Importing the data: Transfers
 
-[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 USING PERIODIC COMMIT
 LOAD CSV WITH HEADERS FROM '{data-url}/transfers-all.csv' AS row

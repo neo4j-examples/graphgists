@@ -38,7 +38,7 @@ Outline:
 
 Be sure to enable multi-statement query editor in Neo4j Browser, then run:
 
-[source,cypher]
+[source,cypher,subs=attributes]
 ----
 CREATE CONSTRAINT ON (c:Company) ASSERT c.companyNumber IS UNIQUE;
 CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name) IS NODE KEY;

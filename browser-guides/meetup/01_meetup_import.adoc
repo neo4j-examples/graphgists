@@ -108,7 +108,7 @@ Let's see if we can fix that by importing all countries and cities in the world.
 
 == Import World Cities/Countries
 
-[source,cypher]
+[source,cypher,subs=attributes]
 ----
 LOAD CSV WITH HEADERS 
 FROM '{data-url}/worldcities.csv' AS line
