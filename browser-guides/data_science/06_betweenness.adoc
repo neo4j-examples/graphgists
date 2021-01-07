@@ -3,6 +3,7 @@
 :description: Get an introduction to the graph data science library with hands-on practice with some of the key graph algorithms
 :img: https://s3.amazonaws.com/guides.neo4j.com/data_science/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data_science
+:guides: https://s3.amazonaws.com/guides.neo4j.com/data_science
 :tags: data-science, gds, graph-algorithms, betweenness, centrality
 :neo4j-version: 3.5
 

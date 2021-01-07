@@ -3,6 +3,7 @@
 :description: Analyze API data from Meetup.com with Neo4j
 :img: https://s3.amazonaws.com/guides.neo4j.com/meetup/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/meetup
+:guides: https://s3.amazonaws.com/guides.neo4j.com/meetup
 :tags: cypher, data-analysis, similarity, import, load-csv
 :neo4j-version: 3.5
 :icons: font

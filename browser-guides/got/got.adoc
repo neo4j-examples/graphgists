@@ -1,0 +1,28 @@
+= Neo4j Data Science
+:author: Mark Needham
+:description: Explore the Game of Thrones world with Cypher and data science algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/got/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/got
+:guides: https://s3.amazonaws.com/guides.neo4j.com/got
+:tags: intro, cypher, load-csv, gds, algorithms, data-science
+:neo4j-version: 3.5
+
+== Welcome to Neo4j Data Science
+
+ifdef::env-guide[]
+. pass:a[<a play-topic='{guides}/01_eda.html'>Exploratory Data Analysis</a>]
+. pass:a[<a play-topic='{guides}/02_algorithms.html'>Applied Graph Algorithms</a>]
+endif::[]
+
+ifdef::env-graphgist[]
+. link:{gist}/01_eda.adoc[Exploratory Data Analysis^]
+. link:{gist}/02_algorithms.adoc[Applied Graph Algorithms^]
+endif::[]
+
+== Further Resources
+
+* https://neo4j.com/graphgists[Graphgist Examples]
+* https://neo4j.com/docs/stable/cypher-refcard/[Cypher Reference Card]
+* https://neo4j.com/docs/cypher-manual/current/[Neo4j
+Cypher Manual]
+* https://graphdatabases.com[e-book: Graph Databases (free)]

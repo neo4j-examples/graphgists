@@ -1,0 +1,470 @@
+== Applied Graph Algorithms
+:author: Mark Needham
+:description: Explore the Game of Thrones world with Cypher and data science algorithms
+:img: https://s3.amazonaws.com/guides.neo4j.com/got/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/got
+:guides: https://s3.amazonaws.com/guides.neo4j.com/got
+:tags: intro, cypher, load-csv, gds, algorithms, data-science
+:neo4j-version: 3.5
+
+== Applied Graph Algorithms
+
+Welcome to the first of a set of interactive guides. In these guides,
+we’ll learn how to use the Neo4j Graph Data Science package.
+
+Let’s get started!
+
+== Installing Graph Data Science
+
+* In Neo4j Desktop, go to the `Plugins` section on a DBMS instance
+* Click `Install plugin`, which will pull down the jar and place it in the `+$NEO4J_HOME/plugins+` folder.
+* Restart Neo4j
+* Run the following query to check it installed correctly:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL dbms.procedures()
+YIELD name WHERE name STARTS WITH 'gds'
+RETURN count(*)
+----
+
+If we get a result of `+0+`, it hasn’t installed correctly. Feel free to ask for help on the link:https://community.neo4j.com[Community Site], if there are problems!
+
+== Betweenness Centrality
+
+Betweenness centrality identifies nodes that are strategically
+positioned in the network, meaning that information will often travel
+through that person. Such an intermediary position gives that person
+power and influence.
+
+Betweenness centrality is a raw count of the number of short paths that
+go through a given node. For example, if a node is located on a
+bottleneck between two large communities, then it will have high
+betweenness.
+
+image:{img}/betweenness-centrality.png[betweenness-centrality]
+
+The red nodes have a high betweenness centrality and are connectors of
+clusters.
+
+== Betweenness Centrality
+
+We’ll start by calculating the betweenness centrality for the characters
+who interacted in the first book. We can do this by calling the
+`+gds.betweenness.stream+` procedure with the label `+Character+` and
+relationship type `+INTERACTS1+`.
+
+Run the following query to learn who the most influential characters
+are:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.betweenness.stream({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS1: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+}) YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS name, score
+ORDER BY score DESC LIMIT 10
+----
+
+If you’ve read the books or watched the TV series, hopefully the results
+aren’t too surprising!
+
+== Betweenness Centrality vs Biggest Communicators
+
+We can add to our query and see how the betweenness scores compare to
+the total interactions a character had:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.betweenness.stream({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS1: {
+      orientation: 'UNDIRECTED'
+    }
+  }
+}) YIELD nodeId, score
+MATCH (c:Character) WHERE ID(c) = nodeId
+WITH c, score, [(c)-[r:INTERACTS1]-(other) | {character: other.name, weight: r.weight}] AS interactions
+RETURN c.name, score,
+       apoc.coll.sum([i in interactions | i.weight]) AS totalInteractions,
+       [i in apoc.coll.reverse(apoc.coll.sortMaps(interactions, 'weight'))[..5] | i.character] as charactersInteractedWith
+ORDER BY score DESC
+LIMIT 10
+----
+
+From this query, we can see that it’s not necessarily the most talkative
+characters that have the most influence on the network.
+
+Try changing the query to order by `+totalInteractions+` instead of
+`+score+` to see this more clearly.
+
+== Storing Betweenness Centrality
+
+Although the betweenness centrality algorithm runs very quickly on this
+dataset, we wouldn’t usually be running this types of algorithms in the
+normal request/response flow of a web/mobile app. Instead, we can
+store the result of the calculation as a property on the node and then
+refer to it in future queries.
+
+Each of the algorithms has a variant that saves its output to the
+database rather than returning a stream. Let’s run the betweenness
+centrality algorithm and store the result as a property named
+`+book1BetweennessCentrality+`:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.betweenness.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS1: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book1BetweennessCentrality'
+})
+YIELD minimumScore, maximumScore, scoreSum, nodePropertiesWritten
+----
+
+== Querying Betweenness Centrality
+
+We can write the following query to find the most influential
+characters:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+RETURN c.name, c.book1BetweennessCentrality AS centrality
+ORDER BY centrality DESC
+LIMIT 10
+----
+
+*Note:* This returns the same results as the query 3 slides back that calculated the centrality on runtime.
+
+== Exercise: Betweenness Centrality for books 2-5
+
+Now we want to calculate the betweenness centrality for the other books
+in the series and store the results in the database.
+
+* Write queries that call `+gds.betweenness+` for the `+INTERACTS2+`,
+`+INTERACTS3+`, and `+INTERACTS45+` relationship types.
+
+After you’ve done that see if you can write queries to answer the
+following questions:
+
+* Which character had the biggest increase in influence from book 1 to
+5?
+* Which character had the biggest decrease?
+
+Bonus question:
+
+* Which characters who were in the top 10 influencers in book 1 are also
+in the top 10 influencers in book 5?
+
+== Answer: Betweenness Centrality for books 2-5
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.betweenness.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS2: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book2BetweennessCentrality'
+})
+YIELD minimumScore, maximumScore, scoreSum, nodePropertiesWritten
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.betweenness.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS3: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book3BetweennessCentrality'
+})
+YIELD minimumScore, maximumScore, scoreSum, nodePropertiesWritten
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.betweenness.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS45: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book45BetweennessCentrality'
+})
+YIELD minimumScore, maximumScore, scoreSum, nodePropertiesWritten
+----
+
+== Answer: Increase in influence
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+RETURN c.name, c.book1BetweennessCentrality, c.book45BetweennessCentrality, c.book45BetweennessCentrality - c.book1BetweennessCentrality AS difference
+ORDER BY difference DESC
+LIMIT 10
+----
+
+== Answer: Decrease in influence
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+RETURN c.name, c.book1BetweennessCentrality, c.book45BetweennessCentrality, c.book45BetweennessCentrality - c.book1BetweennessCentrality AS difference
+ORDER BY difference
+LIMIT 10
+----
+
+== Answer: Consistent influencers
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+WITH c
+ORDER BY c.book1BetweennessCentrality DESC
+LIMIT 10
+
+WITH collect(c.name) AS characters
+MATCH (c:Character)
+
+WITH c, c.book45BetweennessCentrality AS book45BetweennessCentrality, characters
+ORDER BY book45BetweennessCentrality DESC
+LIMIT 10
+
+WITH c WHERE c.name IN characters
+RETURN c.name, c.book1BetweennessCentrality, c.book45BetweennessCentrality
+LIMIT 10
+----
+
+== Page Rank
+
+This is another version of weighted degree centrality with a feedback
+loop. This time, you only get your “fair share” of your neighbor’s
+importance. Your neighbor’s importance is split between their neighbors, proportional to the number of interactions with that neighbor (i.e. if your neighbor has high importance, you get part of that score too).
+
+Intuitively, PageRank captures how effectively you are taking advantage
+of your network contacts. In our context, PageRank centrality nicely
+captures tensions in the Game of Thrones story. Indeed, major developments occur when two important characters interact.
+
+image:{img}/PageRanks-Example.png[PageRanks-Example]
+
+== Calculating Page Rank
+
+This time, let's skip straight to the version of this procedure that
+stores results straight into the database.
+
+Run the following queries to calculate page rank scores for each of the
+books:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.pageRank.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS1: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book1PageRank'
+})
+YIELD ranIterations, nodePropertiesWritten
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.pageRank.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS2: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book2PageRank'
+})
+YIELD ranIterations, nodePropertiesWritten
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.pageRank.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS3: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book3PageRank'
+})
+YIELD ranIterations, nodePropertiesWritten
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.pageRank.write({
+  nodeProjection: 'Character',
+  relationshipProjection: {
+    INTERACTS45: {
+      orientation: 'UNDIRECTED'
+    }
+  },
+  writeProperty: 'book45PageRank'
+})
+YIELD ranIterations, nodePropertiesWritten
+----
+
+== Querying Page Rank
+
+We can now write a query to see how influential the characters are
+across a variety of different metrics:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+WITH c, [(c)-[r:INTERACTS1]-(other) | {character: other.name, weight: r.weight}] AS interactions
+RETURN c.name, c.book1PageRank, c.book1BetweennessCentrality,
+       apoc.coll.sum([i in interactions | i.weight]) AS totalInteractions,
+       [i in apoc.coll.reverse(apoc.coll.sortMaps(interactions, 'weight'))[..5] | i.character] as charactersInteractedWith
+ORDER BY c.book1PageRank DESC
+LIMIT 10
+----
+
+You’ll notice that there are some characters who have a high page rank
+but a very low betweenness centrality score.
+
+This suggests that they aren’t necessarily influential in their own
+right, but are friends with important people. _Catelyn-Stark_ is a good example of a character that fits this profile (centrality is lower than _Robert-Baratheon_ and _Jon-Snow_, but higher pagerank, likely due to being wife of Eddard Stark).
+
+== Community Detection
+
+We can detect communities in our data by running an algorithm which
+traverses the graph structure to find highly connected subgraphs with
+fewer connections other other subgraphs.
+
+Run the following query to calculate the communities that exist based on
+interactions across all the books.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.labelPropagation.write({
+  nodeQuery: 'MATCH (c:Character) RETURN id(c) as id',
+  relationshipQuery: 'MATCH (c:Character)-[rel]->(c2) RETURN id(c) as source, id(c2) as target, SUM(rel.weight) as weight',
+  writeProperty: 'community'
+})
+YIELD communityCount, ranIterations, didConverge
+----
+
+== Querying Communities
+
+We can then write a query to see what communities we have and how many
+members they have:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+WHERE exists(c.community)
+RETURN c.community, count(*) AS count
+ORDER BY count DESC
+----
+
+There seem to be 1 very large cluster of people and then a lot of
+smaller ones.
+
+== Querying Communities
+
+It’d be good to know who are the influential people in each community.
+To do that we’ll need to calculate a Pagerank score for each character
+across all the books:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL gds.pageRank.write({
+  nodeQuery: 'MATCH (c:Character) RETURN id(c) as id',
+  relationshipQuery: 'MATCH (c:Character)-[rel]->(c2) RETURN id(c) as source, id(c2) as target, SUM(rel.weight) as weight',
+  writeProperty: 'pageRank'
+})
+YIELD ranIterations, nodePropertiesWritten
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+WHERE exists(c.community)
+WITH c ORDER BY c.pageRank DESC
+RETURN c.community as cluster, count(*) AS count, collect(c.name)[..10]
+ORDER BY count DESC
+----
+
+Most people are in a big community containing _Tyrion-Lannister_, but we
+also have smaller communities which contain _Theon-Greyjoy_ and _Daenerys-Targaryen_, who are other important characters.
+
+== Visualising Communities
+
+We can write the following community to see the interactions between
+people in one of the communities:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character) WHERE EXISTS(c.community)
+WITH c.community AS community, COUNT(*) AS count
+ORDER BY count DESC
+SKIP 1 LIMIT 1
+MATCH path = (c:Character {community: community})--(c2:Character {community: community})
+return path
+----
+
+== Intra community Page Rank
+
+We can also calculate the Pagerank within communities.
+
+Run the following query to calculate the pagerank for the 2nd largest
+community:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character) WHERE EXISTS(c.community)
+WITH c.community AS communityId, COUNT(*) AS count
+ORDER BY count DESC
+SKIP 1 LIMIT 1
+CALL apoc.cypher.doIt(
+  "CALL gds.pageRank.write({nodeQuery: 'MATCH (c:Character) WHERE c.community =" + communityId + " RETURN id(c) as id', relationshipQuery: 'MATCH (c:Character)-[rel]->(c2) WHERE c.community =" + communityId + " AND c2.community =" + communityId + " RETURN id(c) as source,id(c2) as target, sum(rel.weight) as weight', writeProperty: 'communityPageRank'}) YIELD nodePropertiesWritten", {})
+YIELD value
+RETURN value
+----
+
+== Intra community Page Rank
+
+We can run the following query to find the most influential character
+within that cluster:
+
+[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character) WHERE EXISTS(c.community)
+WITH c.community AS communityId, COUNT(*) AS count
+ORDER BY count DESC
+SKIP 1 LIMIT 1
+MATCH (c:Character) WHERE c.community = communityId
+RETURN c.name, c.communityPageRank
+ORDER BY c.communityPageRank DESC
+LIMIT 10
+----
+
+== Other materials
+
+* https://github.com/datagovsg/data-quality[Data quality Github project]
+* http://scikit-learn.org/stable/modules/outlier_detection.html[Scikit learn outlier detection]
+* http://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster[Scikit learn cluster]

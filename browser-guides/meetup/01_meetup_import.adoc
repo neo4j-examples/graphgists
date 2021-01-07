@@ -2,6 +2,7 @@
 :data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
 :img: https://s3.amazonaws.com/guides.neo4j.com/meetup/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/meetup
+:guides: https://s3.amazonaws.com/guides.neo4j.com/meetup
 :icons: font
 :neo4j-version: 3.5
 

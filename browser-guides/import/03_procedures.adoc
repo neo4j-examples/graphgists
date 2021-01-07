@@ -1,9 +1,10 @@
 = Neo4j import: Custom procedures
 :author: Mark Needham
 :description: Learn how to use 3 methods for importing data into Neo4j
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
 :img: https://s3.amazonaws.com/guides.neo4j.com/import/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/import
-:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:guides: https://s3.amazonaws.com/guides.neo4j.com/import
 :tags: import, data, load, custom-procedures, user-defined, procedures
 :neo4j-version: 3.5
 :icons: font

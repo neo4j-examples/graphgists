@@ -1,0 +1,285 @@
+= Recipes Guide - BBC Food Graph
+:author: Mark Needham
+:description: Explore the BBC Food data in Neo4j for recipes and ingredients
+:img: https://s3.amazonaws.com/guides.neo4j.com/recipes/img
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/recipes
+:guides: https://s3.amazonaws.com/guides.neo4j.com/recipes
+:tags: food, cypher, apoc, data-analysis, parameters
+:neo4j-version: 3.5
+:icons: font
+
+== Recipes Overview
+
+image:{img}/dark-chocolate-pudding-with-malted-cream.jpg[image,width=300]
+
+This guide will demonstrate how Neo4j can be used to make sense of
+https://www.bbcgoodfood.com/[BBC GoodFood] recipes data.
+
+== Data Import
+
+First up, let’s import the data. We can do this by executing the
+next several queries:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+//set up indexes for query performance
+CREATE INDEX FOR (r:Recipe) ON (r.id);
+CREATE INDEX FOR (i:Ingredient) ON (i.name);
+CREATE INDEX FOR (k:Keyword) ON (k.name);
+CREATE INDEX FOR (d:DietType) ON (d.name);
+CREATE INDEX FOR (a:Author) ON (a.name);
+CREATE INDEX FOR (c:Collection) ON (c.name);
+----
+
+== Data Import, part 2
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+//import recipes to the graph
+CALL apoc.load.json('{data-url}/stream_clean.json') YIELD value
+WITH value.page.article.id AS id,
+       value.page.title AS title,
+       value.page.article.description AS description,
+       value.page.recipe.cooking_time AS cookingTime,
+       value.page.recipe.prep_time AS preparationTime,
+       value.page.recipe.skill_level AS skillLevel
+MERGE (r:Recipe {id: id})
+SET r.cookingTime = cookingTime,
+    r.preparationTime = preparationTime,
+    r.name = title,
+    r.description = description,
+    r.skillLevel = skillLevel;
+----
+
+== Data Import, part 3
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+//import authors and connect to recipes
+CALL apoc.load.json('{data-url}/stream_clean.json') YIELD value
+WITH value.page.article.id AS id,
+       value.page.article.author AS author
+MERGE (a:Author {name: author})
+WITH a,id
+MATCH (r:Recipe {id:id})
+MERGE (a)-[:WROTE]->(r);
+----
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+//import ingredients and connect to recipes
+CALL apoc.load.json('{data-url}/stream_clean.json') YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.ingredients AS ingredients
+MATCH (r:Recipe {id:id})
+FOREACH (ingredient IN ingredients |
+  MERGE (i:Ingredient {name: ingredient})
+  MERGE (r)-[:CONTAINS_INGREDIENT]->(i)
+);
+----
+
+== Data Import, part 4
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+//import keywords and connect to recipes
+CALL apoc.load.json('{data-url}/stream_clean.json') YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.keywords AS keywords
+MATCH (r:Recipe {id:id})
+FOREACH (keyword IN keywords |
+  MERGE (k:Keyword {name: keyword})
+  MERGE (r)-[:KEYWORD]->(k)
+);
+----
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+//import dietTypes and connect to recipes
+CALL apoc.load.json('{data-url}/stream_clean.json') YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.diet_types AS dietTypes
+MATCH (r:Recipe {id:id})
+FOREACH (dietType IN dietTypes |
+  MERGE (d:DietType {name: dietType})
+  MERGE (r)-[:DIET_TYPE]->(d)
+);
+----
+
+== Data Import, part 5
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+//import collections and connect to recipes
+CALL apoc.load.json('{data-url}/stream_clean.json') YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.collections AS collections
+MATCH (r:Recipe {id:id})
+FOREACH (collection IN collections |
+  MERGE (c:Collection {name: collection})
+  MERGE (r)-[:COLLECTION]->(c)
+);
+----
+
+== Graph Schema
+
+Now let’s review the metagraph and see the types of nodes and
+relationships we’re going to be working with.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL db.schema.visualization()
+----
+
+We can see that the graph is based around Recipes, which are then
+connected to several other entities. A recipe contains Ingredients, can
+be part of a Collection, is written by an Author, can form part of a
+DietType, and has certain Keywords.
+
+== Most common ingredients
+
+What are the most popular ingredients and in how many recipes have they
+been used?
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (i:Ingredient)<-[rel:CONTAINS_INGREDIENT]-(r:Recipe)
+RETURN i.name, count(rel) as recipes
+ORDER BY recipes DESC
+----
+
+The items at the top of the list aren’t all that surprising - olive oil,
+butter, and garlic! Further down the list we can see some ingredients
+that are probably used in cakes: sugar, milk, self-raising flour.
+
+== I want chocolate cake!
+
+This dataset also contains collections, and one of the tastiest looking
+ones is the collection of chocolate cakes. The following query returns
+the recipes in this collection:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (:Collection {name: 'Chocolate cake'})<-[:COLLECTION]-(recipe)
+RETURN recipe.id, recipe.name, recipe.description
+----
+
+A hunger-inducing list, but let’s not be greedy. We’ll zoom in on that
+seriously rich chocolate cake.
+
+== Seriously rich chocolate cake
+
+We’ll start with the following query, which returns a graph of the
+recipe and its ingredients:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH path = (r:Recipe {id:'97123'})-[:CONTAINS_INGREDIENT]->(i:Ingredient)
+RETURN path
+----
+
+== Are there any similar cakes to this one?
+
+Ok, so we’ve now baked this cake a few times, and while it was delicious,
+we’d like to try out some other recipes. What other cakes are there
+similar to this one?
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (r:Recipe {id:'97123'})-[:CONTAINS_INGREDIENT]->(i:Ingredient)<-[:CONTAINS_INGREDIENT]-(rec:Recipe)
+RETURN rec.id, rec.name, collect(i.name) AS commonIngredients
+ORDER BY size(commonIngredients) DESC
+LIMIT 10
+----
+
+The query above:
+
+* finds all the ingredients in the seriously rich chocolate cake
+* finds other recipes that also contain these ingredients
+* returns the recipes that contain the most common ingredients
+
+== What other recipes has the author published?
+
+Another type of recommendation query would be to find the other recipes
+published by the author of seriously rich chocolate cake. The following
+query does this:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (rec:Recipe)<-[:WROTE]-(a:Author)-[:WROTE]->(r:Recipe {id:'97123'})
+RETURN rec.id, rec.name, rec.description
+----
+
+== What can I make with the ingredients in my kitchen?
+
+=== Show me the chillis
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (r:Recipe)
+WHERE (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {name: 'chilli'})
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.name]
+       AS ingredients
+----
+
+== What can I make with the ingredients in my kitchen?
+
+=== Recipes with multiple ingredients (Part 1)
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (r:Recipe)
+WHERE (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {name: 'chilli'})
+AND   (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {name: 'prawn'})
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.name]
+       AS ingredients
+LIMIT 20
+----
+
+== What can I make with the ingredients in my kitchen?
+
+=== Recipes with multiple ingredients (Part 2)
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+:param ingredients => ['chilli', 'prawn']
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (r:Recipe)
+WHERE all(i in $ingredients WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {name: i})))
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.name]
+       AS ingredients
+ORDER BY size(ingredients)
+LIMIT 20
+----
+
+== Mark’s allergic to all the things
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+:param allergens =>   ['egg', 'milk'];
+:param ingredients => ['coconut milk', 'rice'];
+----
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (r:Recipe)
+
+WHERE all(i in $ingredients WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {name: i})))
+AND none(i in $allergens WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {name: i})))
+
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.name]
+       AS ingredients
+ORDER BY size(ingredients)
+LIMIT 20
+----

@@ -3,6 +3,7 @@
 :description: Learn how to use 3 methods for importing data into Neo4j
 :img: https://s3.amazonaws.com/guides.neo4j.com/import/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/import
+:guides: https://s3.amazonaws.com/guides.neo4j.com/import
 :data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
 :tags: import, data, load, load-csv
 :neo4j-version: 3.5

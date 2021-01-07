@@ -1,7 +1,8 @@
 = Game of Thrones: Characters and Episodes
 :csv-url: https://raw.githubusercontent.com/mneedham/neo4j-got/master/data/import
 :img: https://s3.amazonaws.com/guides.neo4j.com/got_wwc/img
-:guides: https://guides.neo4j.com/got_wwc
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/got_wwc
+:guides: https://s3.amazonaws.com/guides.neo4j.com/got_wwc
 :icons: font
 :neo4j-version: 3.5
 

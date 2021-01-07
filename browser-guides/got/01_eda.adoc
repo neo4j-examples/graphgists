@@ -1,0 +1,289 @@
+= Exploratory Data Analysis
+:author: Mark Needham
+:description: Explore the Game of Thrones world with Cypher and data science algorithms
+:data-url: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/data
+:img: https://s3.amazonaws.com/guides.neo4j.com/got/img
+:gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/got
+:guides: https://s3.amazonaws.com/guides.neo4j.com/got
+:tags: intro, cypher, load-csv, gds, algorithms, data-science
+:neo4j-version: 3.5
+
+== Exploratory Data Analysis
+
+Welcome to the first of a set of interactive guides. In these guides,
+we’ll learn how to explore graph datasets using Cypher - the graph
+database query language.
+
+Let’s get started!
+
+== Our dataset
+
+image:{img}/AStormOfSwords.jpg[AStormOfSwords]
+
+Most of this demo is based on work done by Dr. Andrew Beveridge, based
+on his https://networkofthrones.wordpress.com/[Network of Thrones]
+research.
+
+Article: https://www.macalester.edu/~abeverid/index.html[Beveridge,
+Andrew, Shan, Jie. Network of Thrones. Math Horizons Magazine, Vol. 23,
+No. 4 (2016) pp. 18-22.]
+
+== Graph of Character Interactions
+
+Build a graph where each character of the story is a node and the
+relationships represent character interactions.
+
+Link two characters each time their names (or nicknames) *appear within
+15 words of one another*.
+
+Each link corresponds to an interaction between the two characters. Note
+that this interaction could be direct or indirect. Here are some of the
+types of interactions that our method picks up.
+
+* Two characters appearing together in the same location
+* Two characters in conversation
+* One character talking about another character
+* One character listening to a third character talk about a second
+character
+* A third character talking about two other characters
+
+How the data was extracted from the books is described in detail here:
+https://networkofthrones.wordpress.com/from-book-to-network/
+
+image:{img}/char_cooccurence.png[char_cooccurence,float=right]
+
+== Exploring the data
+
+The data containing character interactions for all 5 books is available
+in the https://github.com/mathbeveridge/asoiaf[asoiaf GitHub
+repository].
+
+Characters are stored in files with the `+-nodes.csv+` suffix. The
+interactions between those characters are stored in files with the
+`+-edges.csv+` suffix.
+
+Let’s explore one of those files using Cypher’s `+LOAD CSV+` command:
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book2-edges.csv' AS row
+RETURN row
+LIMIT 10
+----
+
+This query returns the first 10 rows of data from
+`+asoiaf-book2-edges.csv+`. `+row+` contains a map of key/value pairs
+representing the value of a particular column for a given row.
+
+== Exploring the data
+
+We could write other exploratory queries without importing anything into
+the database.
+
+=== How many different interactions were there in the 2nd book?
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book2-edges.csv' AS row
+RETURN row
+LIMIT 10
+----
+
+== Exploring the data
+
+=== What’s the most common number of interactions?
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book2-edges.csv' AS row
+RETURN row.weight, count(*)
+ORDER BY count(*) DESC
+LIMIT 10
+----
+
+=== Which character had the most different interactions?
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book2-edges.csv' AS row
+UNWIND [ row.Source, row.Target ] AS character
+RETURN character, count(*)
+ORDER BY count(*) DESC
+LIMIT 10
+----
+
+That last one is a bit gnarly, so let’s import the data into Neo4j to
+make things a bit easier.
+
+== Importing the data
+
+Before we import the data, we’ll create a constraint on
+`+:Character(name)+` so that we don’t accidentally create duplicate
+characters.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CREATE CONSTRAINT ON (c:Character)
+ASSERT c.name IS UNIQUE;
+----
+
+== Importing the data
+
+Run the following queries to import the interactions for all 5 books
+into Neo4j:
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book1-edges.csv' AS row
+MERGE (src:Character {name: row.Source})
+MERGE (tgt:Character {name: row.Target})
+// relationship for the book
+MERGE (src)-[r:INTERACTS1]->(tgt)
+ON CREATE SET r.weight = toInteger(row.weight), r.book=1
+----
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book2-edges.csv' AS row
+MERGE (src:Character {name: row.Source})
+MERGE (tgt:Character {name: row.Target})
+// relationship for the book
+MERGE (src)-[r:INTERACTS2]->(tgt)
+ON CREATE SET r.weight = toInteger(row.weight), r.book=2
+----
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book3-edges.csv' AS row
+MERGE (src:Character {name: row.Source})
+MERGE (tgt:Character {name: row.Target})
+// relationship for the book
+MERGE (src)-[r:INTERACTS3]->(tgt)
+ON CREATE SET r.weight = toInteger(row.weight), r.book=3
+----
+
+[source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+LOAD CSV WITH HEADERS FROM '{data-url}/asoiaf-book45-edges.csv' AS row
+MERGE (src:Character {name: row.Source})
+MERGE (tgt:Character {name: row.Target})
+// relationship for the book
+MERGE (src)-[r:INTERACTS45]->(tgt)
+ON CREATE SET r.weight = toInteger(row.weight), r.book=45
+----
+
+== The data model
+
+Run the following query to see what we’ve created:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+CALL db.schema.visualization()
+----
+
+== The Graph of Thrones
+
+The following query will show us 50 interactions between characters in
+the first book:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH p=(:Character)-[:INTERACTS1]-(:Character)
+RETURN p
+LIMIT 50
+----
+
+Try tweaking the query to find interactions from the other books.
+
+== Analyzing the network
+
+We can run exploratory queries on the graph as well.
+
+=== How many characters do we have?
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)
+RETURN count(c)
+----
+
+=== How many interactions were there in each book?
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH ()-[r]->()
+RETURN r.book as book, count(r)
+ORDER BY book
+----
+
+== Summary statistics
+
+We can also calculate network summary statistics.
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)-->()
+WITH c, count(*) AS num
+RETURN min(num) AS min, max(num) AS max, avg(num) AS avg_characters, stdev(num) AS stdev
+----
+
+And even do that by book:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (c:Character)-[r]->()
+WITH r.book as book, c, count(*) AS num
+RETURN book, min(num) AS min, max(num) AS max, avg(num) AS avg_characters, stdev(num) AS stdev
+ORDER BY book
+----
+
+== Diameter of the network
+
+The diameter (or geodesic) of a network is defined as the longest
+shortest path in the network.
+
+We can write the following query to find it in our graph for the 2nd
+book:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+// Find maximum diameter of network
+// maximum shortest path between two nodes
+MATCH (a:Character), (b:Character) WHERE id(a) > id(b)
+MATCH p = shortestPath((a)-[:INTERACTS2*]-(b))
+
+WITH length(p) AS len, p
+ORDER BY len DESC
+LIMIT 5
+RETURN nodes(p) AS path, len
+----
+
+This query creates a cartesian product combining all characters so we
+need to be careful when running this on larger graphs or we’ll get an
+`+OutOfMemoryException+`.
+
+== Pivotal nodes
+
+A node is said to be pivotal if it lies on all shortest paths between
+two other nodes in the network. We can find all pivotal nodes in the
+network.
+
+The following query will find all the pivotal nodes in the network for
+the first book:
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+MATCH (a:Character), (b:Character) WHERE id(a) > id(b)
+MATCH p = allShortestPaths((a)-[:INTERACTS1*]-(b))
+
+WITH collect(p) AS paths, a, b
+UNWIND nodes(head(paths)) as c // first path
+
+WITH *
+WHERE NOT c IN [a,b]
+AND all(path IN tail(paths) WHERE c IN nodes(path))
+
+RETURN a.name, b.name, c.name AS PivotalNode, length(head(paths)) AS pathLength, length(paths) AS pathCount
+SKIP 490
+LIMIT 10
+----

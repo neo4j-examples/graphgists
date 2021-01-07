@@ -3,6 +3,7 @@
 :description: Learn to use some of the most popular procedures in the APOC library and explore the capabilities the library can provide
 :img: https://s3.amazonaws.com/guides.neo4j.com/apoc/img
 :gist: https://raw.githubusercontent.com/neo4j-examples/graphgists/master/browser-guides/apoc
+:guides: https://s3.amazonaws.com/guides.neo4j.com/apoc
 :tags: apoc, procedures, temporal, load-json, data-import, refactor, batching, periodic
 :neo4j-version: 3.5
 
