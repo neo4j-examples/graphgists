@@ -1,4 +1,4 @@
-= Neo4j Data Science
+= Neo4j Graph of Thrones and Data Science
 :author: Mark Needham
 :description: Explore the Game of Thrones world with Cypher and data science algorithms
 :img: https://s3.amazonaws.com/guides.neo4j.com/got/img
@@ -7,7 +7,7 @@
 :tags: intro, cypher, load-csv, gds, algorithms, data-science
 :neo4j-version: 3.5
 
-== Welcome to Neo4j Data Science
+== Welcome to Neo4j Graph of Thrones and Data Science
 
 ifdef::env-guide[]
 . pass:a[<a play-topic='{guides}/01_eda.html'>Exploratory Data Analysis</a>]
