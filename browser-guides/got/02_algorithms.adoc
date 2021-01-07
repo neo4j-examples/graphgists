@@ -450,7 +450,7 @@ RETURN value
 We can run the following query to find the most influential character
 within that cluster:
 
-[source,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH (c:Character) WHERE EXISTS(c.community)
 WITH c.community AS communityId, COUNT(*) AS count
