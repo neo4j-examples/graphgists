@@ -17,8 +17,7 @@ Let’s get started!
 == Installing Graph Data Science
 
 * In Neo4j Desktop, go to the `Plugins` section on a DBMS instance
-* Click `Install plugin`, which will pull down the jar and place it in the `+$NEO4J_HOME/plugins+` folder.
-* Restart Neo4j
+* Click `Install and Restart` on the `Graph Data Science Library`.
 * Run the following query to check it installed correctly:
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
