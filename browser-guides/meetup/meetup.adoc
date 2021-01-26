@@ -18,13 +18,13 @@ Once imported, we can explore the data as a graph using the Cypher query languag
 Table of Contents:
 
 ifdef::env-guide[]
-. pass:a[<a play-topic='{guides}/01_meetup_import.html'>Data import</a>]
+. pass:a[<a play-topic='{guides}/01_meetup_import.html'>Data Import</a>]
 . pass:a[<a play-topic='{guides}/02_data_analysis.html'>Data Analysis</a>]
 endif::[]
 
 ifdef::env-graphgist[]
-. link:{gist}/01_data_import.adoc[Data import^]
-. link:{gist}/02_data_analysis.adoc[Data analysis^]
+. link:{gist}/01_meetup_import.adoc[Data Import^]
+. link:{gist}/02_data_analysis.adoc[Data Analysis^]
 endif::[]
 
 == Further Resources

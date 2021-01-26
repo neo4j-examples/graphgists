@@ -9,6 +9,8 @@
 
 == Welcome to Neo4j Import
 
+image:{img}/database_import.png[db-import,width=300,float=right]
+
 In this set of guides, we will cover three different ways to import data into Neo4j. These are not the only three ways to ingest data for Neo4j, but they are common methods.
 
 ifdef::env-guide[]

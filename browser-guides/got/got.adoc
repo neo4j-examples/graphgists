@@ -25,6 +25,5 @@ endif::[]
 
 * https://neo4j.com/graphgists[Graphgist Examples]
 * https://neo4j.com/docs/stable/cypher-refcard/[Cypher Reference Card]
-* https://neo4j.com/docs/cypher-manual/current/[Neo4j
-Cypher Manual]
+* https://neo4j.com/docs/cypher-manual/current/[Neo4j Cypher Manual]
 * https://graphdatabases.com[e-book: Graph Databases (free)]

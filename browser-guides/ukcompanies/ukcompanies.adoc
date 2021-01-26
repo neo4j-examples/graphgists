@@ -44,7 +44,10 @@ CREATE CONSTRAINT ON (c:Company) ASSERT c.companyNumber IS UNIQUE;
 CREATE CONSTRAINT ON (p:Property) ASSERT p.titleNumber IS UNIQUE;
 //Constraint on node key only available in Neo4j enterprise edition!
 //CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name) IS NODE KEY;
+----
 
+[source,cypher,subs=attributes]
+----
 LOAD CSV WITH HEADERS FROM '{data-url}/PSCAmericans.csv' AS row
 MERGE (c:Company {companyNumber: row.company_number})
 MERGE (p:Person {name: row.`data.name`, birthYear: row.`data.date_of_birth.year`, birthMonth: row.`data.date_of_birth.month`})
@@ -53,7 +56,12 @@ ON CREATE SET p.nationality = row.`data.nationality`,
 MERGE (p)-[r:HAS_CONTROL]->(c)
 SET r.nature = split(replace(replace(replace(row.`data.natures_of_control`, "[",""),"]",""),  '"', ""), ",")
 RETURN COUNT(*);
+----
 
+== Import, part 2
+
+[source,cypher,subs=attributes]
+----
 LOAD CSV WITH HEADERS FROM '{data-url}/CompanyDataAmericans.csv' AS row
 MATCH (c:Company {companyNumber: row.` CompanyNumber`})
 SET c.name = row.CompanyName,
@@ -63,7 +71,10 @@ SET c.name = row.CompanyName,
     c.countryOfOrigin = row.CountryOfOrigin,
     c.status = row.CompanyStatus,
     c.category = row.CompanyCategory;
-    
+----
+
+[source,cypher,subs=attributes]
+----
 LOAD CSV WITH HEADERS FROM '{data-url}/ElectionDonationsAmericans.csv' AS row
 MATCH (c:Company) WHERE c.companyNumber = row.CompanyRegistrationNumber
 MERGE (p:Recipient {name: row.RegulatedEntityName})
@@ -71,7 +82,12 @@ SET p.entityType = row.RegulatedEntityType
 MERGE (c)-[r:DONATED {ref: row.ECRef}]->(p)
 SET r.date  = date(datetime({epochSeconds: apoc.date.parse(row.ReceivedDate,'s','dd/MM/yyyy')})),
     r.value = toFloat(replace(replace(row.Value, "£", ""), ",", ""));
-    
+----
+
+== Import, part 3
+
+[source,cypher,subs=attributes]
+----
 LOAD CSV WITH HEADERS FROM '{data-url}/LandOwnershipAmericans.csv' AS row
 MATCH (c:Company {companyNumber: row.`Company Registration No. (1)`})
 MERGE (p:Property {titleNumber: row.`Title Number`})

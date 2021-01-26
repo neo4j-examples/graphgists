@@ -1,10 +1,12 @@
-== StackOverflow
+= StackOverflow
 :author: Neo4j
 :description: Explore Neo4j-related questions, answers, tags, and more with StackOverflow's public data
 :img: https://s3.amazonaws.com/guides.neo4j.com/stackoverflow/img
 :tags: import, recommendation, graph-search
 :neo4j-version: 3.5
 :icons: font
+
+== StackOverflow
 
 image:{img}/stackoverflow-logo.png[so-logo,width=400,float=right]
 
@@ -79,11 +81,31 @@ CALL apoc.load.json(url) YIELD value
 
 UNWIND value.items AS q
 
-MERGE (question:Question {id:q.question_id}) ON CREATE
-  SET question.title = q.title, question.share_link = q.share_link, question.favorite_count = q.favorite_count, question.creation_date = q.creation_date
+MERGE (question:Question {id:q.question_id})
+  ON CREATE SET question.title = q.title, question.share_link = q.share_link, question.favorite_count = q.favorite_count, question.creation_date = q.creation_date
+----
 
-MERGE (owner:User {id:q.owner.user_id}) ON CREATE SET owner.display_name = q.owner.display_name
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH "https://api.stackexchange.com/2.2/questions?pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
+CALL apoc.load.json(url) YIELD value
+
+UNWIND value.items AS q
+MATCH (question:Question {id: q.question_id})
+MERGE (owner:User {id:q.owner.user_id})
+  ON CREATE SET owner.display_name = q.owner.display_name
 MERGE (owner)-[:ASKED]->(question)
+----
+
+== Import, part 2
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+WITH "https://api.stackexchange.com/2.2/questions?pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
+CALL apoc.load.json(url) YIELD value
+
+UNWIND value.items AS q
+MATCH (question:Question {id: q.question_id})
 
 FOREACH (tagName IN q.tags | MERGE (tag:Tag {name:tagName}) MERGE (question)-[:TAGGED]->(tag))
 FOREACH (a IN q.answers |
@@ -99,9 +121,9 @@ Create indexes / constraints (ensure multistatement option is enabled with a che
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-CREATE CONSTRAINT on (q:Question) assert q.id is unique;
-CREATE CONSTRAINT on (t:Tag) assert t.name is unique;
-CREATE CONSTRAINT on (u:User) assert u.id is unique;
+CREATE CONSTRAINT on (q:Question) ASSERT q.id IS UNIQUE;
+CREATE CONSTRAINT on (t:Tag) ASSERT t.name IS UNIQUE;
+CREATE CONSTRAINT on (u:User) ASSERT u.id IS UNIQUE;
 ----
 
 == Larger Import (10 pages)
@@ -116,11 +138,34 @@ CALL apoc.load.json(url) YIELD value
 
 UNWIND value.items AS q
 
-MERGE (question:Question {id:q.question_id}) ON CREATE
-  SET question.title = q.title, question.share_link = q.share_link, question.favorite_count = q.favorite_count, question.creation_date = q.creation_date
+MERGE (question:Question {id:q.question_id})
+  ON CREATE SET question.title = q.title, question.share_link = q.share_link, question.favorite_count = q.favorite_count, question.creation_date = q.creation_date
+----
 
-MERGE (owner:User {id:coalesce(q.owner.user_id,'deleted')}) ON CREATE SET owner.display_name = q.owner.display_name
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+UNWIND range(1,10) as page
+WITH "https://api.stackexchange.com/2.2/questions?page="+page+"&pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
+CALL apoc.load.json(url) YIELD value
+
+UNWIND value.items AS q
+MATCH (question:Question {id:q.question_id})
+
+MERGE (owner:User {id:coalesce(q.owner.user_id,'deleted')})
+  ON CREATE SET owner.display_name = q.owner.display_name
 MERGE (owner)-[:ASKED]->(question)
+----
+
+== Larger import, part 2
+
+[source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
+----
+UNWIND range(1,10) as page
+WITH "https://api.stackexchange.com/2.2/questions?page="+page+"&pagesize=100&order=desc&sort=creation&tagged=neo4j&site=stackoverflow&filter=!5-i6Zw8Y)4W7vpy91PMYsKM-k9yzEsSC1_Uxlf" AS url
+CALL apoc.load.json(url) YIELD value
+
+UNWIND value.items AS q
+MATCH (question:Question {id:q.question_id})
 
 FOREACH (tagName IN q.tags | MERGE (tag:Tag {name:tagName}) MERGE (question)-[:TAGGED]->(tag))
 FOREACH (a IN q.answers |
@@ -202,7 +247,8 @@ Shortest path between users:
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 MATCH path = allShortestPaths(
-     (u:User {display_name:"alexanoid"})-[*]-(me:User {display_name:"InverseFalcon"}))
+  (u:User {display_name:"alexanoid"})-[*]-(me:User {display_name:"InverseFalcon"})
+)
 RETURN path;
 ----
 
