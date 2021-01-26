@@ -24,12 +24,12 @@ next several queries:
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
 //set up indexes for query performance
-CREATE INDEX FOR (r:Recipe) ON (r.id);
-CREATE INDEX FOR (i:Ingredient) ON (i.name);
-CREATE INDEX FOR (k:Keyword) ON (k.name);
-CREATE INDEX FOR (d:DietType) ON (d.name);
-CREATE INDEX FOR (a:Author) ON (a.name);
-CREATE INDEX FOR (c:Collection) ON (c.name);
+CREATE INDEX ON :Recipe(id);
+CREATE INDEX ON :Ingredient(name);
+CREATE INDEX ON :Keyword(name);
+CREATE INDEX ON :DietType(name);
+CREATE INDEX ON :Author(name);
+CREATE INDEX ON :Collection(name);
 ----
 
 == Data Import, part 2

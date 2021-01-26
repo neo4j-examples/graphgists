@@ -9,6 +9,8 @@
 
 == Welcome to Neo4j Graph of Thrones and Data Science
 
+image:{img}/got_header.png[got_header,float=right,width=500]
+
 ifdef::env-guide[]
 . pass:a[<a play-topic='{guides}/01_eda.html'>Exploratory Data Analysis</a>]
 . pass:a[<a play-topic='{guides}/02_algorithms.html'>Applied Graph Algorithms</a>]

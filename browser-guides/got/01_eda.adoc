@@ -10,6 +10,8 @@
 
 == Exploratory Data Analysis
 
+image:{img}/graphs-are-coming.jpg[graphs-are-coming,float=right,width=400]
+
 Welcome to the first of a set of interactive guides. In these guides,
 we’ll learn how to explore graph datasets using Cypher - the graph
 database query language.
@@ -18,7 +20,7 @@ Let’s get started!
 
 == Our dataset
 
-image:{img}/AStormOfSwords.jpg[AStormOfSwords]
+image:{img}/AStormOfSwords.jpg[AStormOfSwords,float=right,width=300]
 
 Most of this demo is based on work done by Dr. Andrew Beveridge, based
 on his https://networkofthrones.wordpress.com/[Network of Thrones]
@@ -50,7 +52,7 @@ character
 How the data was extracted from the books is described in detail here:
 https://networkofthrones.wordpress.com/from-book-to-network/
 
-image:{img}/char_cooccurence.png[char_cooccurence,float=right]
+image:{img}/char_cooccurence.png[char_cooccurence,float=right,width=400]
 
 == Exploring the data
 
@@ -151,6 +153,8 @@ MERGE (tgt:Character {name: row.Target})
 MERGE (src)-[r:INTERACTS2]->(tgt)
 ON CREATE SET r.weight = toInteger(row.weight), r.book=2
 ----
+
+== Importing the data
 
 [source,cypher,subs=attributes,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
@@ -287,3 +291,12 @@ RETURN a.name, b.name, c.name AS PivotalNode, length(head(paths)) AS pathLength,
 SKIP 490
 LIMIT 10
 ----
+
+== Next Step
+
+ifdef::env-guide[]
+pass:a[<a play-topic='{guides}/02_algorithms.html'>Applied Graph Algorithms</a>]
+endif::[]
+ifdef::env-graphgist[]
+link:{gist}/02_algorithms.adoc[Applied Graph Algorithms^]
+endif::[]

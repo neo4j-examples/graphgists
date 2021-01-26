@@ -99,9 +99,9 @@ Create indexes / constraints (ensure multistatement option is enabled with a che
 
 [source,cypher,highlight,pre-scrollable,programlisting,cm-s-neo,code,runnable,standalone-example,ng-binding]
 ----
-CREATE constraint on (q:Question) assert q.id is unique;
-CREATE constraint on (t:Tag) assert t.name is unique;
-CREATE constraint on (u:User) assert u.id is unique;
+CREATE CONSTRAINT on (q:Question) assert q.id is unique;
+CREATE CONSTRAINT on (t:Tag) assert t.name is unique;
+CREATE CONSTRAINT on (u:User) assert u.id is unique;
 ----
 
 == Larger Import (10 pages)

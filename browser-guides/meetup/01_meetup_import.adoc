@@ -21,28 +21,28 @@ To help speed up performance of queries and ensure unique entities, let's go ahe
 
 [source,cypher]
 ----
-CREATE INDEX FOR (m:Member) ON (m.id);
+CREATE INDEX ON :Member(id);
 
-CREATE INDEX FOR (e:Event) ON (e.id);
-CREATE INDEX FOR (e:Event) ON (e.time);
-CREATE INDEX FOR (e:Event) ON (e.location);
+CREATE INDEX ON :Event(id);
+CREATE INDEX ON :Event(time);
+CREATE INDEX ON :Event(location);
 
-CREATE INDEX FOR (g:Group) ON (g.id);
-CREATE INDEX FOR (g:Group) ON (g.name);
-CREATE INDEX FOR (g:Group) ON (g.location);
+CREATE INDEX ON :Group(id);
+CREATE INDEX ON :Group(name);
+CREATE INDEX ON :Group(location);
 
-CREATE INDEX FOR (v:Venue) ON (v.id);
-CREATE INDEX FOR (v:Venue) ON (v.location);
-CREATE INDEX FOR (r:RSVP) ON (r.id);
-CREATE INDEX FOR (t:Topic) ON (t.name);
-CREATE INDEX FOR (t:Topic) ON (t.urlkey);
+CREATE INDEX ON :Venue(id);
+CREATE INDEX ON :Venue(location);
+CREATE INDEX ON :RSVP(id);
+CREATE INDEX ON :Topic(name);
+CREATE INDEX ON :Topic(urlkey);
 
-CREATE INDEX FOR (c:City) ON (c.name);
-CREATE INDEX FOR (c:City) ON (c.location);
-CREATE INDEX FOR (c:City) ON (c.population);
+CREATE INDEX ON :City(name);
+CREATE INDEX ON :City(location);
+CREATE INDEX ON :City(population);
 
-CREATE INDEX FOR (o:Country) ON (o.iso2);
-CREATE INDEX FOR (o:Country) ON (o.name);
+CREATE INDEX ON :Country(iso2);
+CREATE INDEX ON :Country(name);
 
 CREATE CONSTRAINT ON (t:Topic) ASSERT t.id IS UNIQUE;
 ----

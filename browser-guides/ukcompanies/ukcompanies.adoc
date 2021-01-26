@@ -41,8 +41,9 @@ Be sure to enable multi-statement query editor in Neo4j Browser, then run:
 [source,cypher,subs=attributes]
 ----
 CREATE CONSTRAINT ON (c:Company) ASSERT c.companyNumber IS UNIQUE;
-CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name) IS NODE KEY;
 CREATE CONSTRAINT ON (p:Property) ASSERT p.titleNumber IS UNIQUE;
+//Constraint on node key only available in Neo4j enterprise edition!
+//CREATE CONSTRAINT ON (p:Person) ASSERT (p.birthMonth, p.birthYear, p.name) IS NODE KEY;
 
 LOAD CSV WITH HEADERS FROM '{data-url}/PSCAmericans.csv' AS row
 MERGE (c:Company {companyNumber: row.company_number})
